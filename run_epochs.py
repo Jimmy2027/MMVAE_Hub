@@ -113,7 +113,6 @@ def basic_routine_epoch(exp, batch):
     elif exp.flags.modality_poe:
         klds_joint = {'content': group_divergence,
                       'style': dict()};
-        recs_joint = dict();
         elbos = dict();
         for m, m_key in enumerate(mods.keys()):
             mod = mods[m_key];
@@ -122,16 +121,17 @@ def basic_routine_epoch(exp, batch):
             else:
                 kld_style_m = 0.0;
             klds_joint['style'][m_key] = kld_style_m;
-            i_batch_mod = {m_key: batch_d[m_key]};
-            r_mod = mm_vae(i_batch_mod);
-            log_prob_mod = -mod.calc_log_prob(r_mod['rec'][m_key],
-                                              batch_d[m_key],
-                                              exp.flags.batch_size);
-            log_prob = {m_key: log_prob_mod};
-            klds_mod = {'content': klds[m_key],
-                        'style': {m_key: kld_style_m}};
-            elbo_mod = utils.calc_elbo(exp, m_key, log_prob, klds_mod);
-            elbos[m_key] = elbo_mod;
+            if exp.flags.poe_unimodal_elbos:
+                i_batch_mod = {m_key: batch_d[m_key]};
+                r_mod = mm_vae(i_batch_mod);
+                log_prob_mod = -mod.calc_log_prob(r_mod['rec'][m_key],
+                                                  batch_d[m_key],
+                                                  exp.flags.batch_size);
+                log_prob = {m_key: log_prob_mod};
+                klds_mod = {'content': klds[m_key],
+                            'style': {m_key: kld_style_m}};
+                elbo_mod = utils.calc_elbo(exp, m_key, log_prob, klds_mod);
+                elbos[m_key] = elbo_mod;
         elbo_joint = utils.calc_elbo(exp, 'joint', log_probs, klds_joint);
         elbos['joint'] = elbo_joint;
         total_loss = sum(elbos.values())

@@ -18,7 +18,6 @@ if __name__ == '__main__':
 
     if FLAGS.method == 'poe':
         FLAGS.modality_poe=True;
-        FLAGS.poe_unimodal_elbos=True;
     elif FLAGS.method == 'moe':
         FLAGS.modality_moe=True;
     elif FLAGS.method == 'jsd':
