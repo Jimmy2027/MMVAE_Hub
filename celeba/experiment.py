@@ -138,7 +138,7 @@ class CelebaExperiment(BaseExperiment):
 
     def set_rec_weights(self):
         rec_weights = dict();
-        ref_mod_d_size = self.modalities['img'].data_size.numel();
+        ref_mod_d_size = self.modalities['img'].data_size.numel()/3;
         for k, m_key in enumerate(self.modalities.keys()):
             mod = self.modalities[m_key];
             numel_mod = mod.data_size.numel()
@@ -164,7 +164,11 @@ class CelebaExperiment(BaseExperiment):
     def eval_label(self, values, labels, index=None):
         pred = values[:,index];
         gt = labels[:,index];
-        return self.eval_metric(gt, pred);
+        try:
+            ap = self.eval_metric(gt, pred) 
+        except ValueError:
+            ap = 0.0;
+        return ap;
 
 
     def get_test_samples(self, num_images=10):
