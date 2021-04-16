@@ -1,0 +1,4 @@
+{
+  "method": "joint_elbo",
+  "text_encoding": "char"
+}
