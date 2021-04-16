@@ -22,9 +22,9 @@ def test_run_epochs():
         flags.alphabet = alphabet
         flags = create_dir_structure(flags)
 
-        mst = MNISTSVHNText(flags, alphabet)
-        mst.set_optimizer()
-        run_epochs(mst)
+        # mst = MNISTSVHNText(flags, alphabet)
+        # mst.set_optimizer()
+        # run_epochs(mst)
 
 
 if __name__ == '__main__':
