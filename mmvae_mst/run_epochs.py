@@ -1,82 +1,28 @@
-import sys, os
-import numpy as np
-from itertools import cycle
-import json
+import os
 import random
+
+import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.distributions as dist
-from torch.autograd import Variable
-from tensorboardX import SummaryWriter
-from torch.utils.data import DataLoader
-
-from divergence_measures.kl_div import calc_kl_divergence
-from divergence_measures.mm_div import poe
-
-from eval_metrics.coherence import test_generation
-from eval_metrics.representation import train_clf_lr_all_subsets
-from eval_metrics.representation import test_clf_lr_all_subsets
-from eval_metrics.sample_quality import calc_prd_score
-from eval_metrics.likelihood import estimate_likelihoods
-
-from plotting import generate_plots
-
+from mmvae_base.evaluation.eval_metrics.coherence import test_generation
+from mmvae_base.evaluation.eval_metrics.likelihood import estimate_likelihoods
+from mmvae_base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
+from mmvae_base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
+from mmvae_base.evaluation.eval_metrics.sample_quality import calc_prd_score
+from mmvae_base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style
 from mmvae_mst.utils import utils
 from mmvae_mst.utils.TBLogger import TBLogger
+from mmvae_base.utils.plotting import generate_plots
+from torch.autograd import Variable
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from mmvae_base.utils.utils import save_and_log_flags
+from tqdm import tqdm
 
-
-# global variables
-SEED = None 
-SAMPLE1 = None
-if SEED is not None:
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
-    random.seed(SEED) 
-
-
-def calc_log_probs(exp, result, batch):
-    mods = exp.modalities;
-    log_probs = dict()
-    weighted_log_prob = 0.0;
-    for m, m_key in enumerate(mods.keys()):
-        mod = mods[m_key]
-        log_probs[mod.name] = -mod.calc_log_prob(result['rec'][mod.name],
-                                                 batch[0][mod.name],
-                                                 exp.flags.batch_size);
-        weighted_log_prob += exp.rec_weights[mod.name]*log_probs[mod.name];
-    return log_probs, weighted_log_prob;
-
-
-def calc_klds(exp, result):
-    latents = result['latents']['subsets'];
-    klds = dict();
-    for m, key in enumerate(latents.keys()):
-        mu, logvar = latents[key];
-        klds[key] = calc_kl_divergence(mu, logvar,
-                                       norm_value=exp.flags.batch_size)
-    return klds;
-
-
-def calc_klds_style(exp, result):
-    latents = result['latents']['modalities'];
-    klds = dict();
-    for m, key in enumerate(latents.keys()):
-        if key.endswith('style'):
-            mu, logvar = latents[key];
-            klds[key] = calc_kl_divergence(mu, logvar,
-                                           norm_value=exp.flags.batch_size)
-    return klds;
-
-
-def calc_style_kld(exp, klds):
-    mods = exp.modalities;
-    style_weights = exp.style_weights;
-    weighted_klds = 0.0;
-    for m, m_key in enumerate(mods.keys()):
-        weighted_klds += style_weights[m_key]*klds[m_key+'_style'];
-    return weighted_klds;
-
+# set the seed for reproducibility
+def set_random_seed(seed: int):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    random.seed(seed)
 
 
 def basic_routine_epoch(exp, batch):
@@ -102,7 +48,7 @@ def basic_routine_epoch(exp, batch):
         klds_style = calc_klds_style(exp, results);
 
     if (exp.flags.modality_jsd or exp.flags.modality_moe
-        or exp.flags.joint_elbo):
+            or exp.flags.joint_elbo):
         if exp.flags.factorized_representation:
             kld_style = calc_style_kld(exp, klds_style);
         else:
@@ -179,8 +125,8 @@ def test(epoch, exp, tb_logger):
         rec_weight = 1.0;
 
         d_loader = DataLoader(exp.dataset_test, batch_size=exp.flags.batch_size,
-                            shuffle=True,
-                            num_workers=8, drop_last=True);
+                              shuffle=True,
+                              num_workers=8, drop_last=True);
 
         for iteration, batch in enumerate(d_loader):
             basic_routine = basic_routine_epoch(exp, batch);
@@ -216,12 +162,11 @@ def run_epochs(exp):
     # initialize summary writer
     writer = SummaryWriter(exp.flags.dir_logs)
     tb_logger = TBLogger(exp.flags.str_experiment, writer)
-    str_flags = utils.save_and_log_flags(exp.flags);
+    str_flags = save_and_log_flags(exp.flags)
     tb_logger.writer.add_text('FLAGS', str_flags, 0)
 
     print('training epochs progress:')
-    for epoch in range(exp.flags.start_epoch, exp.flags.end_epoch):
-        utils.printProgressBar(epoch, exp.flags.end_epoch)
+    for epoch in tqdm(range(exp.flags.start_epoch, exp.flags.end_epoch), postfix='epochs'):
         # one epoch of training and testing
         train(epoch, exp, tb_logger);
         test(epoch, exp, tb_logger);

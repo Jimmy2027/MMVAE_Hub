@@ -1,40 +1,32 @@
 import os
-
 import random
-import numpy as np 
+from pathlib import Path
 
 import PIL.Image as Image
-from PIL import ImageFont
-
+import mmvae_base
+import numpy as np
 import torch
-from torchvision import transforms
 import torch.optim as optim
-from sklearn.metrics import accuracy_score
-
-#from utils.BaseExperiment import BaseExperiment
-
+from PIL import ImageFont
+from mmvae_base import BaseExperiment
+from mmvae_mst.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
 from mmvae_mst.modalities.MNIST import MNIST
 from mmvae_mst.modalities.SVHN import SVHN
 from mmvae_mst.modalities.Text import Text
+from mmvae_mst.networks import VAEtrimodalSVHNMNIST, ClfImgMNIST, ClfImgSVHN, ClfText, EncoderImg, DecoderImg, \
+    EncoderSVHN, DecoderSVHN, EncoderText, DecoderText
+from sklearn.metrics import accuracy_score
+from torchvision import transforms
 
-from mmvae_mst.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
-from mmvae_mst.mnistsvhntext.networks.VAEtrimodalSVHNMNIST import VAEtrimodalSVHNMNIST
-from mmvae_mst.mnistsvhntext.networks.ConvNetworkImgClfMNIST import ClfImg as ClfImgMNIST
-from mmvae_mst.mnistsvhntext.networks.ConvNetworkImgClfSVHN import ClfImgSVHN
-from mmvae_mst.mnistsvhntext.networks.ConvNetworkTextClf import ClfText as ClfText
 
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksImgMNIST import EncoderImg, DecoderImg
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksImgSVHN import EncoderSVHN, DecoderSVHN
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksTextMNIST import EncoderText, DecoderText
-
-from mmvae_mst.utils.BaseExperiment import BaseExperiment
+# from utils.BaseExperiment import BaseExperiment
 
 
 class MNISTSVHNText(BaseExperiment):
     def __init__(self, flags, alphabet):
         super().__init__(flags)
         self.plot_img_size = torch.Size((3, 28, 28))
-        self.font = ImageFont.truetype('FreeSerif.ttf', 38)
+        self.font = self.get_font()
         self.alphabet = alphabet;
         self.flags.num_features = len(alphabet);
 
@@ -52,17 +44,15 @@ class MNISTSVHNText(BaseExperiment):
         self.style_weights = self.set_style_weights();
 
         self.test_samples = self.get_test_samples();
-        self.eval_metric = accuracy_score; 
+        self.eval_metric = accuracy_score;
         self.paths_fid = self.set_paths_fid();
 
         self.labels = ['digit'];
-
 
     def set_model(self):
         model = VAEtrimodalSVHNMNIST(self.flags, self.modalities, self.subsets)
         model = model.to(self.flags.device);
         return model;
-
 
     def set_modalities(self):
         mod1 = MNIST(EncoderImg(self.flags), DecoderImg(self.flags));
@@ -76,7 +66,6 @@ class MNISTSVHNText(BaseExperiment):
         mods = {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3};
         return mods;
 
-
     def get_transform_mnist(self):
         transform_mnist = transforms.Compose([transforms.ToTensor(),
                                               transforms.ToPILImage(),
@@ -84,11 +73,9 @@ class MNISTSVHNText(BaseExperiment):
                                               transforms.ToTensor()])
         return transform_mnist;
 
-
     def get_transform_svhn(self):
         transform_svhn = transforms.Compose([transforms.ToTensor()])
         return transform_svhn;
-
 
     def set_dataset(self):
         transform_mnist = self.get_transform_mnist();
@@ -104,7 +91,6 @@ class MNISTSVHNText(BaseExperiment):
                          transform=transforms)
         self.dataset_train = train;
         self.dataset_test = test;
-
 
     def set_clfs(self):
         model_clf_m1 = None;
@@ -131,7 +117,6 @@ class MNISTSVHNText(BaseExperiment):
                 'text': model_clf_m3}
         return clfs;
 
-
     def set_optimizer(self):
         # optimizer definition
         optimizer = optim.Adam(
@@ -140,16 +125,14 @@ class MNISTSVHNText(BaseExperiment):
             betas=(self.flags.beta_1, self.flags.beta_2))
         self.optimizer = optimizer;
 
-
     def set_rec_weights(self):
         rec_weights = dict();
         ref_mod_d_size = self.modalities['svhn'].data_size.numel();
         for k, m_key in enumerate(self.modalities.keys()):
             mod = self.modalities[m_key];
             numel_mod = mod.data_size.numel()
-            rec_weights[mod.name] = float(ref_mod_d_size/numel_mod)
+            rec_weights[mod.name] = float(ref_mod_d_size / numel_mod)
         return rec_weights;
-
 
     def set_style_weights(self):
         weights = dict();
@@ -157,7 +140,6 @@ class MNISTSVHNText(BaseExperiment):
         weights['svhn'] = self.flags.beta_m2_style;
         weights['text'] = self.flags.beta_m3_style;
         return weights;
-
 
     def get_test_samples(self, num_images=10):
         n_test = self.dataset_test.__len__();
@@ -172,18 +154,17 @@ class MNISTSVHNText(BaseExperiment):
                     break;
         return samples
 
-
     def mean_eval_metric(self, values):
         return np.mean(np.array(values));
-
 
     def get_prediction_from_attr(self, attr, index=None):
         pred = np.argmax(attr, axis=1).astype(int);
         return pred;
 
-
     def eval_label(self, values, labels, index):
         pred = self.get_prediction_from_attr(values);
         return self.eval_metric(labels, pred);
 
-
+    def get_font(self):
+        font_path = Path(mmvae_base.__file__).parent / 'modalities/text/FreeSerif.ttf'
+        return ImageFont.truetype(str(font_path), 38)
