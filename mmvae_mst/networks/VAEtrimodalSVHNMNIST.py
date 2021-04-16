@@ -2,18 +2,14 @@ import os
 
 import torch
 import torch.nn as nn
-
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksImgSVHN import EncoderSVHN, DecoderSVHN
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksImgMNIST import EncoderImg, DecoderImg
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksTextMNIST import EncoderText, DecoderText
-
+from mmvae_base import BaseMMVae
+# from mmvae_mst.utils.BaseMMVae import BaseMMVae
 from mmvae_mst.utils import utils
-from mmvae_mst.utils.BaseMMVae import BaseMMVae
 
 
 class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
     def __init__(self, flags, modalities, subsets):
-        super().__init__(flags, modalities, subsets)
+        super(VAEtrimodalSVHNMNIST, self).__init__(flags, modalities, subsets)
         self.encoder_m1 = modalities['mnist'].encoder;
         self.decoder_m1 = modalities['mnist'].decoder;
         self.encoder_m2 = modalities['svhn'].encoder;
@@ -29,7 +25,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
         self.decoder_m2 = self.decoder_m2.to(flags.device);
         self.encoder_m3 = self.encoder_m3.to(flags.device);
         self.decoder_m3 = self.decoder_m3.to(flags.device);
-
 
     def forward(self, input_batch):
         latents = self.inference(input_batch);
@@ -73,7 +68,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
         results['rec'] = results_rec;
         return results;
 
-
     def encode(self, input_batch):
         latents = dict();
         if 'mnist' in input_batch.keys():
@@ -102,7 +96,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
             latents['text'] = [None, None];
         return latents;
 
-
     def get_random_styles(self, num_samples):
         if self.flags.factorized_representation:
             z_style_1 = torch.randn(num_samples, self.flags.style_m1_dim);
@@ -117,7 +110,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
             z_style_3 = None;
         styles = {'mnist': z_style_1, 'svhn': z_style_2, 'text': z_style_3};
         return styles;
-
 
     def get_random_style_dists(self, num_samples):
         s1_mu = torch.zeros(num_samples,
@@ -137,7 +129,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
         styles = {'mnist': m1_dist, 'svhn': m2_dist, 'text': m3_dist};
         return styles;
 
-
     def generate_sufficient_statistics_from_latents(self, latents):
         style_m1 = latents['style']['mnist'];
         style_m2 = latents['style']['svhn'];
@@ -147,7 +138,6 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
         cond_gen_m2 = self.lhood_m2(*self.decoder_m2(style_m2, content));
         cond_gen_m3 = self.lhood_m3(*self.decoder_m3(style_m3, content));
         return {'mnist': cond_gen_m1, 'svhn': cond_gen_m2, 'text': cond_gen_m3}
-
 
     def save_networks(self):
         torch.save(self.encoder_m1.state_dict(), os.path.join(self.flags.dir_checkpoints, self.flags.encoder_save_m1))

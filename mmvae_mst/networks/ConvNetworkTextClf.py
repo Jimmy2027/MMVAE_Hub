@@ -1,8 +1,5 @@
-
-import torch
 import torch.nn as nn
 
-from mmvae_mst.mnistsvhntext.networks.ConvNetworksTextMNIST import FeatureEncText
 
 # Residual block
 class ResidualBlockEncoder(nn.Module):
