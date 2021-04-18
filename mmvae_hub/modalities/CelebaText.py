@@ -1,11 +1,12 @@
 
+
 import torch
 
-from mmvae_mst.modalities.Modality import Modality
+from mmvae_hub.modalities.Modality import Modality
 
-from mmvae_mst.utils import utils, plot
-from mmvae_mst.utils.save_samples import write_samples_text_to_file
-from mmvae_mst.utils.text import tensor_to_text
+from mmvae_hub.utils import utils, plot
+from mmvae_hub.utils.save_samples import write_samples_text_to_file
+from mmvae_hub.utils.text import tensor_to_text
 
 
 class Text(Modality):
@@ -33,5 +34,6 @@ class Text(Modality):
  
     def plot_data(self, d):
         out = plot.text_to_pil(d.unsqueeze(0), self.plot_img_size,
-                               self.alphabet, self.font)
+                               self.alphabet, self.font,
+                               w=256, h=256, linewidth=16)
         return out;

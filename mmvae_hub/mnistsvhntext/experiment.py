@@ -9,11 +9,11 @@ import torch
 import torch.optim as optim
 from PIL import ImageFont
 from mmvae_base import BaseExperiment
-from mmvae_mst.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
-from mmvae_mst.modalities.MNIST import MNIST
-from mmvae_mst.modalities.SVHN import SVHN
-from mmvae_mst.modalities.Text import Text
-from mmvae_mst.mnistsvhntext.networks import VAEtrimodalSVHNMNIST, ClfImgMNIST, ClfImgSVHN, ClfText, EncoderImg, DecoderImg, \
+from mmvae_hub.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
+from mmvae_hub.modalities.MNIST import MNIST
+from mmvae_hub.modalities.SVHN import SVHN
+from mmvae_hub.modalities.Text import Text
+from mmvae_hub.mnistsvhntext.networks import VAEtrimodalSVHNMNIST, ClfImgMNIST, ClfImgSVHN, ClfText, EncoderImg, DecoderImg, \
     EncoderSVHN, DecoderSVHN, EncoderText, DecoderText
 from sklearn.metrics import accuracy_score
 from torchvision import transforms

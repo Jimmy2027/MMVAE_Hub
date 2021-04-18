@@ -178,7 +178,7 @@ if __name__ == "__main__":
         savepath_train: Path = Path('~/Documents/temp/mmnist/train').expanduser()
         savepath_test: Path = Path('~/Documents/temp/mmnist/test').expanduser()
         backgroundimagepath: Path = Path(
-            '~/Documents/master_4/MMVAE_mnist_svhn_text/mmvae_mst/mmnist/mmnist_background_images').expanduser()
+            '/mmvae_hub/mmnist/mmnist_background_images').expanduser()
         num_modalities: int = 5
 
 

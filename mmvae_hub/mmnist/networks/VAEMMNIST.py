@@ -7,7 +7,7 @@ from mmvae_base import BaseMMVae
 
 from mmvae_base.evaluation.divergence_measures.mm_div import poe
 
-from mmvae_mst.utils import utils
+from mmvae_hub.utils import utils
 from mmvae_base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, poe
 
 

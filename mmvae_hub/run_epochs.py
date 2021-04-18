@@ -17,8 +17,8 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from mmvae_mst.utils import utils
-from mmvae_mst.utils.TBLogger import TBLogger
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.TBLogger import TBLogger
 
 
 # set the seed for reproducibility

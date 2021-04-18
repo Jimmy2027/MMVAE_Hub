@@ -9,12 +9,12 @@ from mmvae_base import BaseExperiment
 from sklearn.metrics import accuracy_score
 from torchvision import transforms
 
-from mmvae_mst.mmnist.MMNISTDataset import MMNISTDataset, ToyMMNISTDataset
-from mmvae_mst.mmnist.metrics import MmnistMetrics
-from mmvae_mst.mmnist.networks.ConvNetworkImgClfCMNIST import ClfImg as ClfImgCMNIST
-from mmvae_mst.mmnist.networks.ConvNetworksImgCMNIST import EncoderImg, DecoderImg
-from mmvae_mst.mmnist.networks.VAEMMNIST import VAEMMNIST
-from mmvae_mst.modalities.CMNIST import CMNIST
+from mmvae_hub.mmnist.MMNISTDataset import MMNISTDataset, ToyMMNISTDataset
+from mmvae_hub.mmnist.metrics import MmnistMetrics
+from mmvae_hub.mmnist.networks.ConvNetworkImgClfCMNIST import ClfImg as ClfImgCMNIST
+from mmvae_hub.mmnist.networks.ConvNetworksImgCMNIST import EncoderImg, DecoderImg
+from mmvae_hub.mmnist.networks.VAEMMNIST import VAEMMNIST
+from mmvae_hub.modalities.CMNIST import CMNIST
 
 
 class MMNISTExperiment(BaseExperiment):

@@ -14,9 +14,9 @@ import numpy as np
 import torch
 import codecs
 
-from mmvae_mst.utils.text import one_hot_encode
-from mmvae_mst.utils.text import create_text_from_label_mnist
-from mmvae_mst.utils.text import char2Index
+from mmvae_hub.utils.text import one_hot_encode
+from mmvae_hub.utils.text import create_text_from_label_mnist
+from mmvae_hub.utils.text import char2Index
 
 digit_text_german = ['null', 'eins', 'zwei', 'drei', 'vier', 'fuenf', 'sechs', 'sieben', 'acht', 'neun'];
 digit_text_english = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];

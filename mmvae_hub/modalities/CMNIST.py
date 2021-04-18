@@ -4,10 +4,10 @@ from torchvision import transforms
 
 from PIL import Image
 
-from mmvae_mst.modalities.Modality import Modality
+from mmvae_hub.modalities.Modality import Modality
 
-from mmvae_mst.utils import utils
-from mmvae_mst.utils.save_samples import write_samples_img_to_file
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.save_samples import write_samples_img_to_file
 
 
 class CMNIST(Modality):
