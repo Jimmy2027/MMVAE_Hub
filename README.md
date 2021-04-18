@@ -1,5 +1,5 @@
 # MMVAE_Hub
-[![Build Status](https://travis-ci.com/Jimmy2027/MMVAE_mnist-svhn-text.svg?branch=main)](https://travis-ci.com/Jimmy2027/MMVAE_mnist-svhn-text)
+[![Build Status](https://travis-ci.com/Jimmy2027/MMVAE_mnist_svhn_text.svg?branch=main)](https://travis-ci.com/Jimmy2027/MMVAE_mnist-svhn-text)
 
 Codebase for training multi modal VAEs on multiple datasets.
 
