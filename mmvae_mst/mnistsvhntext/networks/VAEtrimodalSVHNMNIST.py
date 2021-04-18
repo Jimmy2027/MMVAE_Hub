@@ -69,7 +69,7 @@ class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
         return results;
 
     def encode(self, input_batch):
-        latents = dict();
+        latents = {};
         if 'mnist' in input_batch.keys():
             i_m1 = input_batch['mnist'];
             l = self.encoder_m1(i_m1)

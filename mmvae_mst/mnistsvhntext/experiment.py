@@ -13,7 +13,7 @@ from mmvae_mst.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
 from mmvae_mst.modalities.MNIST import MNIST
 from mmvae_mst.modalities.SVHN import SVHN
 from mmvae_mst.modalities.Text import Text
-from mmvae_mst.networks import VAEtrimodalSVHNMNIST, ClfImgMNIST, ClfImgSVHN, ClfText, EncoderImg, DecoderImg, \
+from mmvae_mst.mnistsvhntext.networks import VAEtrimodalSVHNMNIST, ClfImgMNIST, ClfImgSVHN, ClfText, EncoderImg, DecoderImg, \
     EncoderSVHN, DecoderSVHN, EncoderText, DecoderText
 from sklearn.metrics import accuracy_score
 from torchvision import transforms

@@ -8,8 +8,8 @@ from run_epochs import run_epochs
 
 from mmvae_mst.utils.filehandling import create_dir_structure
 from mmvae_mst.utils.filehandling import create_dir_structure_testing
-from mmvae_mst.flags import parser
-from mmvae_mst.experiment import MNISTSVHNText
+from mmvae_mst.mnistsvhntext.flags import parser
+from mmvae_mst.mnistsvhntext.experiment import MNISTSVHNText
 
 if __name__ == '__main__':
     FLAGS = parser.parse_args()
