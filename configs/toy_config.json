@@ -1,4 +1,13 @@
 {
   "method": "joint_elbo",
-  "text_encoding": "char"
+  "text_encoding": "char",
+  "div_weight_uniform_content": 0.25,
+  "dir_data": "~/Documents/master_4/mmnist",
+  "use_clf": false,
+  "dataloader_workers": 0,
+  "steps_per_training_epoch": 2,
+  "end_epoch": 1,
+  "dataset": "toy",
+  "eval_lr": true,
+  "batch_size": 10
 }
