@@ -28,8 +28,6 @@ class MMNISTExperiment(BaseExperiment):
         self.dataset_name = 'mmnist'
         self.num_modalities = flags.num_mods
         self.plot_img_size = torch.Size((3, 28, 28))
-        font_path = str(Path(mmvae_base.__file__).parent / 'modalities/text/FreeSerif.ttf')
-        self.font = ImageFont.truetype(font_path, 38)
         self.alphabet = alphabet
         self.flags.num_features = len(alphabet)
 
