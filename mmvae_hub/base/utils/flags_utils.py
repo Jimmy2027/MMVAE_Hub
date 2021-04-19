@@ -7,6 +7,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
+
+import mmvae_hub
 from mmvae_hub.base import log
 from mmvae_hub.base.utils.filehandling import get_method, create_dir_structure
 
@@ -58,13 +60,20 @@ class BaseFlagsSetup:
     def flags_set_alpha_modalities(self, flags):
         pass
 
-    def setup_paths(self, flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
+    @staticmethod
+    def setup_paths(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
         """Expand user in paths and set dir_fid if not given."""
         flags.dir_data = Path(flags.dir_data).expanduser()
         flags.dir_experiment = Path(flags.dir_experiment).expanduser()
         flags.inception_state_dict = Path(flags.inception_state_dict).expanduser()
         flags.dir_fid = Path(flags.dir_fid).expanduser() if flags.dir_fid else flags.dir_experiment / 'fid'
         flags.dir_clf = Path(flags.dir_clf).expanduser() if flags.use_clf else None
+        return flags
+
+    def setup_test(self, flags, tmpdirname: str):
+        flags = self.setup(flags, testing=True)
+        flags.dir_experiment = Path(tmpdirname) / 'tmpexp'
+        flags.dir_fid = Path(tmpdirname) / 'fid'
         return flags
 
 
@@ -89,11 +98,28 @@ def update_flags_with_config(p, config_path: Path, additional_args: dict = None,
     additional_args : optional additional arguments to be passed as dict.
     """
     additional_args = additional_args or {}
-    with open(config_path, 'rt') as json_file:
-        t_args = argparse.Namespace()
-        json_config = json.load(json_file)
+    json_config = json2dict(config_path)
+    t_args = argparse.Namespace()
     t_args.__dict__.update({**json_config, **additional_args})
     if testing:
         return p.parse_args([], namespace=t_args)
     else:
         return p.parse_args(namespace=t_args)
+
+
+def json2dict(json_path: Path) -> dict:
+    with open(json_path, 'rt') as json_file:
+        json_config = json.load(json_file)
+    return json_config
+
+
+def get_config_path(flags=None):
+    if not flags or not flags.config_path:
+        if os.path.exists('/cluster/home/klugh/'):
+            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/leomed_config.json")
+        elif os.path.exists('/mnt/data/hendrik'):
+            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/bartholin_config.json")
+        else:
+            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/local_config.json")
+    else:
+        return flags.config_path
