@@ -2,7 +2,6 @@
   "dir_clf": "/tmp/trained_clfs_polyMNIST",
   "inception_state_dict": "/tmp/pt_inception-2015-12-05-6726825d.pth",
   "method": "joint_elbo",
-  "text_encoding": "char",
   "dataset": "toy",
   "dataloader_workers": 0,
   "steps_per_training_epoch": 2,

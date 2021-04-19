@@ -42,7 +42,6 @@ class BaseFlagsSetup:
             torch.cuda.set_device(get_freer_gpu())
         flags = self.flags_set_alpha_modalities(flags)
         flags.log_file = log.manager.root.handlers[1].baseFilename
-        flags.len_sequence = 128 if flags.text_encoding == 'word' else 1024
 
         if flags.load_flags:
             old_flags = torch.load(Path(flags.load_flags).expanduser())
@@ -77,14 +76,14 @@ class BaseFlagsSetup:
         return flags
 
 
-def get_freer_gpu():
+def get_freer_gpu() -> int:
     """
     Returns the index of the gpu with the most free memory.
     Taken from https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/6
     """
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
     memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
-    return np.argmax(memory_available)
+    return int(np.argmax(memory_available))
 
 
 def update_flags_with_config(p, config_path: Path, additional_args: dict = None, testing=False):
