@@ -1,14 +1,13 @@
 import math
 
 import numpy as np
-import torch
 from torch.utils.data import DataLoader
 
+from mmvae_hub.base import log
 from mmvae_hub.base.utils.likelihood import get_latent_samples
 from mmvae_hub.base.utils.likelihood import log_joint_estimate
 from mmvae_hub.base.utils.likelihood import log_marginal_estimate
 from mmvae_hub.base.utils.utils import dict_to_device
-from mmvae_hub.base import log
 
 LOG2PI = float(np.log(2.0 * math.pi))
 
@@ -67,11 +66,7 @@ def calc_log_likelihood_batch(exp, latents, subset_key, subset, batch, num_imp_s
     l_lin_rep_style = l_lin_rep['style']
     l_lin_rep_content = l_lin_rep['content']
     ll = {}
-    if exp.flags.text_encoding == 'word' and len(batch['text'].shape) == 2:
-        # need second equality to only modify the batch once, otherwise a one
-        # hot encoding of the one hot encoding would be generated
-        batch['text'] = torch.nn.functional.one_hot(batch['text'].to(torch.int64),
-                                                    num_classes=exp.flags.vocab_size)
+
     for m_key, mod in mods.items():
         # compute marginal log-likelihood
         style_mod = l_lin_rep_style[mod.name] if mod in subset else None
