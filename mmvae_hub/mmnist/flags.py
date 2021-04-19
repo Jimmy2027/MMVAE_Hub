@@ -25,28 +25,6 @@ parser.add_argument('--num_channels_m2', type=int, default=3, help="number of ch
 parser.add_argument('--dim', type=int, default=64, help="number of classes on which the data set trained")
 parser.add_argument('--data_multiplications', type=int, default=1, help="number of pairs per sample")
 parser.add_argument('--num_hidden_layers', type=int, default=1, help="number of channels in images")
-# parser.add_argument('--likelihood_m1', type=str, default='laplace', help="output distribution")
-# parser.add_argument('--likelihood_m2', type=str, default='laplace', help="output distribution")
-# parser.add_argument('--likelihood_m3', type=str, default='categorical', help="output distribution")
-parser.add_argument('--likelihood', type=str, default='laplace', help="output distribution")
-
-# paths to save models
-# NOTE: I hard-coded "encoderM{1..}" and "decoderM{1..}"
-# parser.add_argument('--encoder_save_m1', type=str, default='encoderM1', help="model save for encoder")
-# parser.add_argument('--encoder_save_m2', type=str, default='encoderM2', help="model save for encoder")
-# parser.add_argument('--encoder_save_m3', type=str, default='encoderM3', help="model save for decoder")
-# parser.add_argument('--decoder_save_m1', type=str, default='decoderM1', help="model save for decoder")
-# parser.add_argument('--decoder_save_m2', type=str, default='decoderM2', help="model save for decoder")
-# parser.add_argument('--decoder_save_m3', type=str, default='decoderM3', help="model save for decoder")
-
-
-# classifiers
-
-# NOTE: below are standardized to "pretrained_img_to_digit_clf_m{1,2,...}"
-# parser.add_argument('--clf_save_m1', type=str, default='clf_m1', help="model save for clf")
-# parser.add_argument('--clf_save_m2', type=str, default='clf_m2', help="model save for clf")
-# parser.add_argument('--clf_save_m3', type=str, default='clf_m3', help="model save for clf")
-
 
 # multimodal
 
