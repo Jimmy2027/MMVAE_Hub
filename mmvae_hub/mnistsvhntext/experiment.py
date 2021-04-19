@@ -3,12 +3,12 @@ import random
 from pathlib import Path
 
 import PIL.Image as Image
-import mmvae_base
+import mmvae_hub.base
 import numpy as np
 import torch
 import torch.optim as optim
 from PIL import ImageFont
-from mmvae_base import BaseExperiment
+from mmvae_hub.base import BaseExperiment
 from mmvae_hub.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
 from mmvae_hub.modalities.MNIST import MNIST
 from mmvae_hub.modalities.SVHN import SVHN
@@ -166,5 +166,5 @@ class MNISTSVHNText(BaseExperiment):
         return self.eval_metric(labels, pred);
 
     def get_font(self):
-        font_path = Path(mmvae_base.__file__).parent / 'modalities/text/FreeSerif.ttf'
+        font_path = Path(mmvae_hub.base.__file__).parent / 'modalities/text/FreeSerif.ttf'
         return ImageFont.truetype(str(font_path), 38)

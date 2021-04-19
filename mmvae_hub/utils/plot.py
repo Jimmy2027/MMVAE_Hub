@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import save_image
 from torchvision.utils import make_grid
 from torchvision import transforms
-from mmvae_base.utils import text as text
+from mmvae_hub.base.utils import text as text
 
 from PIL import ImageDraw
 from PIL import ImageFont

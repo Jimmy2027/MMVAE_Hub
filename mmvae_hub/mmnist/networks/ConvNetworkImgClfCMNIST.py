@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mmvae_base.networks.utils import Flatten
+from mmvae_hub.base.networks.utils import Flatten
 
 
 class ClfImg(nn.Module):

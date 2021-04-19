@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.optim as optim
-from mmvae_base import BaseExperiment
+from mmvae_hub.base import BaseExperiment
 from sklearn.metrics import accuracy_score
 from torchvision import transforms
 

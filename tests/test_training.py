@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 import torch
-from mmvae_base.modalities.text.alphabet import alphabet
-from mmvae_base.utils.plotting import generate_plots
+from mmvae_hub.base.modalities.text.alphabet import alphabet
+from mmvae_hub.base.utils.plotting import generate_plots
 
 import mmvae_hub
 from mmvae_hub import run_epochs

@@ -1,7 +1,7 @@
-from mmvae_base import log
-from mmvae_base.BaseFlags import parser as parser
-from mmvae_base.utils.filehandling import get_method
-from mmvae_base.utils.flags_utils import get_freer_gpu, update_flags_with_config
+from mmvae_hub.base import log
+from mmvae_hub.base.BaseFlags import parser as parser
+from mmvae_hub.base.utils.filehandling import get_method
+from mmvae_hub.base.utils.flags_utils import get_freer_gpu, update_flags_with_config
 
 # DATASET NAME
 parser.add_argument('--dataset', type=str, default='SVHN_MNIST_text', help="name of the dataset")

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from mmvae_base.networks.utils import Flatten, Unflatten
+from mmvae_hub.base.networks.utils import Flatten, Unflatten
 
 
 class EncoderImg(nn.Module):

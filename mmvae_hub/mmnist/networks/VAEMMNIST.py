@@ -3,12 +3,12 @@ import os
 import torch
 import torch.nn as nn
 
-from mmvae_base import BaseMMVae
+from mmvae_hub.base import BaseMMVae
 
-from mmvae_base.evaluation.divergence_measures.mm_div import poe
+from mmvae_hub.base.evaluation.divergence_measures.mm_div import poe
 
 from mmvae_hub.utils import utils
-from mmvae_base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, poe
+from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, poe
 
 
 

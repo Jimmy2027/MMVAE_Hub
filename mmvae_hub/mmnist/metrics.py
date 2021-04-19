@@ -2,7 +2,7 @@
 import typing
 
 import torch
-from mmvae_base.utils import BaseMetrics
+from mmvae_hub.base.utils import BaseMetrics
 from sklearn.metrics import accuracy_score
 
 

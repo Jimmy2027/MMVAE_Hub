@@ -2,7 +2,7 @@ import os
 
 import torch
 import torch.nn as nn
-from mmvae_base import BaseMMVae
+from mmvae_hub.base import BaseMMVae
 # from mmvae_hub.utils.BaseMMVae import BaseMMVae
 from mmvae_hub.utils import utils
 

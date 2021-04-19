@@ -3,15 +3,15 @@ import random
 
 import numpy as np
 import torch
-from mmvae_base import log
-from mmvae_base.evaluation.eval_metrics.coherence import test_generation
-from mmvae_base.evaluation.eval_metrics.likelihood import estimate_likelihoods
-from mmvae_base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
-from mmvae_base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
-from mmvae_base.evaluation.eval_metrics.sample_quality import calc_prd_score
-from mmvae_base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style, calc_style_kld
-from mmvae_base.utils.plotting import generate_plots
-from mmvae_base.utils.utils import save_and_log_flags, at_most_n
+from mmvae_hub.base import log
+from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
+from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
+from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
+from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
+from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
+from mmvae_hub.base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style, calc_style_kld
+from mmvae_hub.base.utils.plotting import generate_plots
+from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter

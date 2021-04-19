@@ -8,4 +8,4 @@ class Testmmvae(unittest.TestCase):
     def test_import(self):
         """Tests the imports for the MMVAE_mst package."""
         import mmvae_hub
-        import mmvae_base
+        import mmvae_hub.base

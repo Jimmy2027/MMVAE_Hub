@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from mmvae_base.BaseFlags import parser as parser
-from mmvae_base.utils.flags_utils import BaseFlagsSetup
+from mmvae_hub.base.BaseFlags import parser as parser
+from mmvae_hub.base.utils.flags_utils import BaseFlagsSetup
 
 parser.add_argument('--name', type=str, default='MMNIST', help="name of the dataset")
 parser.add_argument('--dataset', type=str, default='MMNIST', help="name of the dataset")
