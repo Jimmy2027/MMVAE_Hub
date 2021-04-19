@@ -5,6 +5,7 @@
   "dir_fid": "/mnt/data/hendrik/polymnist",
   "method": "joint_elbo",
   "data_multiplications": 20,
+  "div_weight_uniform_content": 0.25,
   "num_hidden_layers": 1,
   "style_dim": 0,
   "class_dim": 64,
