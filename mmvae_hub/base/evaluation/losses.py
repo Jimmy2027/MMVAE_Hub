@@ -2,7 +2,7 @@ from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_diverge
 from mmvae_hub.base.utils import utils
 
 
-def calc_log_probs(exp, result, batch):
+def calc_log_probs(exp, result, batch_d):
     """
     Calculates log_probs of batch
     """
@@ -11,7 +11,7 @@ def calc_log_probs(exp, result, batch):
     weighted_log_prob = 0.0
     for m_key in mods:
         mod = mods[m_key]
-        ba = batch[0][mod.name]
+        ba = batch_d[mod.name]
 
         log_probs[mod.name] = -mod.calc_log_prob(out_dist=result['rec'][mod.name], target=ba,
                                                  norm_value=exp.flags.batch_size)

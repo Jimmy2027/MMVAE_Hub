@@ -3,9 +3,11 @@ from abc import ABC, abstractmethod
 
 import torch
 import torch.nn as nn
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, poe
-from mmvae_hub.base.utils import utils
 from torch import Tensor
+
+from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, \
+    poe
+from mmvae_hub.base.utils import utils
 
 
 class BaseMMVae(ABC, nn.Module):
@@ -227,3 +229,28 @@ class BaseMMVae(ABC, nn.Module):
             latents = {'content': content_rep, 'style': style_latents}
             cond_gen_samples[key] = self.generate_from_latents(latents)
         return cond_gen_samples
+
+    @staticmethod
+    def calc_elbo(exp, modality, recs, klds):
+        flags = exp.flags
+        s_weights = exp.style_weights
+        kld_content = klds['content']
+        if modality == 'joint':
+            w_style_kld = 0.0
+            w_rec = 0.0
+            klds_style = klds['style']
+            mods = exp.modalities
+            r_weights = exp.rec_weights
+            for m_key in mods:
+                w_style_kld += s_weights[m_key] * klds_style[m_key]
+                w_rec += r_weights[m_key] * recs[m_key]
+            kld_style = w_style_kld
+            rec_error = w_rec
+        else:
+            beta_style_mod = s_weights[modality]
+            # rec_weight_mod = r_weights[modality]
+            rec_weight_mod = 1.0
+            kld_style = beta_style_mod * klds['style'][modality]
+            rec_error = rec_weight_mod * recs[modality]
+        div = flags.beta_content * kld_content + flags.beta_style * kld_style
+        return rec_error + flags.beta * div
