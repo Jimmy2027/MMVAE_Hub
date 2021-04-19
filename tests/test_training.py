@@ -20,10 +20,7 @@ def test_run_epochs_mmnist():
         flags = parser.parse_args([])
         config_path = Path(mmvae_hub.__file__).parent.parent / 'configs/toy_config.json'
         flags_setup = FlagsSetup(config_path)
-        flags = flags_setup.setup(flags, testing=True)
-        use_cuda = torch.cuda.is_available()
-        flags.device = torch.device('cuda' if use_cuda else 'cpu')
-        flags.dir_experiment = tmpdirname
+        flags = flags_setup.setup_test(flags, tmpdirname)
         mst = MMNISTExperiment(flags, alphabet)
         mst.set_optimizer()
         trainer = MmnistTrainer(mst)
@@ -39,6 +36,7 @@ def test_generate_plots():
         use_cuda = torch.cuda.is_available()
         flags.device = torch.device('cuda' if use_cuda else 'cpu')
         flags.dir_experiment = tmpdirname
+        flags.dir_fid = tmpdirname + '/fid'
         mst = MMNISTExperiment(flags, alphabet)
         generate_plots(mst, epoch=1)
 
