@@ -41,13 +41,13 @@ class MMNISTDataset(Dataset):
         self.num_files = num_files
 
     @staticmethod
-    def create_mmnist_dataset(savepath, backgroundimagepath, num_modalities, train):
+    def create_mmnist_dataset(savepath: Path, backgroundimagepath:Path, num_modalities, train):
         """Create the Multimodal MNIST Dataset under 'savepath' given a directory of background images.
         
             Args:
-                savepath (str): path to directory that the dataset will be written to. Will be created if it does not
+                savepath : path to directory that the dataset will be written to. Will be created if it does not
                     exist.
-                backgroundimagepath (str): path to a directory filled with background images. One background images is
+                backgroundimagepath : path to a directory filled with background images. One background images is
                     used per modality.
                 num_modalities (int): number of modalities to create.
                 train (bool): create the dataset based on MNIST training (True) or test data (False).
@@ -171,14 +171,16 @@ if __name__ == "__main__":
     # print("\nARGS:\n", args)
     from dataclasses import dataclass
     from pathlib import Path
+    from mmvae_hub.base.utils.flags_utils import get_config_path, json2dict
+
+    config = json2dict(get_config_path())
 
 
     @dataclass
     class Args:
-        savepath_train: Path = Path('~/Documents/temp/mmnist/train').expanduser()
-        savepath_test: Path = Path('~/Documents/temp/mmnist/test').expanduser()
-        backgroundimagepath: Path = Path(
-            '/mmvae_hub/mmnist/mmnist_background_images').expanduser()
+        savepath_train: Path = Path(config['dir_data']) / 'train'
+        savepath_test: Path = Path(config['dir_data']) / 'test'
+        backgroundimagepath: Path = Path(__file__).parent / 'mmnist_background_images'
         num_modalities: int = 5
 
 
