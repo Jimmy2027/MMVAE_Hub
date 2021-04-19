@@ -1,9 +1,10 @@
 {
+  "dir_data": "~/Documents/master_4/mmnist",
+  "dir_clf": "~/Documents/master_4/trained_clfs_polyMNIST",
   "method": "joint_elbo",
   "text_encoding": "char",
   "div_weight_uniform_content": 0.25,
-  "dir_data": "~/Documents/master_4/mmnist",
-  "use_clf": false,
+  "use_clf": true,
   "dataloader_workers": 0,
   "steps_per_training_epoch": 2,
   "end_epoch": 1,

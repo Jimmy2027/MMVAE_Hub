@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from mmvae_hub.base import log, BaseExperiment, BaseMMVae
+from mmvae_hub.base import log, BaseExperiment
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
@@ -160,7 +160,7 @@ class BaseTrainer:
 
                 if self.flags.use_clf:
                     log.info('test generation')
-                    gen_eval = test_generation(epoch, self.exp)
+                    gen_eval = test_generation(self.exp)
                     self.tb_logger.write_coherence_logs(gen_eval)
 
                 if self.flags.calc_nll:

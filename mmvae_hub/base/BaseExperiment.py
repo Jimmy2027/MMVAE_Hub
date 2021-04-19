@@ -15,7 +15,6 @@ class BaseExperiment(ABC):
         self.dataset_test = None
 
         self.mm_vae = None
-        self.clfs = None
         self.optimizer = None
         self.rec_weights = None
         self.style_weights = None
@@ -33,10 +32,6 @@ class BaseExperiment(ABC):
 
     @abstractmethod
     def set_dataset(self):
-        pass
-
-    @abstractmethod
-    def set_clfs(self):
         pass
 
     @abstractmethod

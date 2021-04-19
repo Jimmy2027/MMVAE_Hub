@@ -5,16 +5,14 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.optim as optim
-from mmvae_hub.base import BaseExperiment
 from sklearn.metrics import accuracy_score
 from torchvision import transforms
 
+from mmvae_hub.base import BaseExperiment
 from mmvae_hub.mmnist.MMNISTDataset import MMNISTDataset, ToyMMNISTDataset
+from mmvae_hub.mmnist.PolyMNISTMod import PolyMNISTMod
 from mmvae_hub.mmnist.metrics import MmnistMetrics
-from mmvae_hub.mmnist.networks.ConvNetworkImgClfCMNIST import ClfImg as ClfImgCMNIST
-from mmvae_hub.mmnist.networks.ConvNetworksImgCMNIST import EncoderImg, DecoderImg
 from mmvae_hub.mmnist.networks.VAEMMNIST import VAEMMNIST
-from mmvae_hub.modalities.CMNIST import CMNIST
 
 
 class MMNISTExperiment(BaseExperiment):
@@ -35,7 +33,6 @@ class MMNISTExperiment(BaseExperiment):
         self.dataset_train, self.dataset_test = self.set_dataset()
 
         self.mm_vae = self.set_model()
-        self.clfs = self.set_clfs()
         self.optimizer = None
         self.rec_weights = self.set_rec_weights()
         self.style_weights = self.set_style_weights()
@@ -51,8 +48,7 @@ class MMNISTExperiment(BaseExperiment):
         return model
 
     def set_modalities(self):
-        mods = [CMNIST(EncoderImg(self.flags), DecoderImg(self.flags), name="m%d" % m) for m in
-                range(self.num_modalities)]
+        mods = [PolyMNISTMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]
         return {m.name: m for m in mods}
 
     def set_dataset(self):
@@ -64,17 +60,6 @@ class MMNISTExperiment(BaseExperiment):
             train = MMNISTDataset(Path(self.flags.dir_data) / 'train', transform=transform)
             test = MMNISTDataset(Path(self.flags.dir_data) / 'train', transform=transform)
         return train, test
-
-    def set_clfs(self):
-        clfs = {"m%d" % m: None for m in range(self.num_modalities)}
-        if self.flags.use_clf:
-            for m in range(self.num_modalities):
-                model_clf = ClfImgCMNIST()
-                model_clf.load_state_dict(
-                    torch.load(os.path.join(self.flags.dir_clf, "pretrained_img_to_digit_clf_m%d" % m)))
-                model_clf = model_clf.to(self.flags.device)
-                clfs["m%d" % m] = model_clf
-        return clfs
 
     def set_optimizer(self):
         # optimizer definition

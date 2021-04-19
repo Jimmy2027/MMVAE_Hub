@@ -1,7 +1,7 @@
 import torch
 
 import mmvae_hub.base.modalities.utils
-from mmvae_hub.base.modalities.Modality import Modality
+from mmvae_hub.base.modalities.BaseModality import Modality
 from mmvae_hub.base.utils import plot
 from mmvae_hub.base.utils.save_samples import write_samples_text_to_file
 from mmvae_hub.base.utils.text import tensor_to_text

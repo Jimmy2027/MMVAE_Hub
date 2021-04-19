@@ -68,7 +68,6 @@ class FlagsSetup(BaseFlagsSetup):
         super().__init__(config_path)
         self.parser = parser
 
-
     def flags_set_alpha_modalities(self, flags):
         flags.alpha_modalities = [flags.div_weight_uniform_content]
         if flags.div_weight is None:

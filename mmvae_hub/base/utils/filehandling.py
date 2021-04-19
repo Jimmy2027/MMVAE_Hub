@@ -89,8 +89,6 @@ def create_dir_structure(flags: argparse.ArgumentParser(), train: bool = True) -
     if train:
         create_dir(flags.dir_cond_gen)
 
-    if flags.dir_clf and not os.path.exists(flags.dir_clf):
-        os.makedirs(flags.dir_clf)
     return flags
 
 
