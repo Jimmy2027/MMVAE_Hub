@@ -58,6 +58,6 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
-    # test_run_epochs_mmnist()
+    test_run_epochs_mmnist()
     # test_generate_plots()
-    test_test_generation()
+    # test_test_generation()
