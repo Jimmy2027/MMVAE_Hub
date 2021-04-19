@@ -161,6 +161,7 @@ class BaseTrainer:
                 if self.flags.use_clf:
                     log.info('test generation')
                     gen_eval = test_generation(self.exp)
+                    log.info(f'gen eval: {gen_eval}')
                     self.tb_logger.write_coherence_logs(gen_eval)
 
                 if self.flags.calc_nll:
