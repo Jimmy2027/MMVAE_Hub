@@ -1,13 +1,17 @@
 {
   "dir_clf": "/tmp/trained_clfs_polyMNIST",
+  "inception_state_dict": "/tmp/pt_inception-2015-12-05-6726825d.pth",
   "method": "joint_elbo",
   "text_encoding": "char",
+  "dataset": "toy",
   "dataloader_workers": 0,
   "steps_per_training_epoch": 2,
   "div_weight_uniform_content": 0.25,
-  "use_clf": true,
   "end_epoch": 1,
-  "dataset": "toy",
+  "batch_size": 10,
+  "eval_freq_fid": 1,
+  "use_clf": true,
   "eval_lr": true,
-  "batch_size": 10
+  "calc_prd": false,
+  "calc_nll": true
 }
