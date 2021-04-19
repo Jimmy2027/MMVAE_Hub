@@ -3,13 +3,13 @@ from typing import Mapping
 
 import numpy as np
 import torch
-from mmvae_hub.base import log
-from mmvae_hub.base.utils.save_samples import save_generated_samples_singlegroup
-from mmvae_hub.base.utils.utils import at_most_n, dict_to_device
-from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
 from torch import Tensor
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+
+from mmvae_hub.base import log
+from mmvae_hub.base.utils.save_samples import save_generated_samples_singlegroup
+from mmvae_hub.base.utils.utils import dict_to_device
+from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
 
 
 def classify_cond_gen_samples_(exp, labels: Tensor, cond_samples: typing.Mapping[str, Tensor]) \
@@ -49,13 +49,11 @@ def classify_cond_gen_samples(exp, labels: Tensor, cond_samples: typing.Mapping[
     'text': tensor}
 
     """
-    clfs = exp.clfs
     clf_predictions = {mod: {} for mod in exp.modalities}
     for mod in exp.modalities:
         if mod in cond_samples:
             mod_cond_gen: Tensor = cond_samples[mod]
-            mod_clf = clfs[mod]
-            mod_cond_gen = transform_gen_samples(mod_cond_gen, exp.clf_transforms[mod]).to(exp.flags.device)
+            mod_clf = exp.modalities[mod].clf
             # classify generated sample to evaluate coherence
             clf_predictions[mod] = mod_clf(mod_cond_gen).cpu()
         else:
@@ -68,7 +66,6 @@ def calculate_coherence(exp, samples) -> dict:
     Classifies generated modalities. The generated samples are coherent if all modalities
     are classified as belonging to the same class.
     """
-    clfs = exp.clfs
     mods = exp.modalities
     # TODO: make work for num samples NOT EQUAL to batch_size
     c_labels = {}
@@ -76,11 +73,8 @@ def calculate_coherence(exp, samples) -> dict:
         pred_mods = np.zeros((len(mods.keys()), exp.flags.batch_size))
         for k, m_key in enumerate(mods.keys()):
             mod = mods[m_key]
-            clf_mod = clfs[mod.name].to(exp.flags.device)
+            clf_mod = mod.clf
             samples_mod = samples[mod.name]
-            samples_mod = transform_gen_samples(samples_mod, exp.clf_transforms[m_key])
-            samples_mod = samples_mod.to(exp.flags.device)
-
             attr_mod = clf_mod(samples_mod)
             output_prob_mod = attr_mod.cpu().data.numpy()
             pred_mod = np.argmax(output_prob_mod, axis=1).astype(int)
@@ -165,8 +159,7 @@ def calc_coherence_random_gen(exp, mm_vae, iteration: int, gen_perf: typing.Mapp
         typing.Mapping[str, dict]:
     args = exp.flags
     # generating random samples
-    with catching_cuda_out_of_memory(batch_size=args.batch_size):
-        rand_gen = mm_vae.module.generate() if args.distributed else mm_vae.generate()
+    rand_gen = mm_vae.module.generate() if args.distributed else mm_vae.generate()
     rand_gen = dict_to_device(rand_gen, args.device)
     # classifying generated examples
     coherence_random = calculate_coherence(exp, rand_gen)
@@ -219,13 +212,12 @@ def test_generation(exp, dataset=None):
                           shuffle=True,
                           num_workers=exp.flags.dataloader_workers, drop_last=False)
 
-    batch_labels, gen_perf, cond_gen_classified, text_gen_eval_results = classify_generated_samples(args, d_loader, exp,
-                                                                                                    mm_vae,
-                                                                                                    mods, subsets)
+    batch_labels, gen_perf, cond_gen_classified = classify_generated_samples(args, d_loader, exp,
+                                                                             mm_vae,
+                                                                             mods, subsets)
 
     gen_perf['cond']: Mapping[str, Mapping[str, Mapping[str, float]]]
-    return eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, gen_perf,
-                                       batch_labels), text_gen_eval_results
+    return eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, gen_perf, batch_labels)
 
 
 def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
@@ -234,16 +226,13 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     """
     labels = exp.labels
     gen_perf = init_gen_perf(labels, subsets, mods)
-    total_steps = None if args.steps_per_training_epoch < 0 else args.steps_per_training_epoch
+    training_steps = args.steps_per_training_epoch
     # all labels accumulated over batches:
     batch_labels = torch.Tensor()
     cond_gen_classified = init_twolevel_nested_dict(subsets, mods, init_val=torch.Tensor())
     cond_gen_classified: Mapping[subsets, Mapping[mods, Tensor]]
-    text_gen_eval_results = {}
-    text_gen = {k: torch.Tensor() for k in subsets}
-    text_batch = {k: torch.Tensor() for k in subsets}
-    for iteration, (batch_d, batch_l) in tqdm(enumerate(at_most_n(d_loader, total_steps)),
-                                              total=len(d_loader), postfix='test_generation'):
+
+    for iteration, (batch_d, batch_l) in enumerate(d_loader):
 
         batch_labels = torch.cat((batch_labels, batch_l), 0)
         batch_d = dict_to_device(batch_d, exp.flags.device)
@@ -260,16 +249,13 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         cg: typing.Mapping[subsets, typing.Mapping[mods, Tensor]]
         # classify the cond. generated samples
         for subset, cond_val in cg.items():
-            # save the generated text samples to evaluate them afterwards
-            text_gen[subset] = torch.cat((text_gen[subset], cond_val['text'].cpu()), 0)
-            text_batch[subset] = torch.cat((text_batch[subset], batch_d['text'].cpu()), 0)
             clf_cg: Mapping[mods, Tensor] = classify_cond_gen_samples(exp, batch_l, cond_val)
             for mod in mods:
                 cond_gen_classified[subset][mod] = torch.cat((cond_gen_classified[subset][mod], clf_cg[mod]), 0)
             if (exp.flags.batch_size * iteration) < exp.flags.num_samples_fid and exp.flags.save_figure:
                 save_generated_samples_singlegroup(exp, iteration, subset, cond_val)
-    text_gen_eval_results = evaluate_generated_text(exp, text_gen, text_ref=text_batch)
-    return batch_labels, gen_perf, cond_gen_classified, text_gen_eval_results
+
+    return batch_labels, gen_perf, cond_gen_classified
 
 
 def flatten_cond_gen_values(gen_eval: dict):
