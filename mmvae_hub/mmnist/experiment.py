@@ -16,7 +16,7 @@ from mmvae_hub.mmnist.networks.VAEMMNIST import VAEMMNIST
 
 
 class MMNISTExperiment(BaseExperiment):
-    def __init__(self, flags, alphabet):
+    def __init__(self, flags):
         super(MMNISTExperiment, self).__init__(flags)
         self.flags = flags
         self.labels = ['digit']
@@ -24,8 +24,6 @@ class MMNISTExperiment(BaseExperiment):
         self.dataset_name = 'mmnist'
         self.num_modalities = flags.num_mods
         self.plot_img_size = torch.Size((3, 28, 28))
-        self.alphabet = alphabet
-        self.flags.num_features = len(alphabet)
 
         self.modalities = self.set_modalities()
         self.subsets = self.set_subsets()
