@@ -2,9 +2,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-# DATASET NAME
-# to be specified by experiments themselves
-# parser.add_argument('--dataset', type=str, default='SVHN_MNIST_text', help="name of the dataset")
+parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
 
 # TRAINING
 parser.add_argument('--seed', type=int, default=None,
