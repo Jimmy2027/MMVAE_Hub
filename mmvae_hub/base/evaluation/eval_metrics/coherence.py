@@ -28,8 +28,7 @@ def classify_cond_gen_samples_(exp, labels: Tensor, cond_samples: typing.Mapping
                 if exp.flags.dataset == 'testing':
                     # when using the testing dataset, the vae attr_hat might contain nans.
                     # Replace them for testing purposes
-                    score = exp.eval_label(np.nan_to_num(attr_hat.cpu().data.numpy()), labels,
-                                           index=l)
+                    score = exp.eval_label(np.nan_to_num(attr_hat.cpu().data.numpy()), labels, index=l)
                 else:
                     # score is nan if it only contains one class.
                     score = exp.eval_label(attr_hat.cpu().data.numpy(), labels, index=l)

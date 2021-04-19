@@ -113,6 +113,9 @@ class MMNISTExperiment(BaseExperiment):
         print(paths.keys())
         return paths
 
+    def get_prediction_from_attr(self, attr, index=None):
+        return np.argmax(attr, axis=1).astype(int);
+
     def eval_label(self, values, labels, index):
-        # todo: HK: abstract method that needs to be implemented. No idea for what it is needed
-        pass
+        pred = self.get_prediction_from_attr(values);
+        return self.eval_metric(labels, pred);

@@ -44,9 +44,7 @@ class BaseTBLogger:
                                         (l_key, s_key),
                                         gen_eval['cond'][l_key][s_key],
                                         self.step)
-        self.writer.add_scalars('Generation/Random',
-                                gen_eval['random'],
-                                self.step)
+        self.writer.add_scalars('Generation/Random', gen_eval['random'], self.step)
 
     def write_lhood_logs(self, lhoods):
         for k, key in enumerate(sorted(lhoods.keys())):
