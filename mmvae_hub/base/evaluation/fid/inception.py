@@ -186,9 +186,11 @@ def fid_inception_v3(PATH_STATE_DICT):
     inception.Mixed_7b = FIDInceptionE_1(1280)
     inception.Mixed_7c = FIDInceptionE_2(2048)
 
-    # state_dict = load_state_dict_from_url(FID_WEIGHTS_URL, progress=True)
-    # inception.load_state_dict(state_dict)
-    inception.load_state_dict(torch.load(PATH_STATE_DICT))
+    if PATH_STATE_DICT.exists():
+        inception.load_state_dict(torch.load(PATH_STATE_DICT))
+    else:
+        state_dict = load_state_dict_from_url(FID_WEIGHTS_URL, progress=True)
+        inception.load_state_dict(state_dict)
     return inception
 
 
