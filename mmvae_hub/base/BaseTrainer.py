@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+import shutil
+from pathlib import Path
 
 import torch
 from torch.autograd import Variable
@@ -9,12 +11,14 @@ from tqdm import tqdm
 
 from mmvae_hub import log
 from mmvae_hub.base import BaseExperiment
+from mmvae_hub.base import experiment_vis
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style, calc_style_kld
+from mmvae_hub.base.experiment_vis.utils import write_experiment_vis_config
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n
@@ -45,6 +49,8 @@ class BaseTrainer:
                     os.makedirs(dir_network_epoch)
                 self.exp.mm_vae.save_networks()
                 torch.save(self.exp.mm_vae.state_dict(), os.path.join(dir_network_epoch, self.flags.mm_vae_save))
+
+        self.finalize()
 
     def train(self):
         self.exp.mm_vae.train()
@@ -170,3 +176,11 @@ class BaseTrainer:
                     log.info('calculating prediction score')
                     prd_scores = calc_prd_score(self.exp)
                     self.tb_logger.write_prd_scores(prd_scores)
+
+    def finalize(self):
+        experiment_vis_config_path = write_experiment_vis_config(self.flags.dir_experiment_run)
+        log.info('Converting notebook to html.')
+        notebook_path = Path(experiment_vis.__file__).parent / 'experiment_vis.ipynb'
+        os.system(f'jupyter nbconvert --to html {notebook_path}')
+        shutil.move(notebook_path.with_suffix('.html'), self.flags.dir_experiment_run)
+        os.remove(experiment_vis_config_path)
