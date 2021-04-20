@@ -6,9 +6,9 @@ import pytest
 import mmvae_hub
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.mmnist import MmnistTrainer
-from mmvae_hub.mmnist.experiment import MMNISTExperiment
-from mmvae_hub.mmnist.flags import FlagsSetup, parser
+from mmvae_hub.polymnist import PolymnistExperiment
+from mmvae_hub.polymnist import PolymnistTrainer
+from mmvae_hub.polymnist.flags import FlagsSetup, parser
 
 
 def set_me_up(tmpdirname):
@@ -16,16 +16,16 @@ def set_me_up(tmpdirname):
     config_path = Path(mmvae_hub.__file__).parent.parent / 'configs/toy_config.json'
     flags_setup = FlagsSetup(config_path)
     flags = flags_setup.setup_test(flags, tmpdirname)
-    mst = MMNISTExperiment(flags)
+    mst = PolymnistExperiment(flags)
     mst.set_optimizer()
     return mst
 
 
 @pytest.mark.tox
-def test_run_epochs_mmnist():
+def test_run_epochs_polymnist():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname)
-        trainer = MmnistTrainer(mst)
+        trainer = PolymnistTrainer(mst)
         trainer.run_epochs()
 
 
@@ -43,6 +43,6 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
-    test_run_epochs_mmnist()
+    test_run_epochs_polymnist()
     # test_generate_plots()
     # test_test_generation()

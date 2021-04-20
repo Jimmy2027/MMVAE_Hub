@@ -9,15 +9,15 @@ from sklearn.metrics import accuracy_score
 from torchvision import transforms
 
 from mmvae_hub.base import BaseExperiment
-from mmvae_hub.mmnist.MMNISTDataset import MMNISTDataset, ToyMMNISTDataset
-from mmvae_hub.mmnist.PolyMNISTMod import PolyMNISTMod
-from mmvae_hub.mmnist.metrics import MmnistMetrics
-from mmvae_hub.mmnist.networks.VAEMMNIST import VAEMMNIST
+from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
+from mmvae_hub.polymnist.PolymnistMod import PolyMNISTMod
+from mmvae_hub.polymnist.metrics import PolymnistMetrics
+from mmvae_hub.polymnist.networks.VAEPolymnist import VAEPolymnist
 
 
-class MMNISTExperiment(BaseExperiment):
+class PolymnistExperiment(BaseExperiment):
     def __init__(self, flags):
-        super(MMNISTExperiment, self).__init__(flags)
+        super(PolymnistExperiment, self).__init__(flags)
         self.flags = flags
         self.labels = ['digit']
         # self.name = flags.name
@@ -37,11 +37,11 @@ class MMNISTExperiment(BaseExperiment):
 
         self.test_samples = self.get_test_samples()
         self.eval_metric = accuracy_score;
-        self.metrics = MmnistMetrics
+        self.metrics = PolymnistMetrics
         self.paths_fid = self.set_paths_fid()
 
     def set_model(self):
-        model = VAEMMNIST(self.flags, self.modalities, self.subsets)
+        model = VAEPolymnist(self.flags, self.modalities, self.subsets)
         model = model.to(self.flags.device)
         return model
 
@@ -52,11 +52,11 @@ class MMNISTExperiment(BaseExperiment):
     def set_dataset(self):
         transform = transforms.Compose([transforms.ToTensor()])
         if self.flags.dataset == 'toy':
-            train = ToyMMNISTDataset()
-            test = ToyMMNISTDataset()
+            train = ToyPolymnistDataset()
+            test = ToyPolymnistDataset()
         else:
-            train = MMNISTDataset(Path(self.flags.dir_data) / 'train', transform=transform)
-            test = MMNISTDataset(Path(self.flags.dir_data) / 'train', transform=transform)
+            train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
+            test = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
         return train, test
 
     def set_optimizer(self):
@@ -80,7 +80,7 @@ class MMNISTExperiment(BaseExperiment):
     def set_style_weights(self):
         return {"m%d" % m: self.flags.beta_style for m in range(self.num_modalities)}
 
-    def get_transform_mmnist(self):
+    def get_transform_polymnist(self):
         return transforms.Compose([transforms.ToTensor()])
 
     def get_test_samples(self, num_images=10):

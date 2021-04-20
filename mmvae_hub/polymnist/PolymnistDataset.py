@@ -11,7 +11,7 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
 
-class MMNISTDataset(Dataset):
+class PolymnistDataset(Dataset):
     """Multimodal MNIST Dataset."""
 
     def __init__(self, dir_data: Path, transform=None, target_transform=None, num_modalities: int = 5):
@@ -41,7 +41,7 @@ class MMNISTDataset(Dataset):
         self.num_files = num_files
 
     @staticmethod
-    def create_mmnist_dataset(savepath: Path, backgroundimagepath:Path, num_modalities, train):
+    def create_polymnist_dataset(savepath: Path, backgroundimagepath:Path, num_modalities, train):
         """Create the Multimodal MNIST Dataset under 'savepath' given a directory of background images.
         
             Args:
@@ -80,7 +80,7 @@ class MMNISTDataset(Dataset):
                 ixs_perm = ixs[torch.randperm(len(ixs))]  # one permutation per modality and digit label
                 for i, ix in enumerate(ixs_perm):
                     # add background image
-                    new_img = MMNISTDataset._add_background_image(background_images[m], mnist.data[ix])
+                    new_img = PolymnistDataset._add_background_image(background_images[m], mnist.data[ix])
                     # save as png
                     filepath = os.path.join(savepath, "m%d/%d.%d.png" % (m, i, digit))
                     save_image(new_img, filepath)
@@ -134,14 +134,14 @@ class MMNISTDataset(Dataset):
             labels = [self.transform(label) for label in labels]
 
         images_dict = {"m%d" % m: images[m] for m in range(self.num_modalities)}
-        return images_dict, labels[0]  # NOTE: for MMNIST, labels are shared across modalities, so can take one value
+        return images_dict, labels[0]  # NOTE: for Polymnist, labels are shared across modalities, so can take one value
 
     def __len__(self):
         return self.num_files
 
 
-class ToyMMNISTDataset(Dataset):
-    """Toy MMNIST dataset for testing purposes."""
+class ToyPolymnistDataset(Dataset):
+    """Toy Polymnist dataset for testing purposes."""
 
     def __init__(self, num_modalities: int = 5):
         super().__init__()
@@ -180,12 +180,12 @@ if __name__ == "__main__":
     class Args:
         savepath_train: Path = Path(config['dir_data']) / 'train'
         savepath_test: Path = Path(config['dir_data']) / 'test'
-        backgroundimagepath: Path = Path(__file__).parent / 'mmnist_background_images'
+        backgroundimagepath: Path = Path(__file__).parent / 'polymnist_background_images'
         num_modalities: int = 5
 
 
     args = Args()
     # create dataset
-    MMNISTDataset.create_mmnist_dataset(args.savepath_train, args.backgroundimagepath, args.num_modalities, train=True)
-    MMNISTDataset.create_mmnist_dataset(args.savepath_test, args.backgroundimagepath, args.num_modalities, train=False)
+    PolymnistDataset.create_polymnist_dataset(args.savepath_train, args.backgroundimagepath, args.num_modalities, train=True)
+    PolymnistDataset.create_polymnist_dataset(args.savepath_test, args.backgroundimagepath, args.num_modalities, train=False)
     print("Done.")

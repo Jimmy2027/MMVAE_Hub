@@ -6,14 +6,14 @@ from mmvae_hub.base.utils import BaseMetrics
 from sklearn.metrics import accuracy_score
 
 
-class MmnistMetrics(BaseMetrics):
+class PolymnistMetrics(BaseMetrics):
     """
     Defines a set of metrics that are used to evaluate the performance of a model
     Modified version of https://github.com/ParGG/MasterThesisOld/blob/44f7b93214fa16494ebaeef7763ff81943b5ffc3/losses.py#L142
     """
 
     def __init__(self, prediction: torch.Tensor, groundtruth: torch.Tensor, str_labels):
-        super(MmnistMetrics, self).__init__(prediction, groundtruth, str_labels)
+        super(PolymnistMetrics, self).__init__(prediction, groundtruth, str_labels)
 
     def evaluate(self) -> typing.Dict[str, list]:
         """

@@ -4,15 +4,12 @@ import torch
 import torch.nn as nn
 
 from mmvae_hub.base import BaseMMVae
-
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import poe
-
+from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, \
+    poe
 from mmvae_hub.utils import utils
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, poe
 
 
-
-class VAEMMNIST(BaseMMVae, nn.Module):
+class VAEPolymnist(BaseMMVae, nn.Module):
     def __init__(self, flags, modalities, subsets):
         super().__init__(flags, modalities, subsets)
         self.num_modalities = len(modalities.keys())
@@ -159,7 +156,7 @@ class VAEMMNIST(BaseMMVae, nn.Module):
             torch.save(self.encoders[m].state_dict(), os.path.join(self.flags.dir_checkpoints, "encoderM%d" % m))
 
 
-class VAEMMNIST_(nn.Module):
+class VAEPolymnist_(nn.Module):
     def __init__(self, flags, modalities, subsets):
         super().__init__()
         self.num_modalities = len(modalities.keys())

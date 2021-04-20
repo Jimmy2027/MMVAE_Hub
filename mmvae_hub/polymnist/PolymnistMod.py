@@ -3,9 +3,9 @@ import os
 import torch
 
 from mmvae_hub.base.modalities import BaseModality
-from mmvae_hub.mmnist.networks.ConvNetworkImgClfCMNIST import ClfImg
-from mmvae_hub.mmnist.networks.ConvNetworksImgCMNIST import EncoderImg, DecoderImg
-from mmvae_hub.mmnist.utils import download_polymnist_clfs
+from mmvae_hub.polymnist.networks.ConvNetworkImgClfPolymnist import ClfImg
+from mmvae_hub.polymnist.networks.ConvNetworksImgPolymnist import EncoderImg, DecoderImg
+from mmvae_hub.polymnist.utils import download_polymnist_clfs
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.save_samples import write_samples_img_to_file
 
