@@ -67,6 +67,8 @@ class BaseFlagsSetup:
         flags.inception_state_dict = Path(flags.inception_state_dict).expanduser()
         flags.dir_fid = Path(flags.dir_fid).expanduser() if flags.dir_fid else flags.dir_experiment / 'fid'
         flags.dir_clf = Path(flags.dir_clf).expanduser() if flags.use_clf else None
+
+        assert flags.dir_data.exists() or flags.dataset == 'toy', f'data path: "{flags.dir_data}" not found.'
         return flags
 
     def setup_test(self, flags, tmpdirname: str):
