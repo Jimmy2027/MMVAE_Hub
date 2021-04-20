@@ -3,16 +3,16 @@ import os
 import torch
 
 from mmvae_hub.base.modalities import BaseModality
+from mmvae_hub.base.utils.likelihood import get_likelihood
+from mmvae_hub.base.utils.save_samples import write_samples_img_to_file
 from mmvae_hub.polymnist.networks.ConvNetworkImgClfPolymnist import ClfImg
 from mmvae_hub.polymnist.networks.ConvNetworksImgPolymnist import EncoderImg, DecoderImg
 from mmvae_hub.polymnist.utils import download_polymnist_clfs
-from mmvae_hub.utils import utils
-from mmvae_hub.utils.save_samples import write_samples_img_to_file
 
 
-class PolyMNISTMod(BaseModality):
+class PolymnistMod(BaseModality):
     def __init__(self, flags, name: str):
-        super(PolyMNISTMod, self).__init__(flags, name)
+        super(PolymnistMod, self).__init__(flags, name)
 
         self.likelihood_name = 'laplace'
         self.data_size = torch.Size((3, 28, 28))
@@ -20,7 +20,7 @@ class PolyMNISTMod(BaseModality):
         self.file_suffix = '.png'
         self.encoder = EncoderImg(flags)
         self.decoder = DecoderImg(flags)
-        self.likelihood = utils.get_likelihood(self.likelihood_name)
+        self.likelihood = get_likelihood(self.likelihood_name)
         self.clf = self.set_clf()
         # self.transform = transforms.Compose([transforms.ToTensor()])
 

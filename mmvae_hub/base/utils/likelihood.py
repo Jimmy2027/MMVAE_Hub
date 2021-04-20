@@ -2,12 +2,28 @@ import math
 
 import numpy as np
 import torch
+import torch.distributions as dist
 
+from mmvae_hub import log
 from mmvae_hub.base.evaluation.divergence_measures.mm_div import alpha_poe
 from mmvae_hub.base.utils import utils
-from mmvae_hub import log
 
 LOG2PI = float(np.log(2.0 * math.pi))
+
+
+def get_likelihood(str):
+    if str == 'laplace':
+        pz = dist.Laplace;
+    elif str == 'bernoulli':
+        pz = dist.Bernoulli;
+    elif str == 'normal':
+        pz = dist.Normal;
+    elif str == 'categorical':
+        pz = dist.OneHotCategorical;
+    else:
+        print('likelihood not implemented')
+        pz = None;
+    return pz;
 
 
 def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from mmvae_hub.base import BaseMMVae
 # from mmvae_hub.utils.BaseMMVae import BaseMMVae
-from mmvae_hub.utils import utils
+from mmvae_hub.base.utils import utils
 
 
 class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):

@@ -10,7 +10,7 @@ from torchvision import transforms
 
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
-from mmvae_hub.polymnist.PolymnistMod import PolyMNISTMod
+from mmvae_hub.polymnist.PolymnistMod import PolymnistMod
 from mmvae_hub.polymnist.metrics import PolymnistMetrics
 from mmvae_hub.polymnist.networks.VAEPolymnist import VAEPolymnist
 
@@ -46,7 +46,7 @@ class PolymnistExperiment(BaseExperiment):
         return model
 
     def set_modalities(self):
-        mods = [PolyMNISTMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]
+        mods = [PolymnistMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]
         return {m.name: m for m in mods}
 
     def set_dataset(self):
