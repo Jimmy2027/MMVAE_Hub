@@ -2,12 +2,13 @@ from typing import Mapping
 
 import numpy as np
 import torch
-from mmvae_hub.base import log
-from mmvae_hub.base.utils.utils import atleast_2d
-from mmvae_hub.base.utils.utils import dict_to_device
 from sklearn.linear_model import LogisticRegression
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+from mmvae_hub.base import log
+from mmvae_hub.base.utils.utils import atleast_2d
+from mmvae_hub.base.utils.utils import dict_to_device
 
 
 def train_clf_lr_all_subsets(exp):
@@ -24,10 +25,7 @@ def train_clf_lr_all_subsets(exp):
     train_loader = DataLoader(exp.dataset_train, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.dataloader_workers)
 
-    if exp.flags.steps_per_training_epoch > 0:
-        training_steps = exp.flags.steps_per_training_epoch
-    else:
-        training_steps = len(train_loader)
+    training_steps = exp.flags.steps_per_training_epoch
 
     data_train = {
         s_key: torch.Tensor()
@@ -35,7 +33,8 @@ def train_clf_lr_all_subsets(exp):
     }
     all_labels = torch.Tensor()
     log.info(f"Creating {training_steps} batches of the latent representations for the classifier.")
-    for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=training_steps, postfix='creating_train_lr'):
+    for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=training_steps or len(train_loader),
+                                       postfix='creating_train_lr'):
         """
         Constructs the training set (labels and inferred subsets) for the classifier training.
         """
@@ -91,10 +90,7 @@ def test_clf_lr_all_subsets(clf_lr, exp):
     d_loader = DataLoader(exp.dataset_test, batch_size=exp.flags.batch_size, shuffle=False,
                           num_workers=exp.flags.dataloader_workers, drop_last=False)
 
-    if exp.flags.steps_per_training_epoch > 0:
-        training_steps = exp.flags.steps_per_training_epoch
-    else:
-        training_steps = len(d_loader)
+    training_steps = exp.flags.steps_per_training_epoch if exp.flags.steps_per_training_epoch else len(d_loader)
     log.info(f'Creating {training_steps} batches of latent representations for classifier testing '
              f'with a batch_size of {exp.flags.batch_size}.')
 

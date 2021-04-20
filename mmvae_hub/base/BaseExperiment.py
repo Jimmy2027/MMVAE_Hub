@@ -60,11 +60,11 @@ class BaseExperiment(ABC):
 
     def set_subsets(self):
         """
-        powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3)
-        (1,2,3)
+        powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
         >>> exp.modalities = {'a':None, 'b':None, 'c':None}
         >>> exp.set_subsets()
-        {'': [], 'a': [None], 'b': [None], 'c': [None], 'a_b': [None, None], 'a_c': [None, None], 'b_c': [None, None], 'a_b_c': [None, None, None]}
+        {'': [], 'a': [None], 'b': [None], 'c': [None], 'a_b': [None, None], 'a_c': [None, None], 'b_c': [None, None],
+        'a_b_c': [None, None, None]}
         """
         xs = list(self.modalities)
         # note we return an iterator rather than a list

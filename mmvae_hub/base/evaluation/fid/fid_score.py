@@ -47,8 +47,6 @@ except:
     from imageio import imread
 from torch.nn.functional import adaptive_avg_pool2d
 
-print(torch.cuda.is_available())
-
 try:
     from tqdm import tqdm
 except ImportError:

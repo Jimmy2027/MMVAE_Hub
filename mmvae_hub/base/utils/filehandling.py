@@ -55,7 +55,6 @@ def create_dir_structure(flags: argparse.ArgumentParser(), train: bool = True) -
     flags.dir_logs = os.path.join(os.path.expanduser(flags.dir_experiment_run), 'logs')
     if train:
         create_dir(flags.dir_logs)
-    log.info(f'dir_logs: {flags.dir_logs}')
 
     flags.dir_gen_eval = os.path.join(os.path.expanduser(flags.dir_experiment_run), 'generation_evaluation')
     if train:

@@ -25,7 +25,6 @@ class BaseTrainer:
         self.flags = exp.flags
         self.tb_logger = self._setup_tblogger()
 
-
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
         tb_logger = BaseTBLogger(self.flags.str_experiment, writer)
@@ -54,8 +53,7 @@ class BaseTrainer:
                               drop_last=True)
         training_steps = self.flags.steps_per_training_epoch
 
-        for iteration, (batch_d, _) in tqdm(enumerate(at_most_n(d_loader, training_steps)),
-                                            total=training_steps or len(d_loader), postfix='train'):
+        for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
             basic_routine = self.basic_routine_epoch(batch_d)
             results = basic_routine['results']
             total_loss = basic_routine['total_loss']
@@ -66,7 +64,6 @@ class BaseTrainer:
             total_loss.backward()
             self.exp.optimizer.step()
             self.tb_logger.write_training_logs(results, total_loss, log_probs, klds)
-
 
     def basic_routine_epoch(self, batch_d):
         # set up weights
@@ -161,7 +158,6 @@ class BaseTrainer:
                 if self.flags.use_clf:
                     log.info('test generation')
                     gen_eval = test_generation(self.exp)
-                    log.info(f'gen eval: {gen_eval}')
                     self.tb_logger.write_coherence_logs(gen_eval)
 
                 if self.flags.calc_nll:

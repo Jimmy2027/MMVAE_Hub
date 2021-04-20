@@ -41,4 +41,4 @@ class PolyMNISTMod(BaseModality):
         model_clf.load_state_dict(
             torch.load(os.path.join(self.flags.dir_clf, f"pretrained_img_to_digit_clf_{self.name}"),
                        map_location=self.flags.device))
-        return model_clf
+        return model_clf.to(self.flags.device)

@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
 
+import pytest
 
+
+@pytest.mark.tox
 class Testmmvae(unittest.TestCase):
     """Basic tests for the MMVAE_mst package."""
 
