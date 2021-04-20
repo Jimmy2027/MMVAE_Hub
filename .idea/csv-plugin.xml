@@ -17,6 +17,27 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/mmvae_hub/polymnist/PolymnistMod.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/mmvae_hub/polymnist/PolymnistTrainer.py">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/mmvae_hub/polymnist/metrics.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/tests/test_training.py">
           <value>
             <Attribute>
