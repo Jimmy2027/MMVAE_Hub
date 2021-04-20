@@ -18,7 +18,7 @@ from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_al
 from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style, calc_style_kld
-from mmvae_hub.base.experiment_vis.utils import write_experiment_vis_config
+from mmvae_hub.base.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n
@@ -178,9 +178,4 @@ class BaseTrainer:
                     self.tb_logger.write_prd_scores(prd_scores)
 
     def finalize(self):
-        experiment_vis_config_path = write_experiment_vis_config(self.flags.dir_experiment_run)
-        log.info('Converting notebook to html.')
-        notebook_path = Path(experiment_vis.__file__).parent / 'experiment_vis.ipynb'
-        os.system(f'jupyter nbconvert --to html {notebook_path}')
-        shutil.move(notebook_path.with_suffix('.html'), self.flags.dir_experiment_run)
-        os.remove(experiment_vis_config_path)
+        run_notebook_convert(self.flags.dir_experiment_run)

@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 import glob
 import json
+import os
+import shutil
 from pathlib import Path
 
 from matplotlib import pyplot as plt
 from tensorflow.compat.v1.train import summary_iterator
+
+from mmvae_hub import log
 
 
 def write_experiment_vis_config(experiment_dir: Path) -> Path:
@@ -85,3 +89,13 @@ def plot_logs(cathegory: str, logs_dict: dict, together: bool = False):
             plt.plot(v)
             plt.title(k)
             plt.show()
+
+
+def run_notebook_convert(dir_experiment_run: Path) -> None:
+    """Run and convert the notebook to html."""
+    experiment_vis_config_path = write_experiment_vis_config(dir_experiment_run)
+    log.info('Converting notebook to html.')
+    notebook_path = Path(__file__).parent / 'experiment_vis.ipynb'
+    os.system(f'jupyter nbconvert --to html {notebook_path}')
+    shutil.move(notebook_path.with_suffix('.html'), dir_experiment_run)
+    os.remove(experiment_vis_config_path)
