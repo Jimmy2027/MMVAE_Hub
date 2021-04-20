@@ -1,8 +1,8 @@
 {
   "dir_data": "/mnt/data/hendrik/polymnist",
   "dir_clf": "/mnt/data/hendrik/polymnist/trained_classifiers",
-  "dir_experiment": "/mnt/data/hendrik/polymnist",
-  "dir_fid": "/mnt/data/hendrik/polymnist",
+  "dir_experiment": "/mnt/data/hendrik/polymnist/experiments",
+  "dir_fid": "/mnt/data/hendrik/polymnist/fid",
   "method": "joint_elbo",
   "data_multiplications": 20,
   "div_weight_uniform_content": 0.25,
