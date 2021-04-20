@@ -3,9 +3,9 @@ from pathlib import Path
 from mmvae_hub.base.BaseFlags import parser as parser
 from mmvae_hub.base.utils.flags_utils import BaseFlagsSetup
 
-parser.add_argument('--name', type=str, default='MMNIST', help="name of the dataset")
-parser.add_argument('--dataset', type=str, default='MMNIST', help="name of the dataset")
-parser.add_argument('--exp_str_prefix', type=str, default='mmnist', help="prefix of the experiment directory.")
+parser.add_argument('--name', type=str, default='polymnist', help="name of the dataset")
+parser.add_argument('--dataset', type=str, default='polymnist', help="name of the dataset")
+parser.add_argument('--exp_str_prefix', type=str, default='polymnist', help="prefix of the experiment directory.")
 # training
 
 parser.add_argument('--num_mods', type=int, default=3, help="dimension of varying factor latent space")

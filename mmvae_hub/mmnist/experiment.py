@@ -21,7 +21,7 @@ class MMNISTExperiment(BaseExperiment):
         self.flags = flags
         self.labels = ['digit']
         # self.name = flags.name
-        self.dataset_name = 'mmnist'
+        self.dataset_name = 'polymnist'
         self.num_modalities = flags.num_mods
         self.plot_img_size = torch.Size((3, 28, 28))
 
