@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 import mmvae_hub
-from mmvae_hub.base import log
+from mmvae_hub import log
 from mmvae_hub.base.utils.filehandling import get_method, create_dir_structure
 
 

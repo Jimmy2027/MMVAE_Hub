@@ -4,7 +4,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from mmvae_hub.base import log
+from mmvae_hub import log
 
 
 def create_dir(dir_name):

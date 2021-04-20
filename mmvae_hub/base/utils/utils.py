@@ -11,7 +11,7 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmvae_hub.base import log
+from mmvae_hub import log
 from torch import device as Device
 from torch.autograd import Variable
 

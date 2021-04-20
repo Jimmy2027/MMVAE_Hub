@@ -5,7 +5,7 @@ import torch
 
 from mmvae_hub.base.evaluation.divergence_measures.mm_div import alpha_poe
 from mmvae_hub.base.utils import utils
-from mmvae_hub.base import log
+from mmvae_hub import log
 
 LOG2PI = float(np.log(2.0 * math.pi))
 

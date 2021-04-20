@@ -3,7 +3,7 @@ import math
 import numpy as np
 from torch.utils.data import DataLoader
 
-from mmvae_hub.base import log
+from mmvae_hub import log
 from mmvae_hub.base.utils.likelihood import get_latent_samples
 from mmvae_hub.base.utils.likelihood import log_joint_estimate
 from mmvae_hub.base.utils.likelihood import log_marginal_estimate

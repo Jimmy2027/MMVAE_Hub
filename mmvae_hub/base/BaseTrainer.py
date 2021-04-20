@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from mmvae_hub.base import log, BaseExperiment
+from mmvae_hub import log
+from mmvae_hub.base import BaseExperiment
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets

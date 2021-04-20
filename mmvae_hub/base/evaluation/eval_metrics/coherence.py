@@ -6,7 +6,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-from mmvae_hub.base import log
+from mmvae_hub import log
 from mmvae_hub.base.utils.save_samples import save_generated_samples_singlegroup
 from mmvae_hub.base.utils.utils import dict_to_device
 from mmvae_hub.base.utils.utils import init_twolevel_nested_dict

@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from mmvae_hub.base import log
+from mmvae_hub import log
 from mmvae_hub.base.utils.utils import atleast_2d
 from mmvae_hub.base.utils.utils import dict_to_device
 

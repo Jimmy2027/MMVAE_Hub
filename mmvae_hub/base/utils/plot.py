@@ -9,7 +9,7 @@ from torchvision.utils import make_grid
 from torchvision.utils import save_image
 
 from mmvae_hub.base.utils import text as text
-from mmvae_hub.base import log
+from mmvae_hub import log
 from pathlib import Path
 
 
