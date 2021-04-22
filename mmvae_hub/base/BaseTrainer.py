@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import os
-import shutil
-from pathlib import Path
+
+from abc import abstractmethod
 
 import torch
 from torch.autograd import Variable
@@ -11,7 +10,6 @@ from tqdm import tqdm
 
 from mmvae_hub import log
 from mmvae_hub.base import BaseExperiment
-from mmvae_hub.base import experiment_vis
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
@@ -29,6 +27,7 @@ class BaseTrainer:
         self.exp = exp
         self.flags = exp.flags
         self.tb_logger = self._setup_tblogger()
+        self.callback = self._set_callback()
 
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
@@ -37,18 +36,16 @@ class BaseTrainer:
         tb_logger.writer.add_text('FLAGS', str_flags, 0)
         return tb_logger
 
+    @abstractmethod
+    def _set_callback(self):
+        pass
+
     def run_epochs(self):
         for epoch in tqdm(range(self.flags.start_epoch, self.flags.end_epoch), postfix='epochs'):
             # one epoch of training and testing
             self.train()
             self.test(epoch)
-            # save checkpoints after every 5 epochs
-            if (epoch + 1) % 5 == 0 or (epoch + 1) == self.flags.end_epoch:
-                dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
-                if not os.path.exists(dir_network_epoch):
-                    os.makedirs(dir_network_epoch)
-                self.exp.mm_vae.save_networks()
-                torch.save(self.exp.mm_vae.state_dict(), os.path.join(dir_network_epoch, self.flags.mm_vae_save))
+            self.callback.update_epoch(epoch)
 
         self.finalize()
 
