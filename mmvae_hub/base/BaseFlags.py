@@ -3,6 +3,10 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
+parser.add_argument('--use_db', default=False, action="store_true", help="If set, will send experiment results to a "
+                                                                         "database for further analysis. "
+                                                                         "The configuration file for the db needs to be"
+                                                                         " under configs/mmvaedb_config.py.")
 
 # TRAINING
 parser.add_argument('--seed', type=int, default=None,
@@ -37,8 +41,8 @@ parser.add_argument('--dataloader_workers', type=int, default=8, help="number of
 parser.add_argument('--mm_vae_save', type=str, default='mm_vae', help="model save for vae_bimodal")
 parser.add_argument('--load_saved', type=bool, default=False, help="flag to indicate if a saved model will be loaded")
 parser.add_argument('--load_flags', type=str, default=None, help="overwrite all values with parameters from an old "
-                                                                  "experiment. Give the path to the flags.rar "
-                                                                  "file as input.")
+                                                                 "experiment. Give the path to the flags.rar "
+                                                                 "file as input.")
 # to bet set by experiments themselves
 # parser.add_argument('--encoder_save_m1', type=str, default='encoderM1', help="model save for encoder")
 # parser.add_argument('--encoder_save_m2', type=str, default='encoderM2', help="model save for encoder")
@@ -96,7 +100,6 @@ parser.add_argument('--factorized_representation', action='store_true', default=
                     help="factorized_representation")
 parser.add_argument('--feature_extractor_img', type=str, default='resnet', help='which feature extractor model to use',
                     choices=['resnet', 'densenet'])
-
 
 # LOSS TERM WEIGHTS
 parser.add_argument('--beta', type=float, default=5.0, help="default weight of sum of weighted divergence terms")
