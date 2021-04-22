@@ -18,8 +18,8 @@ class PolymnistMod(BaseModality):
         self.data_size = torch.Size((3, 28, 28))
         self.gen_quality_eval = True
         self.file_suffix = '.png'
-        self.encoder = EncoderImg(flags)
-        self.decoder = DecoderImg(flags)
+        self.encoder = EncoderImg(flags).to(flags.device)
+        self.decoder = DecoderImg(flags).to(flags.device)
         self.likelihood = get_likelihood(self.likelihood_name)
         self.clf = self.set_clf()
         # self.transform = transforms.Compose([transforms.ToTensor()])

@@ -4,8 +4,7 @@ import torch
 import torch.nn as nn
 
 from mmvae_hub.base import BaseMMVae
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import calc_alphaJSD_modalities, calc_group_divergence_moe, \
-    poe, calc_group_divergence_poe
+from mmvae_hub.base.evaluation.divergence_measures.mm_div import poe
 from mmvae_hub.base.utils import utils
 
 
@@ -16,9 +15,6 @@ class VAEPolymnist(BaseMMVae, nn.Module):
         self.flags = flags
         self.modalities = modalities
         self.subsets = subsets
-        self.encoders = [modalities["m%d" % m].encoder.to(flags.device) for m in range(self.num_modalities)]
-        self.decoders = [modalities["m%d" % m].decoder.to(flags.device) for m in range(self.num_modalities)]
-        self.likelihoods = [modalities["m%d" % m].likelihood for m in range(self.num_modalities)]
 
         weights = utils.reweight_weights(torch.Tensor(flags.alpha_modalities))
         self.weights = weights.to(flags.device)
@@ -35,10 +31,7 @@ class VAEPolymnist(BaseMMVae, nn.Module):
     def forward(self, input_batch):
         latents = self.inference(input_batch)
 
-        results = dict()
-        results['latents'] = latents
-
-        results['group_distr'] = latents['joint']
+        results = {'latents': latents, 'group_distr': latents['joint']}
         class_embeddings = utils.reparameterize(latents['joint'][0],
                                                 latents['joint'][1])
         div = self.calc_joint_divergence(latents['mus'],
@@ -48,71 +41,70 @@ class VAEPolymnist(BaseMMVae, nn.Module):
             results[key] = div[key]
 
         enc_mods = latents['modalities']
-        results_rec = dict()
-        for m in range(self.num_modalities):
-            x_m = input_batch['m%d' % m]
-            if x_m is not None:
-                style_mu, style_logvar = enc_mods['m%d_style' % m]
+        results_rec = {}
+        for mod_str, mod in self.modalities.items():
+            if mod_str in input_batch.keys():
+                style_mu, style_logvar = enc_mods[mod_str + "_style"]
                 if self.flags.factorized_representation:
                     style_embeddings = utils.reparameterize(mu=style_mu, logvar=style_logvar)
                 else:
                     style_embeddings = None
-                rec = self.likelihoods[m](*self.decoders[m](style_embeddings, class_embeddings))
-                results_rec['m%d' % m] = rec
+                rec = mod.likelihood(*mod.decoder(style_embeddings, class_embeddings))
+                results_rec[mod_str] = rec
         results['rec'] = results_rec
         return results
 
     # def encode(self, x_m, m):
     def encode(self, input_batch):
         enc_mods = {}
-        for m in range(self.num_modalities):
-            x_m = input_batch['m%d' % m] if "m%d" % m in input_batch.keys() else None
-            if x_m is not None:
-                latents = self.encoders[m](x_m)
+        for mod_str, mod in self.modalities.items():
+            if mod_str in input_batch.keys():
+                x_m = input_batch[mod_str]
+                latents = mod.encoder(x_m)
                 latents_style = latents[:2]
                 latents_class = latents[2:]
             else:
                 latents_style = [None, None]
                 latents_class = [None, None]
-            enc_mods["m%d" % m] = latents_class
-            enc_mods["m%d_style" % m] = latents_style
+            enc_mods[mod_str] = latents_class
+            enc_mods[mod_str + "_style"] = latents_style
         return enc_mods
 
     def get_random_styles(self, num_samples):
-        styles = dict()
-        for m in range(self.num_modalities):
+        styles = {}
+        for mod_str in self.modalities:
             if self.flags.factorized_representation:
                 z_style_m = torch.randn(num_samples, self.flags.style_dim)
                 z_style_m = z_style_m.to(self.flags.device)
             else:
                 z_style_m = None
-            styles["m%d" % m] = z_style_m
+            styles[mod_str] = z_style_m
         return styles
 
     def get_random_style_dists(self, num_samples):
-        styles = dict()
-        for m in range(self.num_modalities):
+        styles = {}
+        for mod_str in self.modalities:
             s_mu_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
             s_logvar_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
             dist_m = [s_mu_m, s_logvar_m]
-            styles["m%d" % m] = dist_m
+            styles[mod_str] = dist_m
         return styles
 
     def generate_from_latents(self, latents):
         cond_gen = {}
-        for m in range(self.num_modalities):
+        for mod_str in self.modalities:
             suff_stats = self.generate_sufficient_statistics_from_latents(latents)
-            cond_gen_m = suff_stats["m%d" % m].mean
-            cond_gen["m%d" % m] = cond_gen_m
+            cond_gen_m = suff_stats[mod_str].mean
+            cond_gen[mod_str] = cond_gen_m
         return cond_gen
 
     def generate_sufficient_statistics_from_latents(self, latents):
         cond_gen = {}
-        for m in range(self.num_modalities):
-            style_m = latents['style']['m%d' % m]
+        for mod_str, mod in self.modalities.items():
+            style_m = latents['style'][mod_str]
             content = latents['content']
-            cond_gen_m = self.likelihoods[m](*self.decoders[m](style_m, content))
-            cond_gen["m%d" % m] = cond_gen_m
+            cond_gen_m = mod.likelihood(*mod.decoder(style_m, content))
+            cond_gen[mod_str] = cond_gen_m
         return cond_gen
 
     def cond_generation(self, latent_distributions, num_samples=None):
@@ -120,7 +112,7 @@ class VAEPolymnist(BaseMMVae, nn.Module):
             num_samples = self.flags.batch_size
 
         style_latents = self.get_random_styles(num_samples)
-        cond_gen_samples = dict()
+        cond_gen_samples = {}
         for k, key in enumerate(latent_distributions.keys()):
             [mu, logvar] = latent_distributions[key]
             content_rep = utils.reparameterize(mu=mu, logvar=logvar)
@@ -133,10 +125,10 @@ class VAEPolymnist(BaseMMVae, nn.Module):
             num_samples = self.flags.batch_size
 
         style_latents = self.get_random_styles(num_samples)
-        cond_gen_2a = dict()
+        cond_gen_2a = {}
         for p, pair in enumerate(latent_distribution_pairs.keys()):
             ld_pair = latent_distribution_pairs[pair]
-            mu_list = [];
+            mu_list = []
             logvar_list = []
             for k, key in enumerate(ld_pair['latents'].keys()):
                 mu_list.append(ld_pair['latents'][key][0].unsqueeze(0))
@@ -152,5 +144,5 @@ class VAEPolymnist(BaseMMVae, nn.Module):
         return cond_gen_2a
 
     def save_networks(self):
-        for m in range(self.num_modalities):
-            torch.save(self.encoders[m].state_dict(), os.path.join(self.flags.dir_checkpoints, "encoderM%d" % m))
+        for mod_str, mod in self.modalities.items():
+            torch.save(mod.encoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"encoderM{mod_str}"))

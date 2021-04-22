@@ -62,9 +62,10 @@ class PolymnistExperiment(BaseExperiment):
     def set_optimizer(self):
         # optimizer definition
         params = []
-        for model in [*self.mm_vae.encoders, *self.mm_vae.decoders]:
-            for p in model.parameters():
-                params.append(p)
+        for _, mod in self.modalities.items():
+            for model in [mod.encoder, mod.decoder]:
+                for p in model.parameters():
+                    params.append(p)
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
         self.optimizer = optimizer

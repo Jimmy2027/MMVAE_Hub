@@ -20,10 +20,6 @@ class BaseMMVae(ABC, nn.Module):
         self.set_fusion_functions()
         self.metrics = None
 
-        # assign encoders, decoders and likelihoods here # #
-        #
-        # ###############################################
-
     @abstractmethod
     def forward(self, input_batch):
         pass
@@ -73,11 +69,7 @@ class BaseMMVae(ABC, nn.Module):
             weights = self.weights
         weights = weights.clone()
         weights = utils.reweight_weights(weights)
-        div_measures = calc_group_divergence_moe(self.flags,
-                                                 mus,
-                                                 logvars,
-                                                 weights,
-                                                 normalization=self.flags.batch_size)
+        div_measures = calc_group_divergence_moe(self.flags, mus, logvars, weights, normalization=self.flags.batch_size)
         return {
             'joint_divergence': div_measures[0],
             'individual_divs': div_measures[1],
@@ -116,11 +108,8 @@ class BaseMMVae(ABC, nn.Module):
         """
         if self.flags.modality_poe:
             num_samples = mus[0].shape[0]
-            mus = torch.cat((mus, torch.zeros(1, num_samples,
-                                              self.flags.class_dim).to(self.flags.device)),
-                            dim=0)
-            logvars = torch.cat((logvars, torch.zeros(1, num_samples,
-                                                      self.flags.class_dim).to(self.flags.device)),
+            mus = torch.cat((mus, torch.zeros(1, num_samples, self.flags.class_dim).to(self.flags.device)), dim=0)
+            logvars = torch.cat((logvars, torch.zeros(1, num_samples, self.flags.class_dim).to(self.flags.device)),
                                 dim=0)
         # mus = torch.cat(mus, dim=0)
         # logvars = torch.cat(logvars, dim=0)
@@ -153,34 +142,24 @@ class BaseMMVae(ABC, nn.Module):
                 mods_avail = True
                 for mod in mods:
                     if mod.name in input_batch:
-                        mus_subset = torch.cat((mus_subset,
-                                                enc_mods[mod.name][0].unsqueeze(0)),
-                                               dim=0)
-                        logvars_subset = torch.cat((logvars_subset,
-                                                    enc_mods[mod.name][1].unsqueeze(0)),
-                                                   dim=0)
+                        mus_subset = torch.cat((mus_subset, enc_mods[mod.name][0].unsqueeze(0)), dim=0)
+                        logvars_subset = torch.cat((logvars_subset, enc_mods[mod.name][1].unsqueeze(0)), dim=0)
                     else:
                         mods_avail = False
                 if mods_avail:
                     # normalize latents by number of modalities in subset
                     weights_subset = ((1 / float(len(mus_subset))) *
                                       torch.ones(len(mus_subset)).to(self.flags.device))
-                    s_mu, s_logvar = self.modality_fusion(mus_subset,
-                                                          logvars_subset,
-                                                          weights_subset)
+                    s_mu, s_logvar = self.modality_fusion(mus_subset, logvars_subset, weights_subset)
                     distr_subsets[s_key] = [s_mu, s_logvar]
                     # fusion_condition always true
                     # store all s_mus and s_logvars in variables mus and logvars
                     if self.fusion_condition(mods, input_batch):
                         mus = torch.cat((mus, s_mu.unsqueeze(0)), dim=0)
-                        logvars = torch.cat((logvars, s_logvar.unsqueeze(0)),
-                                            dim=0)
+                        logvars = torch.cat((logvars, s_logvar.unsqueeze(0)), dim=0)
         if self.flags.modality_jsd:
-            mus = torch.cat((mus, torch.zeros(1, num_samples,
-                                              self.flags.class_dim).to(self.flags.device)),
-                            dim=0)
-            logvars = torch.cat((logvars, torch.zeros(1, num_samples,
-                                                      self.flags.class_dim).to(self.flags.device)),
+            mus = torch.cat((mus, torch.zeros(1, num_samples, self.flags.class_dim).to(self.flags.device)), dim=0)
+            logvars = torch.cat((logvars, torch.zeros(1, num_samples, self.flags.class_dim).to(self.flags.device)),
                                 dim=0)
         # weights = (1/float(len(mus)))*torch.ones(len(mus)).to(self.flags.device)
         # normalize with number of subsets
