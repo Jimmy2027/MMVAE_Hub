@@ -3,6 +3,7 @@
   "inception_state_dict": "/tmp/pt_inception-2015-12-05-6726825d.pth",
   "method": "planar_mixture",
   "dataset": "toy",
+  "seed": 42,
   "dataloader_workers": 0,
   "steps_per_training_epoch": 2,
   "div_weight_uniform_content": 0.25,

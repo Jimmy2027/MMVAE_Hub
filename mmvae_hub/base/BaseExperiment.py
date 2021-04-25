@@ -1,12 +1,17 @@
 import os
+import random
 from abc import ABC, abstractmethod
 from itertools import chain, combinations
 
-from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae,  JointElboMMVae
+import numpy as np
+import torch
+
+from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae, JointElboMMVae
 
 
 class BaseExperiment(ABC):
     def __init__(self, flags):
+        self.set_random_seed(flags.seed)
         self.flags = flags
         self.name = flags.dataset
 
@@ -89,3 +94,10 @@ class BaseExperiment(ABC):
         for name in self.subsets:
             paths[name] = os.path.join(dir_cond, name)
         return paths
+
+    @staticmethod
+    def set_random_seed(seed: int):
+        # set the seed for reproducibility
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        random.seed(seed)

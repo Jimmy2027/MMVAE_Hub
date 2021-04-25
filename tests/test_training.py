@@ -28,7 +28,8 @@ def test_run_epochs_polymnist():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname)
         trainer = PolymnistTrainer(mst)
-        trainer.run_epochs()
+        test_results = trainer.run_epochs()
+        assert test_results['total_loss'] == 7733.9169921875
 
 
 def test_generate_plots():
