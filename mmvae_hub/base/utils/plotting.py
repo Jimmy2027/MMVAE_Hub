@@ -120,8 +120,8 @@ def generate_conditional_fig_M(exp, epoch, M):
                     i_batch = dict()
                     for o, mod in enumerate(s_in):
                         i_batch[mod.name] = samples[j][mod.name].unsqueeze(0)
-                    latents = model.inference(i_batch, num_samples=1)
-                    c_in = latents['subsets'][s_key]
+                    enc_mods, joint_latent = model.inference(i_batch)
+                    c_in = joint_latent['subsets'][s_key]
                     c_rep = utils.reparameterize(mu=c_in[0], logvar=c_in[1])
 
                     style = dict()

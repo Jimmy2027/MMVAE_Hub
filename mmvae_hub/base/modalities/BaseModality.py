@@ -8,6 +8,7 @@ class BaseModality(ABC):
         self.flags = flags
         self.name = name
         self.clf = self.set_clf()
+        self.rec_weight = None
 
     @abstractmethod
     def save_data(self, exp, d, fn, args):

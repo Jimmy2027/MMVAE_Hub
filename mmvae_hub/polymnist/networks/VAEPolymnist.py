@@ -3,12 +3,12 @@ import os
 import torch
 import torch.nn as nn
 
-from mmvae_hub.base import BaseMMVae
+from mmvae_hub.base.BaseMMVae import BaseMMVae_
 from mmvae_hub.base.evaluation.divergence_measures.mm_div import poe
 from mmvae_hub.base.utils import utils
 
 
-class VAEPolymnist(BaseMMVae, nn.Module):
+class VAEPolymnist(BaseMMVae_, nn.Module):
     def __init__(self, flags, modalities, subsets):
         super().__init__(flags, modalities, subsets)
         self.num_modalities = len(modalities.keys())
@@ -30,18 +30,14 @@ class VAEPolymnist(BaseMMVae, nn.Module):
 
     def forward(self, input_batch):
         latents = self.inference(input_batch)
-
         results = {'latents': latents, 'group_distr': latents['joint']}
-        class_embeddings = utils.reparameterize(latents['joint'][0],
-                                                latents['joint'][1])
-        div = self.calc_joint_divergence(latents['mus'],
-                                         latents['logvars'],
-                                         latents['weights'])
+        div = self.calc_joint_divergence(latents['mus'], latents['logvars'], latents['weights'])
         for k, key in enumerate(div.keys()):
             results[key] = div[key]
 
         enc_mods = latents['modalities']
         results_rec = {}
+        class_embeddings = utils.reparameterize(latents['joint'][0], latents['joint'][1])
         for mod_str, mod in self.modalities.items():
             if mod_str in input_batch.keys():
                 style_mu, style_logvar = enc_mods[mod_str + "_style"]

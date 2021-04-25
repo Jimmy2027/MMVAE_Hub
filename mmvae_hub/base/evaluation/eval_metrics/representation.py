@@ -39,9 +39,9 @@ def train_clf_lr_all_subsets(exp):
         Constructs the training set (labels and inferred subsets) for the classifier training.
         """
         batch_d = {k: v.to(exp.flags.device) for k, v in batch_d.items()}
-        inferred = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
+        _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
 
-        lr_subsets = inferred['subsets']
+        lr_subsets = joint_latent['subsets']
         all_labels = torch.cat((all_labels, batch_l), 0)
         for key in lr_subsets:
             data_train[key] = torch.cat((data_train[key], lr_subsets[key][0].cpu()), 0)
@@ -90,7 +90,7 @@ def test_clf_lr_all_subsets(clf_lr, exp):
     d_loader = DataLoader(exp.dataset_test, batch_size=exp.flags.batch_size, shuffle=False,
                           num_workers=exp.flags.dataloader_workers, drop_last=False)
 
-    training_steps = exp.flags.steps_per_training_epoch if exp.flags.steps_per_training_epoch else len(d_loader)
+    training_steps = exp.flags.steps_per_training_epoch or len(d_loader)
     log.info(f'Creating {training_steps} batches of latent representations for classifier testing '
              f'with a batch_size of {exp.flags.batch_size}.')
 
@@ -105,8 +105,8 @@ def test_clf_lr_all_subsets(clf_lr, exp):
 
         batch_d = dict_to_device(batch_d, exp.flags.device)
 
-        inferred = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
-        lr_subsets = inferred['subsets']
+        _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
+        lr_subsets = joint_latent['subsets']
         data_test = {key: lr_subsets[key][0].cpu().data.numpy() for key in lr_subsets}
 
         clf_predictions_batch = classify_latent_representations(exp, clf_lr, data_test)

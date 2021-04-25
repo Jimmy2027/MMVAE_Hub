@@ -8,11 +8,10 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from torchvision import transforms
 
-from mmvae_hub.base import BaseExperiment
+from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
 from mmvae_hub.polymnist.PolymnistMod import PolymnistMod
 from mmvae_hub.polymnist.metrics import PolymnistMetrics
-from mmvae_hub.polymnist.networks.VAEPolymnist import VAEPolymnist
 
 
 class PolymnistExperiment(BaseExperiment):
@@ -36,14 +35,9 @@ class PolymnistExperiment(BaseExperiment):
         self.style_weights = self.set_style_weights()
 
         self.test_samples = self.get_test_samples()
-        self.eval_metric = accuracy_score;
+        self.eval_metric = accuracy_score
         self.metrics = PolymnistMetrics
         self.paths_fid = self.set_paths_fid()
-
-    def set_model(self):
-        model = VAEPolymnist(self.flags, self.modalities, self.subsets)
-        model = model.to(self.flags.device)
-        return model
 
     def set_modalities(self):
         mods = [PolymnistMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]

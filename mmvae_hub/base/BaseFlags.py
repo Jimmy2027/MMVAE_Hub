@@ -111,3 +111,6 @@ parser.add_argument('--beta_content', type=float, default=1.0,
 # annealing
 parser.add_argument('--kl_annealing', type=int, default=0,
                     help="number of kl annealing steps; 0 if no annealing should be done")
+
+# FLOWS
+parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")

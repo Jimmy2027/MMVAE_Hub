@@ -9,29 +9,25 @@ def calc_log_probs(exp, result, batch_d):
     mods = exp.modalities
     log_probs = {}
     weighted_log_prob = 0.0
-    for m_key in mods:
-        mod = mods[m_key]
-        ba = batch_d[mod.name]
+    for mod_str, mod in mods.items():
+        ba = batch_d[mod_str]
 
-        log_probs[mod.name] = -mod.calc_log_prob(out_dist=result['rec'][mod.name], target=ba,
-                                                 norm_value=exp.flags.batch_size)
+        log_probs[mod_str] = -mod.calc_log_prob(out_dist=result['rec'][mod_str], target=ba,
+                                                norm_value=exp.flags.batch_size)
 
         weighted_log_prob += exp.rec_weights[mod.name] * log_probs[mod.name]
     return log_probs, weighted_log_prob
 
 
-def calc_klds(exp, result):
-    latents = result['latents']['subsets']
+def calc_klds(flags, latents_sub: dict):
     klds = {}
-    for key in latents:
-        mu, logvar = latents[key]
-        klds[key] = calc_kl_divergence(mu, logvar,
-                                       norm_value=exp.flags.batch_size)
+    for key in latents_sub:
+        mu, logvar = latents_sub[key]
+        klds[key] = calc_kl_divergence(mu, logvar, norm_value=flags.batch_size)
     return klds
 
 
-def calc_klds_style(exp, result):
-    latents = result['latents']['modalities']
+def calc_klds_style(exp, latents_mods:dict):
     klds = {}
     for key in latents.keys():
         if key.endswith('style'):

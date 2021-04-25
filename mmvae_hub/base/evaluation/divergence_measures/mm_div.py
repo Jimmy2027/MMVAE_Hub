@@ -87,7 +87,9 @@ def calc_alphaJSD_modalities(flags, mus, logvars, weights, normalization=None):
     return group_div, klds, [alpha_mu, alpha_logvar]
 
 
-def calc_group_divergence_moe(flags, mus, logvars, weights, normalization=None):
+def calc_group_divergence_moe(flags, mus, logvars, normalization=None):
+    # normalize with number of subsets
+    weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(flags.device)
     num_mods = mus.shape[0]
     # num_samples is the batch size
     num_samples = mus.shape[1]
@@ -149,3 +151,26 @@ def calc_modality_divergence(m1_mu, m1_logvar, m2_mu, m2_logvar, flags):
     klds = klds.sum() / (len(mus) * (len(mus) - 1))
     klds_modonly = klds_modonly.sum() / ((len(mus) - 1) * (len(mus) - 1))
     return [klds, klds_modonly]
+
+
+def log_normal_diag(x, mean, log_var, average=False, reduce=True, dim=None):
+    log_norm = -0.5 * (log_var + (x - mean) * (x - mean) * log_var.exp().reciprocal())
+    if reduce:
+        if average:
+            return torch.mean(log_norm, dim)
+        else:
+            return torch.sum(log_norm, dim)
+    else:
+        return log_norm
+
+
+def log_normal_standard(x, average=False, reduce=True, dim=None):
+    log_norm = -0.5 * x * x
+
+    if reduce:
+        if average:
+            return torch.mean(log_norm, dim)
+        else:
+            return torch.sum(log_norm, dim)
+    else:
+        return log_norm

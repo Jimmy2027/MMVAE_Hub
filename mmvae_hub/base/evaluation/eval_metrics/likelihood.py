@@ -106,10 +106,10 @@ def estimate_likelihoods(exp):
     for batch in d_loader:
         batch_d = dict_to_device(batch[0], exp.flags.device)
 
-        latents = model.inference(batch_d)
+        _, joint_latent = model.inference(batch_d)
         for s_key in (subsets.keys()):
             subset = subsets[s_key]
-            ll_batch = calc_log_likelihood_batch(exp, latents,
+            ll_batch = calc_log_likelihood_batch(exp, joint_latent,
                                                  s_key, subset,
                                                  batch_d,
                                                  num_imp_samples=6)

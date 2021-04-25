@@ -9,19 +9,20 @@ class EncoderImg(nn.Module):
     Adopted from:
     https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb
     """
+
     def __init__(self, flags):
         super(EncoderImg, self).__init__()
 
         self.flags = flags
-        self.shared_encoder = nn.Sequential(                          # input shape (3, 28, 28)
-            nn.Conv2d(3, 10, kernel_size=4, stride=2, padding=1),     # -> (10, 14, 14)
+        self.shared_encoder = nn.Sequential(  # input shape (3, 28, 28)
+            nn.Conv2d(3, 10, kernel_size=4, stride=2, padding=1),  # -> (10, 14, 14)
             # nn.Dropout2d(0.5),
             nn.ReLU(),
-            nn.Conv2d(10, 20, kernel_size=4, stride=2, padding=1),    # -> (20, 7, 7)
+            nn.Conv2d(10, 20, kernel_size=4, stride=2, padding=1),  # -> (20, 7, 7)
             # nn.Dropout2d(0.5),
             nn.ReLU(),
-            Flatten(),                                                # -> (980)
-            nn.Linear(980, flags.style_dim + flags.class_dim),        # -> (style_dim + class_dim)
+            Flatten(),  # -> (980)
+            nn.Linear(980, flags.style_dim + flags.class_dim),  # -> (style_dim + class_dim)
             nn.ReLU(),
         )
 
@@ -36,10 +37,9 @@ class EncoderImg(nn.Module):
     def forward(self, x):
         h = self.shared_encoder(x)
         if self.flags.factorized_representation:
-            return self.style_mu(h), self.style_logvar(h), self.class_mu(h), \
-                   self.class_logvar(h)
+            return self.style_mu(h), self.style_logvar(h), self.class_mu(h), self.class_logvar(h), h
         else:
-            return None, None, self.class_mu(h), self.class_logvar(h)
+            return None, None, self.class_mu(h), self.class_logvar(h), h
 
 
 class DecoderImg(nn.Module):
@@ -47,16 +47,17 @@ class DecoderImg(nn.Module):
     Adopted from:
     https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb
     """
+
     def __init__(self, flags):
         super(DecoderImg, self).__init__()
         self.flags = flags
         self.decoder = nn.Sequential(
-            nn.Linear(flags.style_dim + flags.class_dim, 980),               # -> (980)
+            nn.Linear(flags.style_dim + flags.class_dim, 980),  # -> (980)
             nn.ReLU(),
-            Unflatten((20, 7, 7)),                                           # -> (20, 7, 7)
+            Unflatten((20, 7, 7)),  # -> (20, 7, 7)
             nn.ConvTranspose2d(20, 10, kernel_size=4, stride=2, padding=1),  # -> (10, 14, 14)
             nn.ReLU(),
-            nn.ConvTranspose2d(10, 3, kernel_size=4, stride=2, padding=1),   # -> (3, 11, 11)
+            nn.ConvTranspose2d(10, 3, kernel_size=4, stride=2, padding=1),  # -> (3, 11, 11)
         )
 
     def forward(self, style_latent_space, class_latent_space):
@@ -67,7 +68,6 @@ class DecoderImg(nn.Module):
         x_hat = self.decoder(z)
         # x_hat = torch.sigmoid(x_hat)
         return x_hat, torch.tensor(0.75).to(z.device)  # NOTE: consider learning scale param, too
-
 
 # class EncoderImg(nn.Module):
 #     def __init__(self, flags):

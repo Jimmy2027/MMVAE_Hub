@@ -2,6 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from itertools import chain, combinations
 
+from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae,  JointElboMMVae
+
 
 class BaseExperiment(ABC):
     def __init__(self, flags):
@@ -22,13 +24,15 @@ class BaseExperiment(ABC):
         self.test_samples = None
         self.paths_fid = None
 
-    @abstractmethod
     def set_model(self):
-        pass
-
-    @abstractmethod
-    def set_modalities(self):
-        pass
+        """Chose the right VAE model depending on the chosen method."""
+        if self.flags.method in ['joint_elbo', 'poe', 'moe', 'jsd']:
+            model = JointElboMMVae(self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'planar_mixture':
+            model = PlanarFlowMMVae(self.flags, self.modalities)
+        else:
+            raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
+        return model.to(self.flags.device)
 
     @abstractmethod
     def set_dataset(self):
@@ -68,8 +72,7 @@ class BaseExperiment(ABC):
         """
         xs = list(self.modalities)
         # note we return an iterator rather than a list
-        subsets_list = chain.from_iterable(combinations(xs, n) for n in
-                                           range(len(xs) + 1))
+        subsets_list = chain.from_iterable(combinations(xs, n) for n in range(len(xs) + 1))
         subsets = {}
         for k, mod_names in enumerate(subsets_list):
             mods = [self.modalities[mod_name] for mod_name in sorted(mod_names)]

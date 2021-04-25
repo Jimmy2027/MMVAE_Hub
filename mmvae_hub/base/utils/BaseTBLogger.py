@@ -21,17 +21,16 @@ class BaseTBLogger:
                                 {'group_div': group_div.item()},
                                 self.step)
 
-    def write_latent_distr(self, name, latents):
-        l_mods = latents['modalities'];
-        for k, key in enumerate(l_mods.keys()):
-            if l_mods[key][0] is not None:
-                self.writer.add_scalars('%s/mu' % name,
-                                        {key: l_mods[key][0].mean().item()},
-                                        self.step)
-            if l_mods[key][1] is not None:
-                self.writer.add_scalars('%s/logvar' % name,
-                                        {key: l_mods[key][1].mean().item()},
-                                        self.step)
+    def write_latent_distr(self, name, enc_mods: dict):
+        for k, key in enumerate(enc_mods.keys()):
+            # if enc_mods[key]['latents_class']['mu'] is not None:
+            self.writer.add_scalars('%s/mu' % name,
+                                    {key: enc_mods[key]['latents_class']['mu'].mean().item()},
+                                    self.step)
+            # if enc_mods[key]['latents_class']['logvar'] is not None:
+            self.writer.add_scalars('%s/logvar' % name,
+                                    {key: enc_mods[key]['latents_class']['logvar'].mean().item()},
+                                    self.step)
 
     def write_lr_eval(self, lr_eval):
         for s, l_key in enumerate(sorted(lr_eval.keys())):
@@ -75,7 +74,7 @@ class BaseTBLogger:
         self.write_log_probs(name, log_probs);
         self.write_klds(name, klds);
         self.write_group_div(name, results['joint_divergence']);
-        self.write_latent_distr(name, results['latents']);
+        self.write_latent_distr(name, results['enc_mods']);
 
     def write_training_logs(self, results, loss, log_probs, klds):
         self.add_basic_logs(self.training_prefix, results, loss, log_probs, klds);

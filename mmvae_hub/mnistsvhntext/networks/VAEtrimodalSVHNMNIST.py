@@ -2,12 +2,12 @@ import os
 
 import torch
 import torch.nn as nn
-from mmvae_hub.base import BaseMMVae
+from mmvae_hub.base import BaseMMVae_
 # from mmvae_hub.utils.BaseMMVae import BaseMMVae
 from mmvae_hub.base.utils import utils
 
 
-class VAEtrimodalSVHNMNIST(BaseMMVae, nn.Module):
+class VAEtrimodalSVHNMNIST(BaseMMVae_, nn.Module):
     def __init__(self, flags, modalities, subsets):
         super(VAEtrimodalSVHNMNIST, self).__init__(flags, modalities, subsets)
         self.encoder_m1 = modalities['mnist'].encoder;

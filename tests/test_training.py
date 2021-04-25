@@ -16,6 +16,8 @@ def set_me_up(tmpdirname):
     config_path = Path(mmvae_hub.__file__).parent.parent / 'configs/toy_config.json'
     flags_setup = FlagsSetup(config_path)
     flags = flags_setup.setup_test(flags, tmpdirname)
+    flags.method = 'joint_elbo'
+    # flags.method = 'planar_mixture'
     mst = PolymnistExperiment(flags)
     mst.set_optimizer()
     return mst

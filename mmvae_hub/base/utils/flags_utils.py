@@ -10,7 +10,7 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
-from mmvae_hub.base.utils.filehandling import get_method, create_dir_structure
+from mmvae_hub.base.utils.filehandling import create_dir_structure
 
 
 class BaseFlagsSetup:
@@ -52,7 +52,7 @@ class BaseFlagsSetup:
         if not flags.seed:
             # set a random seed
             flags.seed = np.random.randint(0, 10000)
-        flags = get_method(flags)
+        # flags = get_method(flags)
         return flags
 
     @abstractmethod

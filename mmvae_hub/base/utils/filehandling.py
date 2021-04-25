@@ -100,16 +100,16 @@ def expand_paths(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
     return flags
 
 
-def get_method(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
-    if flags.method == 'poe':
-        flags.modality_poe = True
-        flags.poe_unimodal_elbos = True
-    elif flags.method == 'moe':
-        flags.modality_moe = True
-    elif flags.method == 'jsd':
-        flags.modality_jsd = True
-    elif flags.method == 'joint_elbo':
-        flags.joint_elbo = True
-    else:
-        NotImplementedError('method not implemented...exit!')
-    return flags
+# def get_method(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
+#     if flags.method == 'poe':
+#         flags.modality_poe = True
+#         flags.poe_unimodal_elbos = True
+#     elif flags.method == 'moe':
+#         flags.modality_moe = True
+#     elif flags.method == 'jsd':
+#         flags.modality_jsd = True
+#     elif flags.method == 'joint_elbo':
+#         flags.joint_elbo = True
+#     else:
+#         NotImplementedError('method not implemented...exit!')
+#     return flags
