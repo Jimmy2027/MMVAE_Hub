@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Mapping, Optional
 
 from torch import Tensor
 
@@ -36,3 +36,12 @@ class BaseForwardResults:
 class BaseDivergences:
     joint_div: float
     mods_div: Mapping[str, float]
+
+
+@dataclass
+class BaseTestResults(BaseForwardResults):
+    joint_div: float
+    lr_eval: Optional[dict] = None
+    gen_eval: Optional[dict] = None
+    lhoods: Optional[dict] = None
+    prd_scores: Optional[dict] = None

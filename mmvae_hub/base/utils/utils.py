@@ -11,9 +11,10 @@ from typing import Optional
 import numpy as np
 import torch
 import torch.distributed as dist
-from mmvae_hub import log
 from torch import device as Device
 from torch.autograd import Variable
+
+from mmvae_hub import log
 
 
 # Print iterations progress
@@ -46,6 +47,10 @@ def reparameterize(mu, logvar):
 
 def reweight_weights(w):
     return w / w.sum()
+
+
+def get_items_from_dict(in_dict: dict) -> dict:
+    return {k1: v1.cpu().item() for k1, v1 in in_dict.items()}
 
 
 def mixture_component_selection(flags, mus, logvars, w_modalities=None, num_samples=None):
@@ -96,7 +101,6 @@ def flow_mixture_component_selection(flags, reps, w_modalities=None, num_samples
             for k in range(w_modalities.shape[0])
         ]
     )
-
 
 
 def save_and_log_flags(flags) -> str:
@@ -214,9 +218,8 @@ def dict_to_device(d: dict, dev: Device):
 
 def init_twolevel_nested_dict(level1_keys: list, level2_keys: list, init_val: any, copy_init_val: bool = False) -> dict:
     """
-    Initialises a 2 level nested dict with value: init_val.
+    Initialise a 2 level nested dict with value: init_val.
     copy_init_val: when using a list need to copy value.
-    HK, 15.12.20
     """
     if copy_init_val:
         return {l1: {l2: init_val.copy() for l2 in level2_keys if l2} for l1 in level1_keys if l1}
