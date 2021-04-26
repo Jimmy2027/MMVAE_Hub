@@ -69,7 +69,7 @@ class BaseExperiment(ABC):
     def eval_label(self, values, labels, index=None):
         pass
 
-    def set_subsets(self) -> Mapping[str: BaseModality]:
+    def set_subsets(self) -> Mapping[str, BaseModality]:
         """
         powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
         >>> exp.modalities = {'a':None, 'b':None, 'c':None}
@@ -85,7 +85,7 @@ class BaseExperiment(ABC):
             mods = [self.modalities[mod_name] for mod_name in sorted(mod_names)]
             key = '_'.join(sorted(mod_names))
             subsets[key] = mods
-        return {k: v for k, v in subsets if k != ''}
+        return {k: v for k, v in subsets.items() if k != ''}
 
     def set_paths_fid(self):
         dir_real = os.path.join(self.flags.dir_gen_eval_fid, 'real')
