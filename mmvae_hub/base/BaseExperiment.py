@@ -2,11 +2,13 @@ import os
 import random
 from abc import ABC, abstractmethod
 from itertools import chain, combinations
+from typing import Mapping
 
 import numpy as np
 import torch
 
 from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae, JointElboMMVae
+from mmvae_hub.base.modalities.BaseModality import BaseModality
 
 
 class BaseExperiment(ABC):
@@ -67,12 +69,12 @@ class BaseExperiment(ABC):
     def eval_label(self, values, labels, index=None):
         pass
 
-    def set_subsets(self):
+    def set_subsets(self) -> Mapping[str: BaseModality]:
         """
-        powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
+        powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
         >>> exp.modalities = {'a':None, 'b':None, 'c':None}
         >>> exp.set_subsets()
-        {'': [], 'a': [None], 'b': [None], 'c': [None], 'a_b': [None, None], 'a_c': [None, None], 'b_c': [None, None],
+        {'a': [None], 'b': [None], 'c': [None], 'a_b': [None, None], 'a_c': [None, None], 'b_c': [None, None],
         'a_b_c': [None, None, None]}
         """
         xs = list(self.modalities)
@@ -83,7 +85,7 @@ class BaseExperiment(ABC):
             mods = [self.modalities[mod_name] for mod_name in sorted(mod_names)]
             key = '_'.join(sorted(mod_names))
             subsets[key] = mods
-        return subsets
+        return {k: v for k, v in subsets if k != ''}
 
     def set_paths_fid(self):
         dir_real = os.path.join(self.flags.dir_gen_eval_fid, 'real')
