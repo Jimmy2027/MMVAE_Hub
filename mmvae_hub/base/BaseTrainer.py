@@ -3,7 +3,6 @@
 from abc import abstractmethod
 
 import torch
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -15,11 +14,10 @@ from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoo
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
-from mmvae_hub.base.evaluation.losses import calc_log_probs, calc_klds, calc_klds_style, calc_style_kld
 from mmvae_hub.base.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.base.utils import BaseTBLogger
-from mmvae_hub.base.utils.average_meters import *
 from mmvae_hub.base.utils.Dataclasses import *
+from mmvae_hub.base.utils.average_meters import *
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict
 
@@ -219,69 +217,6 @@ class BaseTrainer_:
             total_loss.backward()
             self.exp.optimizer.step()
             self.tb_logger.write_training_logs(results, total_loss, log_probs, klds)
-
-    def basic_routine_epoch(self, batch_d):
-        # set up weights
-        beta_style = self.flags.beta_style
-        beta_content = self.flags.beta_content
-        beta = self.flags.beta
-        mm_vae = self.exp.mm_vae
-        mods = self.exp.modalities
-        total_loss = None
-        for k, m_key in enumerate(batch_d.keys()):
-            batch_d[m_key] = Variable(batch_d[m_key]).to(self.flags.device)
-        results = mm_vae(batch_d)
-
-        log_probs, weighted_log_prob = calc_log_probs(self.exp, results, batch_d)
-        group_divergence = results['joint_divergence']
-
-        klds = calc_klds(self.exp, results)
-        if self.flags.factorized_representation:
-            klds_style = calc_klds_style(self.exp, results)
-
-        if (self.flags.modality_jsd or self.flags.modality_moe
-                or self.flags.joint_elbo):
-            if self.flags.factorized_representation:
-                kld_style = calc_style_kld(self.exp, klds_style)
-            else:
-                kld_style = 0.0
-            kld_content = group_divergence
-            kld_weighted = beta_style * kld_style + beta_content * kld_content
-            rec_weight = 1.0
-
-            total_loss = rec_weight * weighted_log_prob + beta * kld_weighted
-        elif self.flags.modality_poe:
-            klds_joint = {'content': group_divergence,
-                          'style': dict()}
-            elbos = {}
-            for m, m_key in enumerate(mods.keys()):
-                mod = mods[m_key]
-                if self.flags.factorized_representation:
-                    kld_style_m = klds_style[m_key + '_style']
-                else:
-                    kld_style_m = 0.0
-                klds_joint['style'][m_key] = kld_style_m
-                if self.flags.poe_unimodal_elbos:
-                    i_batch_mod = {m_key: batch_d[m_key]}
-                    r_mod = mm_vae(i_batch_mod)
-                    log_prob_mod = -mod.calc_log_prob(r_mod['rec'][m_key],
-                                                      batch_d[m_key],
-                                                      self.flags.batch_size)
-                    log_prob = {m_key: log_prob_mod}
-                    klds_mod = {'content': klds[m_key],
-                                'style': {m_key: kld_style_m}}
-                    elbo_mod = self.model.calc_elbo(self.exp, m_key, log_prob, klds_mod)
-                    elbos[m_key] = elbo_mod
-            elbo_joint = self.model.calc_elbo(self.exp, 'joint', log_probs, klds_joint)
-            elbos['joint'] = elbo_joint
-            total_loss = sum(elbos.values())
-
-        return {
-            'results': results,
-            'log_probs': log_probs,
-            'total_loss': total_loss,
-            'klds': klds,
-        }
 
     def test(self, epoch):
         with torch.no_grad():
