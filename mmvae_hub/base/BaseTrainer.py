@@ -190,6 +190,9 @@ class BaseTrainer_:
 
     def run_epochs(self):
         for epoch in tqdm(range(self.flags.start_epoch, self.flags.end_epoch), postfix='epochs'):
+            # set the epoch for tb_logger
+            self.tb_logger.step = epoch
+
             # one epoch of training and testing
             self.train()
             self.test(epoch)
