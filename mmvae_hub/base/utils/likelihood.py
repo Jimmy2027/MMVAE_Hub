@@ -3,6 +3,7 @@ import math
 import numpy as np
 import torch
 import torch.distributions as dist
+from torch.distributions.distribution import Distribution
 
 from mmvae_hub import log
 from mmvae_hub.base.evaluation.divergence_measures.mm_div import alpha_poe
@@ -11,26 +12,25 @@ from mmvae_hub.base.utils import utils
 LOG2PI = float(np.log(2.0 * math.pi))
 
 
-def get_likelihood(str):
+def get_likelihood(str) -> Distribution:
     if str == 'laplace':
-        pz = dist.Laplace;
+        return dist.Laplace
     elif str == 'bernoulli':
-        pz = dist.Bernoulli;
+        return dist.Bernoulli
     elif str == 'normal':
-        pz = dist.Normal;
+        return dist.Normal
     elif str == 'categorical':
-        pz = dist.OneHotCategorical;
+        return dist.OneHotCategorical
     else:
         print('likelihood not implemented')
-        pz = None;
-    return pz;
+        return None
 
 
 def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
     l_c = latents['content']
     l_s = latents['style']
-    l_c_m_rep = l_c[0].unsqueeze(0).repeat(n_imp_samples, 1, 1)
-    l_c_lv_rep = l_c[1].unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
     c_emb = utils.reparameterize(l_c_m_rep, l_c_lv_rep)
     styles = {}
     c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}

@@ -1,14 +1,18 @@
 import os
 import random
 from pathlib import Path
+from typing import Mapping, Iterable
 
 import numpy as np
 import torch
 import torch.optim as optim
 from sklearn.metrics import accuracy_score
+from torch import Tensor
 from torchvision import transforms
 
 from mmvae_hub.base.BaseExperiment import BaseExperiment
+from mmvae_hub.base.modalities.BaseModality import BaseModality
+from mmvae_hub.base.utils.utils import dict_to_device
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
 from mmvae_hub.polymnist.PolymnistMod import PolymnistMod
 from mmvae_hub.polymnist.metrics import PolymnistMetrics
@@ -39,15 +43,15 @@ class PolymnistExperiment(BaseExperiment):
         self.metrics = PolymnistMetrics
         self.paths_fid = self.set_paths_fid()
 
-    def set_modalities(self):
+    def set_modalities(self) -> Mapping[str, BaseModality]:
         mods = [PolymnistMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]
         return {m.name: m for m in mods}
 
     def set_dataset(self):
         transform = transforms.Compose([transforms.ToTensor()])
         if self.flags.dataset == 'toy':
-            train = ToyPolymnistDataset()
-            test = ToyPolymnistDataset()
+            train = ToyPolymnistDataset(num_modalities=self.num_modalities)
+            test = ToyPolymnistDataset(num_modalities=self.num_modalities)
         else:
             train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
             test = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
@@ -60,6 +64,10 @@ class PolymnistExperiment(BaseExperiment):
             for model in [mod.encoder, mod.decoder]:
                 for p in model.parameters():
                     params.append(p)
+
+        # add flow parameters from mmvae if present
+        params.extend(list(self.mm_vae.parameters()))
+
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
         self.optimizer = optimizer
@@ -78,17 +86,16 @@ class PolymnistExperiment(BaseExperiment):
     def get_transform_polymnist(self):
         return transforms.Compose([transforms.ToTensor()])
 
-    def get_test_samples(self, num_images=10):
+    def get_test_samples(self, num_images=10) -> Iterable[Mapping[str, Tensor]]:
         n_test = len(self.dataset_test)
         samples = []
         for i in range(num_images):
             while True:
+                # loop until sample with label i is found
                 ix = random.randint(0, n_test - 1)
                 sample, target = self.dataset_test[ix]
                 if target == i:
-                    for k, key in enumerate(sample):
-                        sample[key] = sample[key].to(self.flags.device)
-                    samples.append(sample)
+                    samples.append(dict_to_device(sample, self.flags.device))
                     break
         return samples
 

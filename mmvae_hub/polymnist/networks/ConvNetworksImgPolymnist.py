@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch import Tensor
 
 from mmvae_hub.base.networks.utils import Flatten, Unflatten
 
@@ -60,7 +61,7 @@ class DecoderImg(nn.Module):
             nn.ConvTranspose2d(10, 3, kernel_size=4, stride=2, padding=1),  # -> (3, 11, 11)
         )
 
-    def forward(self, style_latent_space, class_latent_space):
+    def forward(self, style_latent_space: Tensor, class_latent_space: Tensor):
         if self.flags.factorized_representation:
             z = torch.cat((style_latent_space, class_latent_space), dim=1)
         else:

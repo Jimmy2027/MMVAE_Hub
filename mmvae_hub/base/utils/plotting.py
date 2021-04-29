@@ -1,8 +1,12 @@
 import os
 
 import torch
+
+from mmvae_hub.base import BaseExperiment
+from mmvae_hub.base.modalities.BaseModality import BaseModality
 from mmvae_hub.base.utils import plot
 from mmvae_hub.base.utils import utils
+from mmvae_hub.base.utils.Dataclasses import *
 
 
 def generate_plots(exp, epoch):
@@ -88,65 +92,78 @@ def generate_swapping_plot(exp, epoch):
     return swap_plots
 
 
-def generate_conditional_fig_M(exp, epoch, M):
+def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModality], subsets) -> Mapping[str, Tensor]:
+    nbr_samples = 10
+    test_samples = exp.test_samples
     model = exp.mm_vae
-    mods = exp.modalities
-    samples = exp.test_samples
-    subsets = exp.subsets
 
     # get style from random sampling
-    random_styles = model.get_random_styles(10)
+    random_styles = model.get_random_styles(nbr_samples)
 
-    cond_plots = dict()
-    for k, s_key in enumerate(subsets.keys()):
+    cond_plots = {}
+    for s_key in subsets:
         subset = subsets[s_key]
         num_mod_s = len(subset)
 
         if num_mod_s == M:
             s_in = subset
-            for l, m_key_out in enumerate(mods.keys()):
+            for m_key_out in mods:
                 mod_out = mods[m_key_out]
                 rec = torch.zeros(exp.plot_img_size,
                                   dtype=torch.float32).repeat(100 + M * 10, 1, 1, 1)
-                for m, sample in enumerate(samples):
+                for m, sample in enumerate(test_samples):
                     for n, mod_in in enumerate(s_in):
                         c_in = mod_in.plot_data(sample[mod_in.name])
                         rec[m + n * 10, :, :, :] = c_in
                 cond_plots[s_key + '__' + mod_out.name] = rec
 
             # style transfer
-            for i in range(len(samples)):
-                for j in range(len(samples)):
-                    i_batch = dict()
-                    for o, mod in enumerate(s_in):
-                        i_batch[mod.name] = samples[j][mod.name].unsqueeze(0)
+            for i in range(len(test_samples)):
+                for j in range(len(test_samples)):
+                    i_batch = {
+                        mod.name: test_samples[j][mod.name].unsqueeze(0)
+                        for o, mod in enumerate(s_in)
+                    }
+                    # infer latents from batch
                     enc_mods, joint_latent = model.inference(i_batch)
-                    c_in = joint_latent['subsets'][s_key]
-                    c_rep = utils.reparameterize(mu=c_in[0], logvar=c_in[1])
+                    # c_in is latent of subset
+                    c_in: Distr = joint_latent.subsets[s_key]
+                    c_rep = utils.reparameterize(mu=c_in.mu, logvar=c_in.logvar)
 
-                    style = dict()
-                    for l, m_key_out in enumerate(mods.keys()):
+                    style = {}
+                    for m_key_out in mods:
                         mod_out = mods[m_key_out]
                         if exp.flags.factorized_representation:
                             style[mod_out.name] = random_styles[mod_out.name][i].unsqueeze(0)
                         else:
                             style[mod_out.name] = None
-                    cond_mod_in = {'content': c_rep, 'style': style}
+                    cond_mod_in = ReparamLatent(content=c_rep, style=style)
                     cond_gen_samples = model.generate_from_latents(cond_mod_in)
 
-                    for l, m_key_out in enumerate(mods.keys()):
+                    for m_key_out in mods:
                         mod_out = mods[m_key_out]
                         rec = cond_plots[s_key + '__' + mod_out.name]
                         squeezed = cond_gen_samples[mod_out.name].squeeze(0)
                         p_out = mod_out.plot_data(squeezed)
                         rec[(i + M) * 10 + j, :, :, :] = p_out
                         cond_plots[s_key + '__' + mod_out.name] = rec
+    return cond_plots
 
-    for k, s_key_in in enumerate(subsets.keys()):
+
+def generate_conditional_fig_M(exp: BaseExperiment, epoch: int, M: int) -> Mapping[str, Tensor]:
+    """
+    Generates conditional figures.
+    M: the number of input modalities that are used as conditioner for the generation.
+    """
+    mods: Mapping[str, BaseModality] = exp.modalities
+    subsets = exp.subsets
+
+    cond_plots = generate_cond_imgs(exp, M, mods, subsets)
+
+    for s_key_in in subsets:
         subset = subsets[s_key_in]
         if len(subset) == M:
-            s_in = subset
-            for l, m_key_out in enumerate(mods.keys()):
+            for m_key_out in mods:
                 mod_out = mods[m_key_out]
                 rec = cond_plots[s_key_in + '__' + mod_out.name]
                 fn_comb = (s_key_in + '_to_' + mod_out.name + '_epoch_' +

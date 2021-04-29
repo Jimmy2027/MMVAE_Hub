@@ -5,12 +5,12 @@ import os
 import subprocess as sp
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Iterable
-from typing import Optional
+from typing import Iterable, Optional, Mapping
 
 import numpy as np
 import torch
 import torch.distributed as dist
+from torch import Tensor
 from torch import device as Device
 from torch.autograd import Variable
 
@@ -39,7 +39,7 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         print()
 
 
-def reparameterize(mu, logvar):
+def reparameterize(mu: Tensor, logvar: Tensor) -> Tensor:
     std = logvar.mul(0.5).exp_()
     eps = Variable(std.data.new(std.size()).normal_())
     return eps.mul(std).add_(mu)
@@ -49,7 +49,7 @@ def reweight_weights(w):
     return w / w.sum()
 
 
-def get_items_from_dict(in_dict: dict) -> dict:
+def get_items_from_dict(in_dict: Mapping[str, Tensor]) -> Mapping[str, float]:
     return {k1: v1.cpu().item() for k1, v1 in in_dict.items()}
 
 

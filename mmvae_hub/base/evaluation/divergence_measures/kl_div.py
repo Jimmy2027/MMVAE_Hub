@@ -1,11 +1,12 @@
 import math
 
 import torch
+from torch import Tensor
 
 from mmvae_hub.base.utils.utils import reweight_weights
 
 
-def calc_kl_divergence(mu0, logvar0, mu1=None, logvar1=None, norm_value=None):
+def calc_kl_divergence(mu0: Tensor, logvar0: Tensor, mu1=None, logvar1=None, norm_value=None) -> float:
     if mu1 is None or logvar1 is None:
         KLD = -0.5 * torch.sum(1 - logvar0.exp() - mu0.pow(2) + logvar0)
     else:

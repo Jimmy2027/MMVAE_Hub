@@ -19,7 +19,7 @@ from mmvae_hub.base.evaluation.losses import calc_log_probs, calc_klds, calc_kld
 from mmvae_hub.base.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.average_meters import *
-from mmvae_hub.base.utils.dataclasses import *
+from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict
 

@@ -1,5 +1,6 @@
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_divergence
 from mmvae_hub.base.utils import utils
+from mmvae_hub.base.utils.Dataclasses import *
 
 
 def calc_log_probs(exp, result, batch_d):
@@ -19,15 +20,16 @@ def calc_log_probs(exp, result, batch_d):
     return log_probs, weighted_log_prob
 
 
-def calc_klds(flags, latents_sub: dict):
-    klds = {}
-    for key in latents_sub:
-        mu, logvar = latents_sub[key]
-        klds[key] = calc_kl_divergence(mu, logvar, norm_value=flags.batch_size)
-    return klds
+def calc_klds(flags, latents_sub: Mapping[str, Distr]) -> Mapping[str, float]:
+    return {
+        key: calc_kl_divergence(
+            latent_distr.mu, latent_distr.logvar, norm_value=flags.batch_size
+        )
+        for key, latent_distr in latents_sub.items()
+    }
 
 
-def calc_klds_style(exp, latents_mods:dict):
+def calc_klds_style(exp, latents_mods: dict):
     klds = {}
     for key in latents.keys():
         if key.endswith('style'):

@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 from mmvae_hub import log
+from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.likelihood import get_latent_samples
 from mmvae_hub.base.utils.likelihood import log_joint_estimate
 from mmvae_hub.base.utils.likelihood import log_marginal_estimate
@@ -19,8 +20,8 @@ def calc_log_likelihood_batch(exp, latents, subset_key, subset, batch, num_imp_s
     mod_weights = exp.style_weights
     mods = exp.modalities
 
-    s_dist = latents['subsets'][subset_key]
-    n_total_samples = s_dist[0].shape[0] * num_imp_samples
+    s_dist = latents.subsets[subset_key]
+    n_total_samples = s_dist.mu.shape[0] * num_imp_samples
 
     if flags.factorized_representation:
         enc_mods = latents['modalities']
@@ -53,13 +54,13 @@ def calc_log_likelihood_batch(exp, latents, subset_key, subset, batch, num_imp_s
         else:
             l_lin_rep['style'][m_key] = None
 
-    l_dec = {'content': l_lin_rep['content']['z'],
-             'style': {}}
+    l_dec = ReparamLatent(content=l_lin_rep['content']['z'], style={})
+
     for m_key in (l_style_rep.keys()):
         if flags.factorized_representation:
-            l_dec['style'][m_key] = l_lin_rep['style'][m_key]['z']
+            l_dec.style[m_key] = l_lin_rep['style'][m_key]['z']
         else:
-            l_dec['style'][m_key] = None
+            l_dec.style[m_key] = None
 
     gen = model.generate_sufficient_statistics_from_latents(l_dec)
 

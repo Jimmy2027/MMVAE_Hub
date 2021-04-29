@@ -30,13 +30,14 @@ class BaseExperiment(ABC):
 
         self.test_samples = None
         self.paths_fid = None
+        self.plot_img_size = None
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
         if self.flags.method in ['joint_elbo', 'poe', 'moe', 'jsd']:
             model = JointElboMMVae(self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_mixture':
-            model = PlanarFlowMMVae(self.flags, self.modalities)
+            model = PlanarFlowMMVae(self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
@@ -67,6 +68,10 @@ class BaseExperiment(ABC):
 
     @abstractmethod
     def eval_label(self, values, labels, index=None):
+        pass
+
+    @abstractmethod
+    def set_modalities(self) -> Mapping[str, BaseModality]:
         pass
 
     def set_subsets(self) -> Mapping[str, BaseModality]:

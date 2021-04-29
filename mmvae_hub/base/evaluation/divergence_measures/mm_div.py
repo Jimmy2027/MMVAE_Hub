@@ -1,4 +1,5 @@
 import torch
+from torch import Tensor
 
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_entropy_gauss
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_divergence
@@ -74,7 +75,7 @@ def calc_alphaJSD_modalities(flags, mus, logvars, weights, normalization=None):
         klds = torch.zeros(num_mods, num_samples)
     klds = klds.to(flags.device)
 
-    for k in range(0, num_mods):
+    for k in range(num_mods):
         kld = calc_kl_divergence(mus[k, :, :], logvars[k, :, :], alpha_mu,
                                  alpha_logvar, norm_value=normalization)
         if normalization is not None:
@@ -87,7 +88,7 @@ def calc_alphaJSD_modalities(flags, mus, logvars, weights, normalization=None):
     return group_div, klds, [alpha_mu, alpha_logvar]
 
 
-def calc_group_divergence_moe(flags, mus, logvars, normalization=None):
+def calc_group_divergence_moe(flags, mus: Tensor, logvars: Tensor, normalization=None):
     # normalize with number of subsets
     weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(flags.device)
     num_mods = mus.shape[0]
