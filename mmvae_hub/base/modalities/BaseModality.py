@@ -10,6 +10,9 @@ class BaseModality(ABC):
         self.clf = self.set_clf()
         self.rec_weight = None
 
+        self.encoder = None
+        self.decoder = None
+
     @abstractmethod
     def save_data(self, exp, d, fn, args):
         pass
