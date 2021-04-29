@@ -5,7 +5,7 @@ import typing
 import numpy as np
 
 from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
-
+from mmvae_hub.base.utils.Dataclasses import *
 
 class AverageMeter(object):
     """
@@ -88,7 +88,7 @@ class AverageMeterLatents(AverageMeterDict):
         super().__init__(name=name)
         self.factorized_representation = factorized_representation
 
-    def update(self, val: typing.Mapping[str, typing.Tuple[typing.Iterable[float], typing.Iterable[float]]]):
+    def update(self, val: typing.Mapping[str, BaseEncMod]):
         if not self.vals:
             lvl2_keys = ['latents_class', 'latents_style'] if self.factorized_representation else ['latents_class']
             self.vals = init_twolevel_nested_dict(level1_keys=[k for k in val],
@@ -96,8 +96,8 @@ class AverageMeterLatents(AverageMeterDict):
                                                   init_val={'mu': [], 'logvar': []})
         for mod_string, enc_mods in val.items():
             for key in self.vals[mod_string]:
-                self.vals[mod_string][key]['mu'].append(val[mod_string][key]['mu'].mean().item())
-                self.vals[mod_string][key]['logvar'].append(val[mod_string][key]['logvar'].mean().item())
+                self.vals[mod_string][key]['mu'].append(val[mod_string].__dict__[key].mu.mean().item())
+                self.vals[mod_string][key]['logvar'].append(val[mod_string].__dict__[key].logvar.mean().item())
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
         return {mod_str: {k: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for k, v in enc_mods.items()} for
