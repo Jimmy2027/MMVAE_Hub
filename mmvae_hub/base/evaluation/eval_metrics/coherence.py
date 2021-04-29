@@ -203,8 +203,6 @@ def test_generation(exp, dataset=None):
     mods = exp.modalities
     mm_vae = exp.mm_vae
     subsets = exp.subsets
-    if '' in subsets:
-        del subsets['']
 
     d_loader = DataLoader(exp.dataset_test if not dataset else dataset,
                           batch_size=args.batch_size,
@@ -243,7 +241,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         # first generates the conditional gen_samples
         # classifies them and stores the classifier predictions
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
-        lr_subsets = joint_latent['subsets']
+        lr_subsets = joint_latent.subsets
         cg = mm_vae.module.cond_generation(lr_subsets) if args.distributed else mm_vae.cond_generation(lr_subsets)
         cg: typing.Mapping[subsets, typing.Mapping[mods, Tensor]]
         # classify the cond. generated samples
