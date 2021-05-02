@@ -63,12 +63,15 @@ class BaseForwardResults:
 
 
 @dataclass
-class BaseTestResults(BaseForwardResults):
+class BaseTestResults:
     joint_div: float
+    prd_scores: Optional[dict] = None
     lr_eval: Optional[dict] = None
     gen_eval: Optional[dict] = None
     lhoods: Optional[dict] = None
-    prd_scores: Optional[dict] = None
+    end_epoch: Optional[int] = None
+    mean_epoch_time: Optional[float] = None
+    experiment_duration: Optional[float] = None
 
 
 @dataclass
