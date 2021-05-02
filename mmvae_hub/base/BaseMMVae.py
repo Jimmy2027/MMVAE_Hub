@@ -1,6 +1,7 @@
 import os
 from abc import ABC
 from abc import abstractmethod
+from pathlib import Path
 from typing import Tuple, Union
 
 import torch.nn as nn
@@ -115,8 +116,7 @@ class BaseMMVAE(ABC, nn.Module):
             weighted_log_prob += mod.rec_weight * log_probs[mod.name]
         return log_probs, weighted_log_prob
 
-    def generate_from_latents(self, latents: ReparamLatent) -> Mapping[
-        str, Tensor]:
+    def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
         cond_gen = {}
         for mod_str in self.modalities:
             suff_stats = self.generate_sufficient_statistics_from_latents(latents)
@@ -230,6 +230,16 @@ class BaseMMVAE(ABC, nn.Module):
             latents = ReparamLatent(content=content_rep, style=style_latents)
             cond_gen_samples[key] = self.generate_from_latents(latents)
         return cond_gen_samples
+
+    def save_networks(self):
+        for mod_str, mod in self.modalities.items():
+            torch.save(mod.encoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"encoderM{mod_str}"))
+            torch.save(mod.decoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"decoderM{mod_str}"))
+
+    def load_networks(self, dir_checkpoint: Path):
+        for mod_str, mod in self.modalities.items():
+            mod.encoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}"))
+            mod.decoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}"))
 
 
 class SubsetFuseMMVae(BaseMMVAE, ABC):
