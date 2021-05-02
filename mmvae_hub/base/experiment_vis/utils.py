@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import glob
 import json
-import os
-import shutil
 from pathlib import Path
 
+import torch
 from matplotlib import pyplot as plt
 from tensorflow.compat.v1.train import summary_iterator
 
-from mmvae_hub import log
+from mmvae_hub.base.utils.plotting import generate_plots
+from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
 def write_experiment_vis_config(experiment_dir: Path) -> Path:
@@ -72,10 +72,11 @@ def get_logs_dict(tensorboard_logs_dir: Path):
     return logs_dict
 
 
-def plot_logs(cathegory: str, logs_dict: dict, together: bool = False):
-    cath_logs = {k.split('/')[-1]: v for k, v in logs_dict.items() if k.startswith(cathegory)}
+def plot_logs(category: str, logs_dict: dict, together: bool = False):
+    cath_logs = {k.split('/')[-1]: v for k, v in logs_dict.items() if k.startswith(category)}
     if together:
         for k in logs_dict:
+            # fixme
             break
         title = k.split('/')[:-1]
         plt.figure()
@@ -91,11 +92,29 @@ def plot_logs(cathegory: str, logs_dict: dict, together: bool = False):
             plt.show()
 
 
-def run_notebook_convert(dir_experiment_run: Path) -> None:
-    """Run and convert the notebook to html."""
-    experiment_vis_config_path = write_experiment_vis_config(dir_experiment_run)
-    log.info('Converting notebook to html.')
-    notebook_path = Path(__file__).parent / 'experiment_vis.ipynb'
-    os.system(f'jupyter nbconvert --to html {notebook_path}')
-    shutil.move(notebook_path.with_suffix('.html'), dir_experiment_run)
-    os.remove(experiment_vis_config_path)
+def show_generated_figs(experiment_dir: Path):
+    flags = torch.load(experiment_dir / 'flags.rar')
+    if Path(flags.dir_data).name == 'polymnist':
+        exp = PolymnistExperiment(flags)
+    latest_checkpoint = max(d.name for d in (experiment_dir / 'checkpoints').iterdir() if d.name.startswith('0'))
+
+    print(f'loading checkpoint from epoch {latest_checkpoint}.')
+
+    latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint / 'mm_vae'
+    exp.mm_vae.load_networks(latest_checkpoint_path)
+    plots = generate_plots(exp, epoch=0)
+
+    for p_key, ps in plots.items():
+        for name, fig in ps.items():
+            plt.figure(figsize=(10, 10))
+            plt.imshow(fig)
+            plt.title(p_key + '_' + name)
+            plt.show()
+
+
+if __name__ == '__main__':
+    # show_generated_figs(Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_joint_elbo_2021_05_01_12_20_00_169344'))
+    experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_planar_mixture_2021_04_29_23_06_00_937191')
+    tensorboard_logs_dir = experiment_dir / 'logs'
+    logs_dict = get_logs_dict(tensorboard_logs_dir)
+    plot_logs('Generation', logs_dict, together=True)
