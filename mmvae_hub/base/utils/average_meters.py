@@ -4,8 +4,9 @@ import typing
 
 import numpy as np
 
-from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
 from mmvae_hub.base.utils.Dataclasses import *
+from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
+
 
 class AverageMeter(object):
     """
@@ -13,8 +14,9 @@ class AverageMeter(object):
     Taken from https://github.com/pytorch/examples/blob/a3f28a26851867b314f4471ec6ca1c2c048217f1/imagenet/main.py#L363
     """
 
-    def __init__(self, name: str, fmt: str = ':f'):
+    def __init__(self, name: str, fmt: str = ':f', precision=None):
         self.name = name
+        self.precision = precision
         self.fmt = fmt
         self.reset()
 
@@ -35,6 +37,8 @@ class AverageMeter(object):
         return fmtstr.format(**self.__dict__)
 
     def get_average(self):
+        if self.precision:
+            return np.round(self.val, self.precision)
         return self.val
 
 
@@ -102,6 +106,3 @@ class AverageMeterLatents(AverageMeterDict):
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
         return {mod_str: {k: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for k, v in enc_mods.items()} for
                 mod_str, enc_mods in self.vals.items()}
-
-
-
