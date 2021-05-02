@@ -171,7 +171,8 @@ if __name__ == "__main__":
     # print("\nARGS:\n", args)
     from dataclasses import dataclass
     from pathlib import Path
-    from mmvae_hub.base.utils.flags_utils import get_config_path, json2dict
+    from mmvae_hub.base.utils.flags_utils import get_config_path
+    from mmvae_hub.base.utils.utils import json2dict
 
     config = json2dict(get_config_path())
 

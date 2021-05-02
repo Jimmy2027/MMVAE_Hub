@@ -13,10 +13,10 @@ def create_dir(dir_name):
     os.makedirs(dir_name)
 
 
-def get_experiment_uid(flags):
+def get_experiment_uid(flags) -> str:
     dateTimeObj = datetime.now()
     dateStr = dateTimeObj.strftime("%Y_%m_%d_%H_%M_%S_%f")
-    return flags.exp_str_prefix + '_' + dateStr
+    return flags.exp_str_prefix + '_' + flags.method + '_' + dateStr
 
 
 def create_dir_structure_testing(exp):
@@ -98,7 +98,6 @@ def expand_paths(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
     flags.dir_fid = os.path.expanduser(flags.dir_fid)
     flags.dir_clf = os.path.expanduser(flags.dir_clf)
     return flags
-
 
 # def get_method(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
 #     if flags.method == 'poe':

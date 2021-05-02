@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
-import json
+import configparser
 import os
 from abc import abstractmethod
 from pathlib import Path
@@ -11,6 +11,7 @@ import torch
 import mmvae_hub
 from mmvae_hub import log
 from mmvae_hub.base.utils.filehandling import create_dir_structure
+from mmvae_hub.base.utils.utils import json2dict
 
 
 class BaseFlagsSetup:
@@ -31,16 +32,24 @@ class BaseFlagsSetup:
         """
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
+
         flags.config_path = self.config_path
+        flags.version = self.get_version_from_setup_config()
+
         if self.config_path:
             flags = update_flags_with_config(p=self.parser, config_path=flags.config_path, testing=testing)
+
         flags = self.setup_paths(flags)
+
         flags = create_dir_structure(flags)
+
         use_cuda = torch.cuda.is_available()
         flags.device = torch.device('cuda' if use_cuda else 'cpu')
         if str(flags.device) == 'cuda':
             torch.cuda.set_device(get_freer_gpu())
+
         flags = self.flags_set_alpha_modalities(flags)
+
         flags.log_file = log.manager.root.handlers[1].baseFilename
 
         if flags.load_flags:
@@ -77,6 +86,13 @@ class BaseFlagsSetup:
         flags.dir_fid = Path(tmpdirname) / 'fid'
         return flags
 
+    @staticmethod
+    def get_version_from_setup_config() -> str:
+        """Read the package version from the setup.cfg file."""
+        config = configparser.ConfigParser()
+        config.read(Path(__file__).parent.parent.parent.parent / 'setup.cfg')
+        return config['metadata']['version']
+
 
 def get_freer_gpu() -> int:
     """
@@ -106,12 +122,6 @@ def update_flags_with_config(p, config_path: Path, additional_args: dict = None,
         return p.parse_args([], namespace=t_args)
     else:
         return p.parse_args(namespace=t_args)
-
-
-def json2dict(json_path: Path) -> dict:
-    with open(json_path, 'rt') as json_file:
-        json_config = json.load(json_file)
-    return json_config
 
 
 def get_config_path(flags=None):

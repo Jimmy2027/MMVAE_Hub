@@ -73,6 +73,9 @@ def get_logs_dict(tensorboard_logs_dir: Path):
 
 
 def plot_logs(category: str, logs_dict: dict, together: bool = False):
+    """
+    together: bool indicating if plots should be plotted individually or all in one plot.
+    """
     cath_logs = {k.split('/')[-1]: v for k, v in logs_dict.items() if k.startswith(category)}
     if together:
         for k in logs_dict:

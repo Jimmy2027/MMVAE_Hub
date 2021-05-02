@@ -237,10 +237,6 @@ def get_items_from_nested_dict(nested: dict) -> dict:
     return new
 
 
-def get_items_from_dict(in_dict: dict) -> dict:
-    return {k1: v1.cpu().item() for k1, v1 in in_dict.items()}
-
-
 class OnlyOnce:
     """
     Contains a set of strings. If the passed string is not in the set, returns True.
@@ -274,3 +270,14 @@ def json_file_to_pyobj(filename: str):
 def atleast_2d(tensor, dim: int):
     if len(tensor.shape) < 2:
         return tensor.unsqueeze(dim)
+
+
+def dict2json(out_path: Path, d: dict):
+    with open(out_path, 'w') as outfile:
+        json.dump(d, outfile, indent=2)
+
+
+def json2dict(json_path: Path) -> dict:
+    with open(json_path, 'rt') as json_file:
+        json_config = json.load(json_file)
+    return json_config

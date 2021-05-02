@@ -1,10 +1,10 @@
 class BaseTBLogger:
     def __init__(self, name, writer):
-        self.name = name;
-        self.writer = writer;
-        self.training_prefix = 'train';
-        self.testing_prefix = 'test';
-        self.step = 0;
+        self.name = name
+        self.writer = writer
+        self.training_prefix = 'train'
+        self.testing_prefix = 'test'
+        self.step = 0
 
     def write_log_probs(self, name, log_probs):
         self.writer.add_scalars('%s/LogProb' % name,
@@ -47,10 +47,7 @@ class BaseTBLogger:
 
     def write_lhood_logs(self, lhoods):
         for k, key in enumerate(sorted(lhoods.keys())):
-            self.writer.add_scalars('Likelihoods/%s' %
-                                    (key),
-                                    lhoods[key],
-                                    self.step)
+            self.writer.add_scalars('Likelihoods/%s' % (key), lhoods[key], self.step)
 
     def write_prd_scores(self, prd_scores):
         self.writer.add_scalars('PRD',
@@ -58,14 +55,9 @@ class BaseTBLogger:
                                 self.step)
 
     def write_plots(self, plots, epoch):
-        for k, p_key in enumerate(plots.keys()):
-            ps = plots[p_key];
-            for l, name in enumerate(ps.keys()):
-                fig = ps[name];
-                self.writer.add_image(p_key + '_' + name,
-                                      fig,
-                                      epoch,
-                                      dataformats="HWC");
+        for p_key, ps in plots.items():
+            for name, fig in ps.items():
+                self.writer.add_image(p_key + '_' + name, fig, epoch, dataformats="HWC")
 
     def add_basic_logs(self, name, joint_divergence, latents, loss, log_probs, klds):
         self.writer.add_scalars('%s/Loss' % name,

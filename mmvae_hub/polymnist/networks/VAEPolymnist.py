@@ -1,5 +1,3 @@
-import os
-
 import torch
 import torch.nn as nn
 
@@ -138,7 +136,3 @@ class VAEPolymnist(BaseMMVae_, nn.Module):
             l_2a = {'content': c_emb, 'style': style_latents}
             cond_gen_2a[pair] = self.generate_from_latents(l_2a)
         return cond_gen_2a
-
-    def save_networks(self):
-        for mod_str, mod in self.modalities.items():
-            torch.save(mod.encoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"encoderM{mod_str}"))
