@@ -231,10 +231,13 @@ class BaseMMVAE(ABC, nn.Module):
             cond_gen_samples[key] = self.generate_from_latents(latents)
         return cond_gen_samples
 
-    def save_networks(self):
+    def save_networks(self, epoch: int):
+        dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
+        if not os.path.exists(dir_network_epoch):
+            os.makedirs(dir_network_epoch)
         for mod_str, mod in self.modalities.items():
-            torch.save(mod.encoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"encoderM{mod_str}"))
-            torch.save(mod.decoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"decoderM{mod_str}"))
+            torch.save(mod.encoder.state_dict(), os.path.join(dir_network_epoch, f"encoderM{mod_str}"))
+            torch.save(mod.decoder.state_dict(), os.path.join(dir_network_epoch, f"decoderM{mod_str}"))
 
     def load_networks(self, dir_checkpoint: Path):
         for mod_str, mod in self.modalities.items():

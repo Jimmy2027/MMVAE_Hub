@@ -18,10 +18,8 @@ class BaseCallback:
 
         # save checkpoints after every 5 epochs
         if (epoch + 1) % 5 == 0 or (epoch + 1) == self.flags.end_epoch:
-            dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
-            if not os.path.exists(dir_network_epoch):
-                os.makedirs(dir_network_epoch)
-            self.exp.mm_vae.save_networks()
+
+            self.exp.mm_vae.save_networks(epoch)
 
     def maybe_send_to_db(self, test_results: BaseTestResults, epoch: int):
         """Send to db if use_db flags is set."""
