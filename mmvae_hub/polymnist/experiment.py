@@ -53,8 +53,10 @@ class PolymnistExperiment(BaseExperiment):
             train = ToyPolymnistDataset(num_modalities=self.num_modalities)
             test = ToyPolymnistDataset(num_modalities=self.num_modalities)
         else:
-            train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
-            test = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform)
+            train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform,
+                                     num_modalities=self.num_modalities)
+            test = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform,
+                                    num_modalities=self.num_modalities)
         return train, test
 
     def set_optimizer(self):
