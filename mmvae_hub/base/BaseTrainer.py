@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import json
+import os
+import shutil
+import time
 from abc import abstractmethod
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -8,17 +13,17 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from mmvae_hub import log
+from mmvae_hub.base import BaseCallback
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
 from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
-from mmvae_hub.base.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.average_meters import *
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict
+from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
 
 
 class BaseTrainer:
@@ -26,7 +31,9 @@ class BaseTrainer:
         self.exp = exp
         self.flags = exp.flags
         self.tb_logger = self._setup_tblogger()
-        self.callback = self._set_callback()
+        self.callback: BaseCallback = self._set_callback()
+
+        self.begin_time = time.time()
 
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
@@ -36,35 +43,31 @@ class BaseTrainer:
         return tb_logger
 
     @abstractmethod
-    def _set_callback(self):
+    def _set_callback(self) -> BaseCallback:
         pass
 
     def run_epochs(self):
         test_results = None
+        end = time.time()
         for epoch in tqdm(range(self.flags.start_epoch, self.flags.end_epoch), postfix='epochs'):
-            # one epoch of training and testing
+            end = time.time()
+
+            # set epoch for tb_logger
+            self.tb_logger.step = epoch
+
+            # training and testing
             self.train()
             test_results = self.test(epoch)
-            self.callback.update_epoch(epoch)
 
-        self.finalize()
+            self.callback.update_epoch(test_results, epoch, time.time() - end)
+
+        self.finalize(test_results, epoch)
         return test_results
 
     def train(self):
         model = self.exp.mm_vae.train()
 
-        d_loader = DataLoader(self.exp.dataset_train, batch_size=self.flags.batch_size, shuffle=True,
-                              num_workers=self.flags.dataloader_workers,
-                              drop_last=True)
-        training_steps = self.flags.steps_per_training_epoch
-
-        average_meters = {
-            'total_loss': AverageMeter('total_test_loss'),
-            'klds': AverageMeterDict('klds'),
-            'log_probs': AverageMeterDict('log_probs'),
-            'joint_divergence': AverageMeter('joint_divergence'),
-            'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
-        }
+        d_loader, training_steps, average_meters = self.setup_phase()
 
         for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
             batch_d = model.batch_to_device(batch_d)
@@ -94,21 +97,11 @@ class BaseTrainer:
         train_results = {k: v.get_average() for k, v in average_meters.items()}
         self.tb_logger.write_training_logs(**train_results)
 
-    def test(self, epoch) -> dict:
+    def test(self, epoch) -> BaseTestResults:
         with torch.no_grad():
             model = self.exp.mm_vae.eval()
 
-            d_loader = DataLoader(self.exp.dataset_test, batch_size=self.flags.batch_size, shuffle=True,
-                                  num_workers=self.flags.dataloader_workers, drop_last=True)
-            training_steps = self.flags.steps_per_training_epoch
-
-            average_meters = {
-                'total_loss': AverageMeter('total_test_loss'),
-                'klds': AverageMeterDict('klds'),
-                'log_probs': AverageMeterDict('log_probs'),
-                'joint_divergence': AverageMeter('joint_divergence'),
-                'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
-            }
+            d_loader, training_steps, average_meters = self.setup_phase()
 
             for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
                 batch_d = model.batch_to_device(batch_d)
@@ -128,8 +121,10 @@ class BaseTrainer:
                 for key in batch_results:
                     average_meters[key].update(batch_results[key])
 
-            test_results = {k: v.get_average() for k, v in average_meters.items()}
-            self.tb_logger.write_testing_logs(**test_results)
+            averages = {k: v.get_average() for k, v in average_meters.items()}
+            self.tb_logger.write_testing_logs(**averages)
+
+            test_results = BaseTestResults(joint_div=averages['joint_divergence'])
 
             log.info('generating plots')
             plots = generate_plots(self.exp, epoch)
@@ -141,27 +136,81 @@ class BaseTrainer:
                     clf_lr = train_clf_lr_all_subsets(self.exp)
                     lr_eval = test_clf_lr_all_subsets(clf_lr, self.exp)
                     self.tb_logger.write_lr_eval(lr_eval)
-                    test_results['lr_eval'] = lr_eval
+                    test_results.lr_eval = lr_eval
 
                 if self.flags.use_clf:
                     log.info('test generation')
                     gen_eval = test_generation(self.exp)
                     self.tb_logger.write_coherence_logs(gen_eval)
-                    test_results['gen_eval'] = flatten_cond_gen_values(gen_eval)
+                    test_results.gen_eval = flatten_cond_gen_values(gen_eval)
 
                 if self.flags.calc_nll:
                     log.info('estimating likelihoods')
                     lhoods = estimate_likelihoods(self.exp)
                     self.tb_logger.write_lhood_logs(lhoods)
-                    test_results['lhoods'] = lhoods
+                    test_results.lhoods = lhoods
 
                 if self.flags.calc_prd and ((epoch + 1) % self.flags.eval_freq_fid == 0):
                     log.info('calculating prediction score')
                     prd_scores = calc_prd_score(self.exp)
                     self.tb_logger.write_prd_scores(prd_scores)
-                    test_results['prd_scores'] = prd_scores
+                    test_results.prd_scores = prd_scores
+        return test_results
 
-        return {k: v for k, v in test_results.items() if k in ['total_loss', 'lr_eval', 'text_gen_eval']}
+    def setup_phase(self):
+        """Setup for train or test phase."""
+        d_loader = DataLoader(self.exp.dataset_test, batch_size=self.flags.batch_size, shuffle=True,
+                              num_workers=self.flags.dataloader_workers, drop_last=True)
+        training_steps = self.flags.steps_per_training_epoch
 
-    def finalize(self):
-        run_notebook_convert(self.flags.dir_experiment_run)
+        average_meters = {
+            'total_loss': AverageMeter('total_test_loss'),
+            'klds': AverageMeterDict('klds'),
+            'log_probs': AverageMeterDict('log_probs'),
+            'joint_divergence': AverageMeter('joint_divergence'),
+            'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
+        }
+        return d_loader, training_steps, average_meters
+
+    def finalize(self, test_results: BaseTestResults, epoch: int):
+        # write results as json to experiment folder
+        test_results.end_epoch = epoch
+        test_results.mean_epoch_time = self.callback.epoch_time.get_average()
+        test_results.experiment_duration = time.time() - self.begin_time
+        dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__)
+
+        if self.flags.use_db:
+            # send results to experiments_database
+            epoch_results = {'final_results': test_results.__dict__}
+            self.exp.experiments_database.insert_dict(epoch_results)
+
+        # run jupyter notebook with visualisations
+        self.run_notebook_convert(self.flags.dir_experiment_run)
+
+        # send alert
+        if self.flags.norby and self.flags.dataset != 'toy':
+            import norby
+            norby.send_msg('Training has finished.')
+
+    def run_notebook_convert(self, dir_experiment_run: Path) -> None:
+        """Run and convert the notebook to html."""
+        experiment_dir = self.exp.flags.dir_experiment
+        # Write a json config that will be read by the experiment_vis jupyter notebook.
+        config = {'experiment_dir': str(experiment_dir)}
+        experiment_vis_config_path = Path(__file__).parent / 'experiment_vis' / f'{experiment_dir.stem}.json'
+        with open(experiment_vis_config_path, 'w') as outfile:
+            json.dump(config, outfile, indent=2)
+
+        notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
+        nbconvert_path = notebook_path.with_suffix('.nbconvert.ipynb')
+
+        log.info('Executing experiment vis notebook.')
+        os.system(f'jupyter nbconvert --to notebook --execute {notebook_path}')
+        log.info('Converting notebook to html.')
+        os.system(f'jupyter nbconvert --to html {nbconvert_path}')
+
+        # move notebook to experiment run
+        shutil.move(notebook_path.with_suffix('.nbconvert.html'), dir_experiment_run)
+
+        # remove json config
+        os.remove(experiment_vis_config_path)

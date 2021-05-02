@@ -9,6 +9,7 @@ import torch
 
 from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae, JointElboMMVae
 from mmvae_hub.base.modalities.BaseModality import BaseModality
+from mmvae_hub.base.utils.MongoDB import MongoDatabase
 
 
 class BaseExperiment(ABC):
@@ -31,6 +32,9 @@ class BaseExperiment(ABC):
         self.test_samples = None
         self.paths_fid = None
         self.plot_img_size = None
+
+        if flags.use_db:
+            self.experiments_database = MongoDatabase(flags)
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""

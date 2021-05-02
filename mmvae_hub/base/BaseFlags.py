@@ -3,6 +3,9 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
+parser.add_argument('--norby', type=bool, default=False,
+                    help="If true use norby package to send training updates via telegram. "
+                         "(Needs norby to be configured on system)")
 parser.add_argument('--use_db', default=False, action="store_true", help="If set, will send experiment results to a "
                                                                          "database for further analysis. "
                                                                          "The configuration file for the db needs to be"
