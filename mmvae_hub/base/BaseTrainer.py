@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import json
 import os
 import shutil
 import time
@@ -8,6 +7,7 @@ from abc import abstractmethod
 from pathlib import Path
 
 import torch
+from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -56,10 +56,10 @@ class BaseTrainer:
             self.tb_logger.step = epoch
 
             # training and testing
-            self.train()
+            train_results: BaseBatchResults = self.train()
             test_results = self.test(epoch)
 
-            self.callback.update_epoch(test_results, epoch, time.time() - end)
+            self.callback.update_epoch(train_results, test_results, epoch, time.time() - end)
 
         self.finalize(test_results, epoch)
         return test_results
@@ -96,6 +96,7 @@ class BaseTrainer:
                 average_meters[key].update(value)
         train_results = {k: v.get_average() for k, v in average_meters.items()}
         self.tb_logger.write_training_logs(**train_results)
+        return BaseBatchResults(**train_results)
 
     def test(self, epoch) -> BaseTestResults:
         with torch.no_grad():
@@ -124,7 +125,7 @@ class BaseTrainer:
             averages = {k: v.get_average() for k, v in average_meters.items()}
             self.tb_logger.write_testing_logs(**averages)
 
-            test_results = BaseTestResults(joint_div=averages['joint_divergence'])
+            test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
             log.info('generating plots')
             plots = generate_plots(self.exp, epoch)
@@ -179,11 +180,6 @@ class BaseTrainer:
         test_results.experiment_duration = time.time() - self.begin_time
         dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__)
 
-        if self.flags.use_db:
-            # send results to experiments_database
-            epoch_results = {'final_results': test_results.__dict__}
-            self.exp.experiments_database.insert_dict(epoch_results)
-
         # run jupyter notebook with visualisations
         self.run_notebook_convert(self.flags.dir_experiment_run)
 
@@ -194,23 +190,21 @@ class BaseTrainer:
 
     def run_notebook_convert(self, dir_experiment_run: Path) -> None:
         """Run and convert the notebook to html."""
-        experiment_dir = self.exp.flags.dir_experiment
-        # Write a json config that will be read by the experiment_vis jupyter notebook.
-        config = {'experiment_dir': str(experiment_dir)}
-        experiment_vis_config_path = Path(__file__).parent / 'experiment_vis' / f'{experiment_dir.stem}.json'
-        with open(experiment_vis_config_path, 'w') as outfile:
-            json.dump(config, outfile, indent=2)
+        if self.flags.use_db:
+            # Copy the experiment_vis jupyter notebook to the experiment dir
+            notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
+            dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
+            shutil.copyfile(notebook_path, dest_notebook_path)
 
-        notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
-        nbconvert_path = notebook_path.with_suffix('.nbconvert.ipynb')
+            nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
 
-        log.info('Executing experiment vis notebook.')
-        os.system(f'jupyter nbconvert --to notebook --execute {notebook_path}')
-        log.info('Converting notebook to html.')
-        os.system(f'jupyter nbconvert --to html {nbconvert_path}')
+            log.info('Executing experiment vis notebook.')
+            os.system(f'jupyter nbconvert --to notebook --execute {dest_notebook_path}')
+            log.info('Converting notebook to html.')
+            os.system(f'jupyter nbconvert --to html {nbconvert_path}')
 
-        # move notebook to experiment run
-        shutil.move(notebook_path.with_suffix('.nbconvert.html'), dir_experiment_run)
+            # move notebook to experiment run
+            # shutil.move(notebook_path.with_suffix('.nbconvert.html'), dir_experiment_run)
 
-        # remove json config
-        os.remove(experiment_vis_config_path)
+            html_path = nbconvert_path.with_suffix('.html')
+            assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'
