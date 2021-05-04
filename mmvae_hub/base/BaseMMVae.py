@@ -313,10 +313,6 @@ class SubsetFuseMMVae(BaseMMVAE, ABC):
             cond_gen_2a[pair] = self.generate_from_latents(l_2a)
         return cond_gen_2a
 
-    def save_networks(self):
-        for mod_str, mod in self.modalities.items():
-            torch.save(mod.encoder.state_dict(), os.path.join(self.flags.dir_checkpoints, f"encoderM{mod_str}"))
-
     @staticmethod
     def calc_elbo(exp, modality, recs, klds):
         flags = exp.flags
@@ -350,9 +346,6 @@ class BaseFlowMMVAE(BaseMMVAE):
 
     @abstractmethod
     def encode(self, input_batch) -> dict:
-        pass
-
-    def save_networks(self):
         pass
 
 
@@ -466,7 +459,9 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
 
     @staticmethod
     def calculate_singlemod_divergence(z_mu, z_logvar, zk, z0, log_det_j) -> Tensor:
-        """Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1| ]."""
+        """
+        Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+        """
         # ln p(z_k)  (not averaged)
         log_p_zk = log_normal_standard(zk, dim=1)
         # ln q(z_0)  (not averaged)

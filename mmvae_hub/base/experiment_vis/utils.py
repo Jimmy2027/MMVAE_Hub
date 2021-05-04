@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import glob
 import json
 from pathlib import Path
 
 import torch
 from matplotlib import pyplot as plt
-from tensorflow.compat.v1.train import summary_iterator
 
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
@@ -20,79 +18,79 @@ def write_experiment_vis_config(experiment_dir: Path) -> Path:
     return out_path
 
 
-def plot_lr_accuracy(tensorboard_logs_dir: Path) -> None:
-    lr_logs = {}
-    for lr_logdir in glob.glob(f'{tensorboard_logs_dir}/Latent Representation*'):
-        dir_name = Path(lr_logdir).stem
-        if dir_name.endswith('accuracy'):
-            # get subset from dir_name
-            subset = dir_name[len('Latent Representation_'):][:-len('_accuracy')]
-            lr_logs[subset] = []
-            for e in summary_iterator(glob.glob(f'{lr_logdir}/events.out.tfevents*')[0]):
-                for v in e.summary.value:
-                    lr_logs[subset].append(v.simple_value)
+def plot_lr_accuracy(logs_dict: dict) -> None:
+    lr_accuracy_values = {}
+
+    for epoch, epoch_values in logs_dict['epoch_results'].items():
+        for k, v in epoch_values['test_results']['lr_eval'].items():
+            if k not in lr_accuracy_values:
+                lr_accuracy_values[k] = [v['accuracy']]
+            else:
+                lr_accuracy_values[k].append(v['accuracy'])
 
     plt.figure()
     plt.title('Latent Representation Accuracy')
-    for subset, values in lr_logs.items():
+    for subset, values in lr_accuracy_values.items():
         plt.plot(values)
-    plt.legend([s for s in lr_logs])
+    plt.legend([s for s in lr_accuracy_values])
     plt.show()
 
 
-def plot_gen_results(tensorboard_logs_dir: Path) -> None:
-    lr_logs = {}
-    for lr_logdir in glob.glob(f'{tensorboard_logs_dir}/Generation*'):
-        for e in summary_iterator(glob.glob(f'{lr_logdir}/events.out.tfevents*')[0]):
-            if e.summary.value:
-                tag = e.summary.value[0].tag
-                if tag not in lr_logs:
-                    lr_logs[tag] = []
-                for v in e.summary.value:
-                    lr_logs[tag].append(v.simple_value)
-
-    plt.figure()
-    plt.title('Gen Eval')
-    for subset, values in lr_logs.items():
-        plt.plot(values)
-    plt.legend([s.split('/')[-1] for s in lr_logs])
-    plt.show()
-
-
-def get_logs_dict(tensorboard_logs_dir: Path):
-    logs_dict = {}
-    for tf_logs in glob.glob(f'{tensorboard_logs_dir}/*/*'):
-        for e in summary_iterator(tf_logs):
-            for v in e.summary.value:
-                tag = v.tag
-                if tag not in logs_dict:
-                    logs_dict[tag] = []
-                logs_dict[tag].append(v.simple_value)
-
-    return logs_dict
-
-
-def plot_logs(category: str, logs_dict: dict, together: bool = False):
+def plot_basic_batch_logs(phase: str, logs_dict: dict):
     """
-    together: bool indicating if plots should be plotted individually or all in one plot.
+    phase: either train or test
     """
-    cath_logs = {k.split('/')[-1]: v for k, v in logs_dict.items() if k.startswith(category)}
-    if together:
-        for k in logs_dict:
-            # fixme
-            break
-        title = k.split('/')[:-1]
+    results_dict = {'total_loss': [], 'klds': {}, 'log_probs': {}, 'joint_divergence': []}
+
+    for epoch, epoch_values in logs_dict['epoch_results'].items():
+        v = epoch_values[f'{phase}_results']
+        results_dict['total_loss'].append(v['total_loss'])
+        results_dict['joint_divergence'].append(v['joint_divergence'])
+
+        for log_k in ['klds', 'log_probs']:
+            for s_key, s_value in v[log_k].items():
+                if s_key not in results_dict[log_k]:
+                    results_dict[log_k][s_key] = [s_value]
+                else:
+                    results_dict[log_k][s_key].append(s_value)
+
+    for k in ['total_loss', 'joint_divergence']:
         plt.figure()
-        plt.title(title)
-        for k, v in cath_logs.items():
-            plt.plot(v)
-        plt.legend([k for k in cath_logs])
+        plt.title(k)
+        plt.plot(results_dict[k])
+        plt.legend(k)
         plt.show()
-    else:
-        for k, v in cath_logs.items():
-            plt.plot(v)
-            plt.title(k)
-            plt.show()
+
+    for k in ['klds', 'log_probs']:
+        plt.figure()
+        plt.title(k)
+        for subset, values in results_dict[k].items():
+            plt.plot(values)
+        plt.legend([s for s in results_dict[k]])
+        plt.show()
+
+
+def plot_coherence_accuracy(logs_dict: dict) -> None:
+    gen_eval_logs = {}
+
+    for epoch, epoch_values in logs_dict['epoch_results'].items():
+        for k, v in epoch_values['test_results']['gen_eval'].items():
+            k = k.removeprefix('digit_')
+            num_input_mods = len(k.split('__')[0].split('_'))
+            if num_input_mods not in gen_eval_logs:
+                gen_eval_logs[num_input_mods] = {k: [v]}
+            elif k not in gen_eval_logs[num_input_mods]:
+                gen_eval_logs[num_input_mods][k] = [v]
+            else:
+                gen_eval_logs[num_input_mods][k].append(v)
+
+    for num_input_mods, v in gen_eval_logs.items():
+        plt.figure()
+        plt.title(f'Gen eval Accuracy with {num_input_mods} input modalities.')
+        for subset, values in v.items():
+            plt.plot(values)
+        plt.legend([s for s in v])
+        plt.show()
 
 
 def show_generated_figs(experiment_dir: Path):
