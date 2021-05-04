@@ -37,6 +37,6 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
-    test_run_epochs_polymnist()
+    test_run_epochs_polymnist(method='joint_elbo')
     # test_generate_plots()
     # test_test_generation()

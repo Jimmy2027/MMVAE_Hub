@@ -32,7 +32,7 @@ def train_clf_lr_all_subsets(exp):
     }
     all_labels = torch.Tensor()
     log.info(f"Creating {training_steps} batches of the latent representations for the classifier.")
-    for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=training_steps or len(train_loader),
+    for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=len(train_loader),
                                        postfix='creating_train_lr'):
         """
         Constructs the training set (labels and inferred subsets) for the classifier training.
