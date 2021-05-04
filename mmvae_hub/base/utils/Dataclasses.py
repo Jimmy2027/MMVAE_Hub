@@ -63,7 +63,16 @@ class BaseForwardResults:
 
 
 @dataclass
-class BaseTestResults:
+class BaseBatchResults:
+    total_loss: Tensor
+    klds: Mapping[str, float]
+    log_probs: dict
+    joint_divergence: dict
+    latents: Mapping[str, BaseEncMod]
+
+
+@dataclass
+class BaseTestResults(BaseBatchResults):
     joint_div: float
     prd_scores: Optional[dict] = None
     lr_eval: Optional[dict] = None
