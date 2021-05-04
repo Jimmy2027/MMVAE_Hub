@@ -13,5 +13,5 @@
   "use_clf": true,
   "eval_lr": true,
   "calc_prd": false,
-  "calc_nll": true,
+  "calc_nll": true
 }
