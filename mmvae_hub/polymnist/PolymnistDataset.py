@@ -41,7 +41,7 @@ class PolymnistDataset(Dataset):
         self.num_files = num_files
 
     @staticmethod
-    def create_polymnist_dataset(savepath: Path, backgroundimagepath:Path, num_modalities, train):
+    def create_polymnist_dataset(savepath: Path, backgroundimagepath: Path, num_modalities, train):
         """Create the Multimodal MNIST Dataset under 'savepath' given a directory of background images.
         
             Args:
@@ -143,8 +143,9 @@ class PolymnistDataset(Dataset):
 class ToyPolymnistDataset(Dataset):
     """Toy Polymnist dataset for testing purposes."""
 
-    def __init__(self, num_modalities: int = 5):
+    def __init__(self, num_modalities: int = 5, seed: int = 42):
         super().__init__()
+        self.seed = seed
         self.num_modalities = num_modalities
         self.num_files = 420
 
@@ -153,7 +154,15 @@ class ToyPolymnistDataset(Dataset):
         Returns a tuple (images, labels) where each element is a list of
         length `self.num_modalities`.
         """
+        torch.manual_seed(self.seed)
         images_dict = {"m%d" % m: torch.rand(3, 28, 28).float() for m in range(self.num_modalities)}
+
+        assert torch.sum(images_dict['m0']).item() in [
+            1189.1019287109375,
+            1162.515869140625,
+            1160.343505859375
+        ]
+
         return images_dict, random.randint(0, 10)
 
     def __len__(self):
@@ -187,6 +196,8 @@ if __name__ == "__main__":
 
     args = Args()
     # create dataset
-    PolymnistDataset.create_polymnist_dataset(args.savepath_train, args.backgroundimagepath, args.num_modalities, train=True)
-    PolymnistDataset.create_polymnist_dataset(args.savepath_test, args.backgroundimagepath, args.num_modalities, train=False)
+    PolymnistDataset.create_polymnist_dataset(args.savepath_train, args.backgroundimagepath, args.num_modalities,
+                                              train=True)
+    PolymnistDataset.create_polymnist_dataset(args.savepath_test, args.backgroundimagepath, args.num_modalities,
+                                              train=False)
     print("Done.")

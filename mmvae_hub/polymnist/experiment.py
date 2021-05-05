@@ -50,8 +50,8 @@ class PolymnistExperiment(BaseExperiment):
     def set_dataset(self):
         transform = transforms.Compose([transforms.ToTensor()])
         if self.flags.dataset == 'toy':
-            train = ToyPolymnistDataset(num_modalities=self.num_modalities)
-            test = ToyPolymnistDataset(num_modalities=self.num_modalities)
+            train = ToyPolymnistDataset(num_modalities=self.num_modalities, seed = self.flags.seed)
+            test = ToyPolymnistDataset(num_modalities=self.num_modalities, seed = self.flags.seed)
         else:
             train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform,
                                      num_modalities=self.num_modalities)
