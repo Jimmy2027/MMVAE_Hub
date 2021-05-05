@@ -104,17 +104,6 @@ class PolymnistExperiment(BaseExperiment):
     def mean_eval_metric(self, values):
         return np.mean(np.array(values))
 
-    def set_paths_fid(self):
-        dir_real = os.path.join(self.flags.dir_gen_eval_fid, 'real')
-        dir_random = os.path.join(self.flags.dir_gen_eval_fid, 'random')
-        paths = {'real': dir_real,
-                 'random': dir_random}
-        dir_cond = self.flags.dir_gen_eval_fid
-        for k, name in enumerate(self.subsets):
-            paths[name] = os.path.join(dir_cond, name)
-        print(paths.keys())
-        return paths
-
     def get_prediction_from_attr(self, attr, index=None):
         return np.argmax(attr, axis=1).astype(int);
 
