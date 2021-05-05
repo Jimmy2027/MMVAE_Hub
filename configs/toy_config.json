@@ -7,7 +7,7 @@
   "dataloader_workers": 0,
   "steps_per_training_epoch": 2,
   "div_weight_uniform_content": 0.25,
-  "end_epoch": 5,
+  "end_epoch": 1,
   "batch_size": 10,
   "eval_freq_fid": 1,
   "use_clf": true,
