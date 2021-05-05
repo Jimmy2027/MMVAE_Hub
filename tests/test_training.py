@@ -20,7 +20,28 @@ def test_run_epochs_polymnist(method: str):
         mst = set_me_up(tmpdirname, method)
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
+        asfd = 0
         # assert test_results['total_loss'] == 7733.9169921875
+
+
+@pytest.mark.tox
+def test_planar_mixture_no_flow():
+    """
+    Test if MOE method results in the same results than planar_mixture method with no flows.
+    """
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # mst = set_me_up(tmpdirname, method='moe',
+        #                 attributes={'num_flows': 0, 'num_mods': 1, 'deterministic': True, 'device': 'cpu'})
+        mst = set_me_up(tmpdirname,
+                        # method='planar_mixture',
+                        method='moe',
+                        attributes={'num_flows': 0, 'num_mods': 1, 'deterministic': True, 'device': 'cpu',
+                                    'steps_per_training_epoch': 1})
+        trainer = PolymnistTrainer(mst)
+        test_results = trainer.run_epochs()
+        assert test_results.joint_div == 0.2534313499927521
+        assert test_results.latents['m0']['latents_class']['mu'] == -0.0005813924944959581
+        agfadfgds = 0
 
 
 def test_generate_plots():
@@ -37,6 +58,7 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
-    test_run_epochs_polymnist(method='joint_elbo')
+    test_planar_mixture_no_flow()
+    # test_run_epochs_polymnist(method='joint_elbo')
     # test_generate_plots()
     # test_test_generation()

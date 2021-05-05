@@ -7,7 +7,6 @@ from abc import abstractmethod
 from pathlib import Path
 
 import torch
-from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -61,7 +60,7 @@ class BaseTrainer:
 
             self.callback.update_epoch(train_results, test_results, epoch, time.time() - end)
 
-        self.finalize(test_results, epoch)
+        self.finalize(test_results, epoch, average_epoch_time=self.callback.epoch_time.get_average())
         return test_results
 
     def train(self):
@@ -127,11 +126,11 @@ class BaseTrainer:
 
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
-            log.info('generating plots')
-            plots = generate_plots(self.exp, epoch)
-            self.tb_logger.write_plots(plots, epoch)
-
             if (epoch + 1) % self.flags.eval_freq == 0 or (epoch + 1) == self.flags.end_epoch:
+                log.info('generating plots')
+                plots = generate_plots(self.exp, epoch)
+                self.tb_logger.write_plots(plots, epoch)
+
                 if self.flags.eval_lr:
                     log.info('evaluation of latent representation')
                     clf_lr = train_clf_lr_all_subsets(self.exp)
@@ -173,7 +172,7 @@ class BaseTrainer:
         }
         return d_loader, training_steps, average_meters
 
-    def finalize(self, test_results: BaseTestResults, epoch: int):
+    def finalize(self, test_results: BaseTestResults, epoch: int, average_epoch_time):
         # write results as json to experiment folder
         test_results.end_epoch = epoch
         test_results.mean_epoch_time = self.callback.epoch_time.get_average()
@@ -182,6 +181,8 @@ class BaseTrainer:
 
         # run jupyter notebook with visualisations
         self.run_notebook_convert(self.flags.dir_experiment_run)
+
+        # todo send epoch, experiment_duration, average_epoch_time to db.
 
         # send alert
         if self.flags.norby and self.flags.dataset != 'toy':
@@ -194,6 +195,8 @@ class BaseTrainer:
             # Copy the experiment_vis jupyter notebook to the experiment dir
             notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
             dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
+
+            # copy notebook to experiment run
             shutil.copyfile(notebook_path, dest_notebook_path)
 
             nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
@@ -202,9 +205,6 @@ class BaseTrainer:
             os.system(f'jupyter nbconvert --to notebook --execute {dest_notebook_path}')
             log.info('Converting notebook to html.')
             os.system(f'jupyter nbconvert --to html {nbconvert_path}')
-
-            # move notebook to experiment run
-            # shutil.move(notebook_path.with_suffix('.nbconvert.html'), dir_experiment_run)
 
             html_path = nbconvert_path.with_suffix('.html')
             assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'
