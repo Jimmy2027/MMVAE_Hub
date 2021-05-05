@@ -121,7 +121,7 @@ def get_activations(files, args, model, batch_size=50, dims=2048,
         images = images.transpose((0, 3, 1, 2))
         images /= 255
 
-        batch = torch.from_numpy(images).type(torch.FloatTensor).cuda()
+        batch = torch.from_numpy(images).type(torch.FloatTensor).to(args.device)
         batch.to(args.device)
         pred = model(batch)[0]
 
