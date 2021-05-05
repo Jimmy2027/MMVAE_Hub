@@ -102,7 +102,7 @@ def save_generated_samples(exp, rand_gen: dict, iteration: int, batch_d: dict) -
     Saves generated samples to dir_fid
     """
     save_generated_samples_singlegroup(exp, iteration, 'random', rand_gen)
-    if exp.flags.text_encoding == 'word':
+    if exp.flags.__contains__('text_encoding') and exp.flags.text_encoding == 'word':
         batch_d_temp = batch_d.copy()
         batch_d_temp['text'] = torch.nn.functional.one_hot(batch_d_temp['text'].to(torch.int64),
                                                            num_classes=exp.flags.vocab_size)
