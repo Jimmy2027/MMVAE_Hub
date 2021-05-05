@@ -1,20 +1,15 @@
-import os
 import random
-from abc import ABC, abstractmethod
-from itertools import chain, combinations
-from typing import Mapping
 
 import numpy as np
-import torch
 
-from mmvae_hub.base.BaseMMVae import PlanarFlowMMVae, JointElboMMVae
+from mmvae_hub.base.BaseMMVae import *
 from mmvae_hub.base.modalities.BaseModality import BaseModality
 from mmvae_hub.base.utils.MongoDB import MongoDatabase
 
 
 class BaseExperiment(ABC):
     def __init__(self, flags):
-        self.set_random_seed(flags.seed)
+        self.set_random_seed(hasattr(flags, 'deterministic') and flags.deterministic, flags.seed)
         self.flags = flags
         self.name = flags.dataset
 
@@ -38,8 +33,12 @@ class BaseExperiment(ABC):
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
-        if self.flags.method in ['joint_elbo', 'poe', 'moe', 'jsd']:
+        if self.flags.method in ['joint_elbo', 'jsd']:
             model = JointElboMMVae(self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'moe':
+            model = MOEMMVae(self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'poe':
+            model = POEMMVae(self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_mixture':
             model = PlanarFlowMMVae(self.flags, self.modalities, self.subsets)
         else:
@@ -107,8 +106,13 @@ class BaseExperiment(ABC):
         return paths
 
     @staticmethod
-    def set_random_seed(seed: int):
+    def set_random_seed(deterministic: bool, seed: int):
+        if deterministic:
+            torch.use_deterministic_algorithms(True)
         # set the seed for reproducibility
         np.random.seed(seed)
         torch.manual_seed(seed)
         random.seed(seed)
+
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)

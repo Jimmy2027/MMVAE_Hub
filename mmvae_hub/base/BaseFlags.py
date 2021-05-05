@@ -11,6 +11,12 @@ parser.add_argument('--use_db', default=False, action="store_true", help="If set
                                                                          "The configuration file for the db needs to be"
                                                                          " under configs/mmvaedb_config.py.")
 
+parser.add_argument('--use_cuda', type=bool, default=True, help="Bool to indicate if GPU should be used.")
+parser.add_argument('--deterministic', type=bool, default=False,
+                    help="Bool to indicate if experiment should be run in a deterministic manner to produce "
+                         "reproducible results. Does not work with cuda enabled, so experiment will run on "
+                         "CPU if set to True.")
+
 # TRAINING
 parser.add_argument('--seed', type=int, default=None,
                     help="Random seed for reproducibility. If None, will be set randomly.")
@@ -82,7 +88,8 @@ parser.add_argument('--eval_lr', default=False, action="store_true",
 parser.add_argument('--calc_prd', default=False, action="store_true",
                     help="flag to indicate calculation of prec-rec for gen model")
 parser.add_argument('--save_figure', default=False, action="store_true",
-                    help="flag to indicate if figures should be saved to disk (in addition to tensorboard logs)")
+                    help="flag to indicate if figures should be saved to disk (in addition to tensorboard logs). "
+                         "Is set to true if calc_prd is true.")
 parser.add_argument('--eval_freq', type=int, default=10,
                     help="frequency of evaluation of latent representation of generative performance (in number of epochs)")
 parser.add_argument('--eval_freq_fid', type=int, default=10,
