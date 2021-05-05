@@ -30,6 +30,9 @@ class BaseFlagsSetup:
             - load flags
             - set seed
         """
+        if flags.calc_prd:
+            flags.save_figure = True
+
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
 
@@ -43,9 +46,10 @@ class BaseFlagsSetup:
 
         flags = create_dir_structure(flags)
 
-        use_cuda = torch.cuda.is_available()
+        use_cuda = flags.use_cuda and not flags.deterministic and torch.cuda.is_available()
         flags.device = torch.device('cuda' if use_cuda else 'cpu')
-        if str(flags.device) == 'cuda':
+
+        if use_cuda:
             torch.cuda.set_device(get_freer_gpu())
 
         flags = self.flags_set_alpha_modalities(flags)
