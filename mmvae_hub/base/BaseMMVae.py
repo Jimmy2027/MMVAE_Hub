@@ -477,3 +477,19 @@ class JointElboMMVae(SubsetFuseMMVae):
         self.modality_fusion = poe_fusion
         self.fusion_condition = fusion_condition_joint
         self.calc_joint_divergence = self.divergence_static_prior
+
+
+class MOEMMVae(SubsetFuseMMVae):
+    def __init__(self, flags, modalities, subsets):
+        super(MOEMMVae, self).__init__(flags, modalities, subsets)
+        self.modality_fusion = moe_fusion
+        self.fusion_condition = fusion_condition_moe
+        self.calc_joint_divergence = self.divergence_static_prior
+
+
+class POEMMVae(SubsetFuseMMVae):
+    def __init__(self, flags, modalities, subsets):
+        super(POEMMVae, self).__init__(flags, modalities, subsets)
+        self.modality_fusion = poe_fusion
+        self.fusion_condition = fusion_condition_poe
+        self.calc_joint_divergence = self.divergence_static_prior
