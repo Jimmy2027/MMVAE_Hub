@@ -5,16 +5,16 @@ import os
 import subprocess as sp
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Iterable, Optional, Mapping
+from typing import Iterable
 
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch import Tensor
 from torch import device as Device
 from torch.autograd import Variable
 
 from mmvae_hub import log
+from mmvae_hub.base.utils.Dataclasses import *
 
 
 # Print iterations progress
@@ -40,6 +40,7 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
 
 
 def reparameterize(mu: Tensor, logvar: Tensor) -> Tensor:
+    torch.manual_seed(42)
     std = logvar.mul(0.5).exp_()
     eps = Variable(std.data.new(std.size()).normal_())
     return eps.mul(std).add_(mu)
@@ -53,13 +54,18 @@ def get_items_from_dict(in_dict: Mapping[str, Tensor]) -> Mapping[str, float]:
     return {k1: v1.cpu().item() for k1, v1 in in_dict.items()}
 
 
-def mixture_component_selection(flags, mus, logvars, w_modalities=None, num_samples=None):
+def mixture_component_selection(flags, mus, logvars, w_modalities=None) -> Distr:
+    """
+    For every sample, select one of the experts. Return the joint distribution as mixture of experts.
+    Every experts gets selected with probability proportional to the corresponding w_modality.
+    """
     num_components = mus.shape[0]
     # num_samples is the batch_size
     num_samples = mus.shape[1]
     # if not defined, take pre-defined weights
     if w_modalities is None:
         w_modalities = torch.Tensor(flags.alpha_modalities).to(flags.device)
+
     idx_start = []
     idx_end = []
     for k in range(num_components):
@@ -75,32 +81,7 @@ def mixture_component_selection(flags, mus, logvars, w_modalities=None, num_samp
 
     mu_sel = torch.cat([mus[k, idx_start[k]:idx_end[k], :] for k in range(w_modalities.shape[0])])
     logvar_sel = torch.cat([logvars[k, idx_start[k]:idx_end[k], :] for k in range(w_modalities.shape[0])])
-    return [mu_sel, logvar_sel]
-
-
-def flow_mixture_component_selection(flags, reps, w_modalities=None, num_samples=None):
-    # if not defined, take pre-defined weights
-    num_samples = reps.shape[1]
-    if w_modalities is None:
-        w_modalities = torch.Tensor(flags.alpha_modalities).to(flags.device)
-    idx_start = []
-    idx_end = []
-    for k in range(w_modalities.shape[0]):
-        i_start = 0 if k == 0 else int(idx_end[k - 1])
-        if k == w_modalities.shape[0] - 1:
-            i_end = num_samples
-        else:
-            i_end = i_start + int(torch.floor(num_samples * w_modalities[k]))
-        idx_start.append(i_start)
-        idx_end.append(i_end)
-
-    idx_end[-1] = num_samples
-    return torch.cat(
-        [
-            reps[k, idx_start[k]: idx_end[k], :]
-            for k in range(w_modalities.shape[0])
-        ]
-    )
+    return Distr(mu=mu_sel, logvar=logvar_sel)
 
 
 def save_and_log_flags(flags) -> str:

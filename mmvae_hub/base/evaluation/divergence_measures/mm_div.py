@@ -88,7 +88,7 @@ def calc_alphaJSD_modalities(flags, mus, logvars, weights, normalization=None):
     return group_div, klds, [alpha_mu, alpha_logvar]
 
 
-def calc_group_divergence_moe(flags, mus: Tensor, logvars: Tensor, normalization=None):
+def calc_group_divergence_moe(flags, mus: Tensor, logvars: Tensor, normalization=None, enc_mods=None):
     # normalize with number of subsets
     weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(flags.device)
     num_mods = mus.shape[0]
@@ -98,8 +98,10 @@ def calc_group_divergence_moe(flags, mus: Tensor, logvars: Tensor, normalization
         klds = torch.zeros(num_mods)
     else:
         klds = torch.zeros(num_mods, num_samples)
+
     klds = klds.to(flags.device)
     weights = weights.to(flags.device)
+
     for k in range(num_mods):
         kld_ind = calc_kl_divergence(mus[k, :, :], logvars[k, :, :],
                                      norm_value=normalization)

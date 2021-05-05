@@ -22,12 +22,14 @@ class BaseMMVAE(ABC, nn.Module):
         self.flags = flags
         self.modalities = modalities
         self.metrics = None
+        self.calc_joint_divergence = None
         self.subsets = subsets
 
     def forward(self, input_batch: dict) -> BaseForwardResults:
         enc_mods, joint_latents = self.inference(input_batch)
         # reconstruct modalities
         rec_mods = self.decode(enc_mods, joint_latents)
+
         return BaseForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=rec_mods)
 
     def decode(self, enc_mods: Mapping[str, EncModPlanarMixture], latents_joint: JointLatents) -> dict:
@@ -35,6 +37,7 @@ class BaseMMVAE(ABC, nn.Module):
         rec_mods = {}
         class_embeddings = utils.reparameterize(latents_joint.joint_distr.mu,
                                                 latents_joint.joint_distr.logvar)
+
         for mod_str, enc_mod in enc_mods.items():
             if enc_mod.latents_style:
                 latents_style = enc_mod.latents_style
@@ -44,10 +47,6 @@ class BaseMMVAE(ABC, nn.Module):
             mod = self.modalities[mod_str]
             rec_mods[mod_str] = mod.likelihood(*mod.decoder(style_embeddings, class_embeddings))
         return rec_mods
-
-    @abstractmethod
-    def encode(self, input_batch) -> Mapping[str, Union[BaseEncMod, EncModPlanarMixture]]:
-        pass
 
     def get_random_styles(self, num_samples: int) -> Mapping[str, Optional[Tensor]]:
         styles = {}
@@ -73,14 +72,12 @@ class BaseMMVAE(ABC, nn.Module):
         """Send the batch to device as Variable."""
         return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
 
-    def moe_fusion(self, mus, logvars, weights=None):
+    def moe_fusion(self, mus, logvars, weights=None) -> Distr:
         if weights is None:
             weights = self.weights
         weights = utils.reweight_weights(weights)
-        # mus = torch.cat(mus, dim=0)
-        # logvars = torch.cat(logvars, dim=0)
-        mu_moe, logvar_moe = utils.mixture_component_selection(self.flags, mus, logvars, weights)
-        return [mu_moe, logvar_moe]
+        joint_distr = utils.mixture_component_selection(self.flags, mus, logvars, weights)
+        return joint_distr
 
     def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
@@ -88,6 +85,7 @@ class BaseMMVAE(ABC, nn.Module):
         weights = (1 / float(len(forward_results.enc_mods))) * torch.ones(len(forward_results.enc_mods)).to(
             self.flags.device)
         joint_divergences = self.calc_joint_divergence(forward_results, weights=weights)
+        # fixme make sure that moe method and planar_mixture have same joint divergences
         joint_divergence = joint_divergences.joint_div
         log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
         beta_style = self.flags.beta_style
@@ -142,6 +140,10 @@ class BaseMMVAE(ABC, nn.Module):
         mus = torch.Tensor().to(self.flags.device)
         logvars = torch.Tensor().to(self.flags.device)
         distr_subsets = {}
+
+        # subsets that will be fused into the joint distribution
+        fusion_subsets_keys = []
+
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
             distr_subset = self.fuse_subset(enc_mods, s_key)
@@ -149,12 +151,13 @@ class BaseMMVAE(ABC, nn.Module):
             if self.fusion_condition(self.subsets[s_key], batch_mods):
                 mus = torch.cat((mus, distr_subset.mu.unsqueeze(0)), dim=0)
                 logvars = torch.cat((logvars, distr_subset.logvar.unsqueeze(0)), dim=0)
+                fusion_subsets_keys.append(s_key)
+
         # normalize with number of subsets
         weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
-        joint_mu, joint_logvar = self.moe_fusion(mus, logvars, weights)
+        joint_distr = self.moe_fusion(mus, logvars, weights)
 
-        return JointLatents(mus=mus, logvars=logvars, joint_distr=Distr(mu=joint_mu, logvar=joint_logvar),
-                            subsets=distr_subsets)
+        return JointLatents(mus=mus, logvars=logvars, joint_distr=joint_distr, subsets=distr_subsets)
 
     def inference(self, input_batch) -> tuple[Mapping[str, Union[BaseEncMod, EncModPlanarMixture]], JointLatents]:
         # encode input
@@ -162,6 +165,7 @@ class BaseMMVAE(ABC, nn.Module):
         batch_mods = [k for k in input_batch]
         # fuse latents
         joint_latent = self.fuse_modalities(enc_mods, batch_mods)
+
         return enc_mods, joint_latent
 
     def fuse_subset(self, enc_mods, s_key) -> Distr:
@@ -188,7 +192,7 @@ class BaseMMVAE(ABC, nn.Module):
     def divergence_static_prior(self, forward_results: BaseForwardResults, weights=None) -> BaseDivergences:
         joint_latents = forward_results.joint_latents
         div_measures = calc_group_divergence_moe(self.flags, joint_latents.mus, joint_latents.logvars,
-                                                 normalization=self.flags.batch_size)
+                                                 normalization=self.flags.batch_size, enc_mods=forward_results.enc_mods)
         return BaseDivergences(joint_div=div_measures[0], mods_div=div_measures[1])
 
     def divergence_dynamic_prior(self, mus, logvars, weights=None):
@@ -244,6 +248,14 @@ class BaseMMVAE(ABC, nn.Module):
             mod.encoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}"))
             mod.decoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}"))
 
+    @abstractmethod
+    def encode(self, input_batch) -> Mapping[str, Union[BaseEncMod, EncModPlanarMixture]]:
+        pass
+
+    @property
+    def fusion_condition(self):
+        raise NotImplementedError
+
 
 class SubsetFuseMMVae(BaseMMVAE, ABC):
     def __init__(self, flags, modalities, subsets):
@@ -252,23 +264,6 @@ class SubsetFuseMMVae(BaseMMVAE, ABC):
         self.flags = flags
         self.modalities = modalities
         self.metrics = None
-
-    # def forward(self, input_batch) -> BaseForwardResults:
-    #     enc_mods, joint_latents = self.inference(input_batch)
-    #     results_rec = {}
-    #     joint_distr = joint_latents.joint_distr
-    #     class_embeddings = utils.reparameterize(joint_distr.mu, joint_distr.logvar)
-    #     for mod_str, mod in self.modalities.items():
-    #         if mod_str in input_batch.keys():
-    #             latents_style = enc_mods[mod_str].latents_style
-    #             if self.flags.factorized_representation:
-    #                 style_embeddings = utils.reparameterize(mu=latents_style.mu, logvar=latents_style.logvar)
-    #             else:
-    #                 style_embeddings = None
-    #             rec = mod.likelihood(*mod.decoder(style_embeddings, class_embeddings))
-    #             results_rec[mod_str] = rec
-    #
-    #     return BaseForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=results_rec)
 
     @staticmethod
     def fusion_condition(subset, input_batch=None):
@@ -360,7 +355,7 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
 
         self.modality_fusion = moe_fusion
         self.fusion_condition = fusion_condition_moe
-        # self.calc_joint_divergence = self.divergence_static_prior
+        self.calc_joint_divergence = self.divergence_static_prior
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0.
@@ -411,8 +406,8 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
     def apply_flows(self, enc_mods: Mapping[str, EncModPlanarMixture]) -> Mapping[str, EncModPlanarMixture]:
         """Apply the flow for each modality."""
         for mod_str, enc_mod in enc_mods.items():
-            log_det_j = 0.
             latents_class = enc_mod.latents_class
+            log_det_j = torch.zeros_like(latents_class.mu)
             flow_params = enc_mod.flow_params
             # Sample z_0
             z = [utils.reparameterize(mu=latents_class.mu, logvar=latents_class.logvar)]
@@ -425,37 +420,37 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
                 z.append(z_k)
                 log_det_j += log_det_jacobian
             enc_mods[mod_str].z0 = z[0]
-            enc_mods[mod_str].zk = z[-1]
+            enc_mods[mod_str].zk = z[-1] if self.num_flows else torch.zeros_like(z[0])
             enc_mods[mod_str].log_det_j = log_det_j
         return enc_mods
 
-    def calc_joint_divergence(self, forward_results: BaseForwardResults, weights=None) -> BaseDivergences:
-        """
-        Calculate the joint divergence as a mixture of the uni modal divergences.
-
-        weight arg is there for compatibility with other calc_joint_divegence methods.
-        """
-        enc_mods = forward_results.enc_mods
-        num_mods = len(enc_mods)
-        mods_div = {}
-        klds = torch.Tensor()
-        klds = klds.to(self.flags.device)
-
-        weights = (1 / float(num_mods)) * torch.ones(num_mods).to(self.flags.device)
-        weights = utils.reweight_weights(weights).to(self.flags.device)
-
-        for mod_idx, (mod_str, enc_mod) in enumerate(enc_mods.items()):
-            enc_mod: EncModPlanarMixture
-            latents_class: Distr = enc_mod.latents_class
-            kld_ind = self.calculate_singlemod_divergence(latents_class.mu, latents_class.logvar, enc_mod.zk,
-                                                          enc_mod.z0, enc_mod.log_det_j)
-            mods_div[mod_str] = kld_ind
-
-            klds = torch.cat((klds, torch.unsqueeze(kld_ind, dim=0)), dim=0)
-
-        # sum over all the individual kl divergences
-        joint_div = (weights * klds).sum(dim=0)
-        return BaseDivergences(joint_div=joint_div, mods_div=mods_div)
+    # def calc_joint_divergence(self, forward_results: BaseForwardResults, weights=None) -> BaseDivergences:
+    #     """
+    #     Calculate the joint divergence as a mixture of the uni modal divergences.
+    #
+    #     weight arg is there for compatibility with other calc_joint_divegence methods.
+    #     """
+    #     enc_mods = forward_results.enc_mods
+    #     num_mods = len(enc_mods)
+    #     mods_div = {}
+    #     klds = torch.Tensor()
+    #     klds = klds.to(self.flags.device)
+    #
+    #     weights = (1 / float(num_mods)) * torch.ones(num_mods).to(self.flags.device)
+    #     weights = utils.reweight_weights(weights).to(self.flags.device)
+    #
+    #     for mod_idx, (mod_str, enc_mod) in enumerate(enc_mods.items()):
+    #         enc_mod: EncModPlanarMixture
+    #         latents_class: Distr = enc_mod.latents_class
+    #         kld_ind = self.calculate_singlemod_divergence(latents_class.mu, latents_class.logvar, enc_mod.zk,
+    #                                                       enc_mod.z0, enc_mod.log_det_j)
+    #         mods_div[mod_str] = kld_ind
+    #
+    #         klds = torch.cat((klds, torch.unsqueeze(kld_ind, dim=0)), dim=0)
+    #
+    #     # sum over all the individual kl divergences
+    #     joint_div = (weights * klds).sum(dim=0)
+    #     return BaseDivergences(joint_div=joint_div, mods_div=mods_div)
 
     @staticmethod
     def calculate_singlemod_divergence(z_mu, z_logvar, zk, z0, log_det_j) -> Tensor:
