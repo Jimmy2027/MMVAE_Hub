@@ -20,20 +20,48 @@ def write_experiment_vis_config(experiment_dir: Path) -> Path:
 
 def plot_lr_accuracy(logs_dict: dict) -> None:
     lr_accuracy_values = {}
+    epochs = [epoch for epoch in logs_dict['epoch_results'] if
+              logs_dict['epoch_results'][epoch]['test_results']['lr_eval']]
 
     for epoch, epoch_values in logs_dict['epoch_results'].items():
-        for k, v in epoch_values['test_results']['lr_eval'].items():
-            if k not in lr_accuracy_values:
-                lr_accuracy_values[k] = [v['accuracy']]
-            else:
-                lr_accuracy_values[k].append(v['accuracy'])
+        if epoch_values['test_results']['lr_eval']:
+            for k, v in epoch_values['test_results']['lr_eval'].items():
+                if k not in lr_accuracy_values:
+                    lr_accuracy_values[k] = [v['accuracy']]
+                else:
+                    lr_accuracy_values[k].append(v['accuracy'])
 
-    plt.figure()
+    plt.figure(figsize=(15, 10))
     plt.title('Latent Representation Accuracy')
     for subset, values in lr_accuracy_values.items():
-        plt.plot(values)
+        plt.plot(epochs, values)
     plt.legend([s for s in lr_accuracy_values])
     plt.show()
+
+
+def plot_likelihoods(logs_dict: dict) -> None:
+    lhoods = {}
+    epochs = [epoch for epoch in logs_dict['epoch_results'] if
+              logs_dict['epoch_results'][epoch]['test_results']['lhoods']]
+
+    for epoch, epoch_values in logs_dict['epoch_results'].items():
+        if epoch_values['test_results']['lhoods']:
+            for subset, v_subset in epoch_values['test_results']['lhoods'].items():
+                if subset not in lhoods:
+                    lhoods[subset] = {}
+                for mod, result in v_subset.items():
+                    if mod in lhoods[subset]:
+                        lhoods[subset][mod].append(result)
+                    else:
+                        lhoods[subset][mod] = [result]
+
+    for subset, v in lhoods.items():
+        plt.figure(figsize=(10, 5))
+        plt.title(f'Likelihoods for subset {subset}.')
+        for mod, values in v.items():
+            plt.plot(epochs, values)
+        plt.legend([s for s in v])
+        plt.show()
 
 
 def plot_basic_batch_logs(phase: str, logs_dict: dict):
@@ -55,14 +83,14 @@ def plot_basic_batch_logs(phase: str, logs_dict: dict):
                     results_dict[log_k][s_key].append(s_value)
 
     for k in ['total_loss', 'joint_divergence']:
-        plt.figure()
+        plt.figure(figsize=(10, 5))
         plt.title(k)
         plt.plot(results_dict[k])
         plt.legend(k)
         plt.show()
 
     for k in ['klds', 'log_probs']:
-        plt.figure()
+        plt.figure(figsize=(10, 5))
         plt.title(k)
         for subset, values in results_dict[k].items():
             plt.plot(values)
@@ -72,23 +100,26 @@ def plot_basic_batch_logs(phase: str, logs_dict: dict):
 
 def plot_coherence_accuracy(logs_dict: dict) -> None:
     gen_eval_logs = {}
+    epochs = [epoch for epoch in logs_dict['epoch_results'] if
+              logs_dict['epoch_results'][epoch]['test_results']['gen_eval']]
 
     for epoch, epoch_values in logs_dict['epoch_results'].items():
-        for k, v in epoch_values['test_results']['gen_eval'].items():
-            k = k.removeprefix('digit_')
-            num_input_mods = len(k.split('__')[0].split('_'))
-            if num_input_mods not in gen_eval_logs:
-                gen_eval_logs[num_input_mods] = {k: [v]}
-            elif k not in gen_eval_logs[num_input_mods]:
-                gen_eval_logs[num_input_mods][k] = [v]
-            else:
-                gen_eval_logs[num_input_mods][k].append(v)
+        if epoch_values['test_results']['gen_eval']:
+            for k, v in epoch_values['test_results']['gen_eval'].items():
+                k = k.removeprefix('digit_')
+                num_input_mods = len(k.split('__')[0].split('_'))
+                if num_input_mods not in gen_eval_logs:
+                    gen_eval_logs[num_input_mods] = {k: [v]}
+                elif k not in gen_eval_logs[num_input_mods]:
+                    gen_eval_logs[num_input_mods][k] = [v]
+                else:
+                    gen_eval_logs[num_input_mods][k].append(v)
 
     for num_input_mods, v in gen_eval_logs.items():
-        plt.figure()
+        plt.figure(figsize=(10, 5))
         plt.title(f'Gen eval Accuracy with {num_input_mods} input modalities.')
         for subset, values in v.items():
-            plt.plot(values)
+            plt.plot(epochs, values)
         plt.legend([s for s in v])
         plt.show()
 
@@ -101,7 +132,7 @@ def show_generated_figs(experiment_dir: Path):
 
     print(f'loading checkpoint from epoch {latest_checkpoint}.')
 
-    latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint / 'mm_vae'
+    latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint
     exp.mm_vae.load_networks(latest_checkpoint_path)
     plots = generate_plots(exp, epoch=0)
 
