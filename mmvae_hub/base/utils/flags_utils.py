@@ -19,7 +19,7 @@ class BaseFlagsSetup:
         self.config_path = config_path
         self.parser = None
 
-    def setup(self, flags, testing=False):
+    def setup(self, flags, testing=False, additional_args=None):
         """
         Setup the flags:
             - update_flags_with_config
@@ -30,17 +30,21 @@ class BaseFlagsSetup:
             - load flags
             - set seed
         """
+        flags.config_path = self.config_path
+        if self.config_path:
+            flags = update_flags_with_config(p=self.parser, config_path=flags.config_path, testing=testing)
+
+        if additional_args:
+            for k, v in additional_args.items():
+                setattr(flags, k, v)
+
         if flags.calc_prd:
             flags.save_figure = True
 
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
 
-        flags.config_path = self.config_path
         flags.version = self.get_version_from_setup_config()
-
-        if self.config_path:
-            flags = update_flags_with_config(p=self.parser, config_path=flags.config_path, testing=testing)
 
         flags = self.setup_paths(flags)
 
@@ -65,7 +69,7 @@ class BaseFlagsSetup:
         if not flags.seed:
             # set a random seed
             flags.seed = np.random.randint(0, 10000)
-        # flags = get_method(flags)
+
         return flags
 
     @abstractmethod
