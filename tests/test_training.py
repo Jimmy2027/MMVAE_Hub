@@ -69,7 +69,7 @@ def test_static_results_2mods(method: str):
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
         assert np.round(test_results.joint_div, 1) == np.round(static_results[method]['joint_div'], 1)
-        assert np.round(test_results.klds['m0'], 2) == np.round(static_results[method]['klds'], 2)
+        assert np.round(test_results.klds['m0'], 1) == np.round(static_results[method]['klds'], 1)
         assert np.round(test_results.lhoods['m0']['m0'], 1) == np.round(static_results[method]['lhoods'], 1)
         assert np.round(test_results.log_probs['m0'], 0) == np.round(static_results[method]['log_probs'], 0)
         assert np.round(test_results.total_loss, 0) == np.round(static_results[method]['total_loss'], 0)
