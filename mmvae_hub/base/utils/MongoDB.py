@@ -10,12 +10,14 @@ from mmvae_hub.base.utils.utils import json2dict
 
 
 class MongoDatabase:
-    def __init__(self, flags, training: bool = True):
+    def __init__(self, flags=None, training: bool = True):
         """
         training: if true, experiment_uid and flags will be send to db.
         """
         self.mongodb_URI = self.get_mongodb_uri()
-        self.experiment_uid = flags.experiment_uid
+
+        if flags is not None:
+            self.experiment_uid = flags.experiment_uid
 
         # create document in db for current experiment
         log.info('Connecting to database.')
