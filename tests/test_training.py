@@ -50,11 +50,11 @@ def test_static_results_2mods(method: str):
                            "lr_eval": 0.05
                            },
         'joint_elbo': {"joint_div": 0.9404307007789612,
-                       "latents_class": {'mu': 0.000365212959877681},
-                       "klds": 0.2594645023345947,
-                       "lhoods": -2613.80517578125,
-                       "log_probs": 2616.78173828125,
-                       "total_loss": 5252.92236328125,
+                       "latents_class": {'mu': -0.000974901719018817},
+                       "klds": 0.25186216831207275,
+                       "lhoods": -2613.82275390625,
+                       "log_probs": 2616.86767578125,
+                       "total_loss": 5253.03369140625,
                        "lr_eval": 0.05
                        },
 
