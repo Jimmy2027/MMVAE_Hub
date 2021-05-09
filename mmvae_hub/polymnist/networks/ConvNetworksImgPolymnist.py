@@ -13,7 +13,7 @@ class EncoderImg(nn.Module):
 
     def __init__(self, flags):
         super(EncoderImg, self).__init__()
-
+        torch.manual_seed(42)
         self.flags = flags
         self.shared_encoder = nn.Sequential(  # input shape (3, 28, 28)
             nn.Conv2d(3, 10, kernel_size=4, stride=2, padding=1),  # -> (10, 14, 14)
@@ -52,6 +52,7 @@ class DecoderImg(nn.Module):
     def __init__(self, flags):
         super(DecoderImg, self).__init__()
         self.flags = flags
+        torch.manual_seed(42)
         self.decoder = nn.Sequential(
             nn.Linear(flags.style_dim + flags.class_dim, 980),  # -> (980)
             nn.ReLU(),
