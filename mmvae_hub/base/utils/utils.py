@@ -5,7 +5,6 @@ import os
 import subprocess as sp
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Iterable
 
 import numpy as np
 import torch
@@ -39,12 +38,6 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         print()
 
 
-def reparameterize(mu: Tensor, logvar: Tensor) -> Tensor:
-    torch.manual_seed(42)
-    std = logvar.mul(0.5).exp_()
-    eps = Variable(std.data.new(std.size()).normal_())
-    return eps.mul(std).add_(mu)
-
 
 def reweight_weights(w):
     return w / w.sum()
@@ -57,7 +50,10 @@ def get_items_from_dict(in_dict: Mapping[str, Tensor]) -> Mapping[str, float]:
 def mixture_component_selection(flags, mus, logvars, w_modalities=None) -> Distr:
     """
     For every sample, select one of the experts. Return the joint distribution as mixture of experts.
-    Every experts gets selected with probability proportional to the corresponding w_modality.
+
+    Every experts gets selected with probability proportional to the corresponding w_modality, this is equivalent to
+    taking an expert for a proportion of the batch that is equal to w_modality —which is what is done here.
+    This simulates sampling from the sum of experts, which would not be Gaussian.
     """
     num_components = mus.shape[0]
     # num_samples is the batch_size
@@ -81,6 +77,7 @@ def mixture_component_selection(flags, mus, logvars, w_modalities=None) -> Distr
 
     mu_sel = torch.cat([mus[k, idx_start[k]:idx_end[k], :] for k in range(w_modalities.shape[0])])
     logvar_sel = torch.cat([logvars[k, idx_start[k]:idx_end[k], :] for k in range(w_modalities.shape[0])])
+
     return Distr(mu=mu_sel, logvar=logvar_sel)
 
 

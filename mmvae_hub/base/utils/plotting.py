@@ -126,9 +126,9 @@ def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModal
                     }
                     # infer latents from batch
                     enc_mods, joint_latent = model.inference(i_batch)
-                    # c_in is latent of subset
-                    c_in: Distr = joint_latent.subsets[s_key]
-                    c_rep = utils.reparameterize(mu=c_in.mu, logvar=c_in.logvar)
+
+                    # c_rep is embedding of subset
+                    c_rep = joint_latent.get_subset_embedding(s_key)
 
                     style = {}
                     for m_key_out in mods:
