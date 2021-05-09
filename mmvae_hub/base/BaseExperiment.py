@@ -33,7 +33,7 @@ class BaseExperiment(ABC):
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
-        if self.flags.method in ['joint_elbo', 'jsd']:
+        if self.flags.method == 'joint_elbo':
             model = JointElboMMVae(self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'moe':
             model = MOEMMVae(self.flags, self.modalities, self.subsets)
@@ -41,6 +41,8 @@ class BaseExperiment(ABC):
             model = POEMMVae(self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_mixture':
             model = PlanarFlowMMVae(self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'jsd':
+            model = JSDMMVae(self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
