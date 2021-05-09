@@ -6,7 +6,6 @@ import time
 from abc import abstractmethod
 from pathlib import Path
 
-import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
