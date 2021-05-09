@@ -17,8 +17,12 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # https://dev.to/joaomcteixeira/setting-up-python-logging-for-a-library-app-6ml
 # https://github.com/numpde/transport/blob/9b53b7c/pt2pt/20181019-study1/helpers/commons.py
 
-LOG_FILE = pathlib.Path('/usr/local/var/logs/mmvae_hub')
-LOG_FILE.mkdir(exist_ok=True, parents=True)
+try:
+    LOG_FILE = pathlib.Path('/usr/local/var/logs/mmvae_hub')
+    LOG_FILE.mkdir(exist_ok=True, parents=True)
+except:
+    LOG_FILE = (pathlib.Path(__file__).parent / "logs")
+    LOG_FILE.mkdir(exist_ok=True, parents=True)
 
 for f in sorted(LOG_FILE.glob("*-*-*.log"))[:-10]:
     os.remove(f)
