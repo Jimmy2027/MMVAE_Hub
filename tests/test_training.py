@@ -21,8 +21,6 @@ def test_run_epochs_polymnist(method: str):
         mst = set_me_up(tmpdirname, method)
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
-        asfd = 0
-        # assert test_results['total_loss'] == 7733.9169921875
 
 
 @pytest.mark.tox
@@ -69,11 +67,11 @@ def test_static_results_2mods(method: str):
                                     'steps_per_training_epoch': 1, 'factorized_representation': False})
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
-        assert np.round(test_results.joint_div, 2) == np.round(static_results[method]['joint_div'], 2)
+        assert np.round(test_results.joint_div, 1) == np.round(static_results[method]['joint_div'], 1)
         assert np.round(test_results.klds['m0'], 2) == np.round(static_results[method]['klds'], 2)
-        assert np.round(test_results.lhoods['m0']['m0'], 2) == np.round(static_results[method]['lhoods'], 2)
+        assert np.round(test_results.lhoods['m0']['m0'], 1) == np.round(static_results[method]['lhoods'], 1)
         assert np.round(test_results.log_probs['m0'], 0) == np.round(static_results[method]['log_probs'], 0)
-        assert np.round(test_results.total_loss, 2) == np.round(static_results[method]['total_loss'], 2)
+        assert np.round(test_results.total_loss, 0) == np.round(static_results[method]['total_loss'], 0)
         assert np.round(test_results.lr_eval['m0']['accuracy'], 2) == np.round(static_results[method]['lr_eval'], 2)
         assert np.round(test_results.latents['m0']['latents_class']['mu'], 2) == np.round(
             static_results[method]['latents_class']['mu'], 2)
