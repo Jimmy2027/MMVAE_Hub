@@ -21,7 +21,8 @@ class MongoDatabase:
         log.info('Connecting to database.')
         experiments = self.connect()
         if training and self.experiment_uid not in [str(id) for id in experiments.find().distinct('_id')]:
-            experiments.insert_one({'_id': self.experiment_uid, 'flags': self.encode_flags(flags), 'epoch_results': {}})
+            experiments.insert_one({'_id': self.experiment_uid, 'flags': self.encode_flags(flags), 'epoch_results': {},
+                                    'version': flags.version})
 
     def connect(self):
         client = MongoClient(self.mongodb_URI)
