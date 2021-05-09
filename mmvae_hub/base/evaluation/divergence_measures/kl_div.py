@@ -1,19 +1,75 @@
 import math
 
 import torch
-from torch import Tensor
 
+from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.utils import reweight_weights
 
 
-def calc_kl_divergence(mu0: Tensor, logvar0: Tensor, mu1=None, logvar1=None, norm_value=None) -> float:
-    if mu1 is None or logvar1 is None:
-        KLD = -0.5 * torch.sum(1 - logvar0.exp() - mu0.pow(2) + logvar0)
+def log_normal_diag(x, mean, log_var, average=False, reduce=True, dim=None):
+    log_norm = -0.5 * (log_var + (x - mean) * (x - mean) * log_var.exp().reciprocal())
+    if reduce:
+        if average:
+            return torch.mean(log_norm, dim)
+        else:
+            return torch.sum(log_norm, dim)
     else:
-        KLD = -0.5 * (
-            torch.sum(1 - logvar0.exp() / logvar1.exp() - (mu0 - mu1).pow(2) / logvar1.exp() + logvar0 - logvar1))
+        return log_norm
+
+
+def log_normal_standard(x, average=False, reduce=True, dim=None):
+    log_norm = -0.5 * x * x
+
+    if reduce:
+        if average:
+            return torch.mean(log_norm, dim)
+        else:
+            return torch.sum(log_norm, dim)
+    else:
+        return log_norm
+
+
+def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,
+                            norm_value=None) -> Tensor:
+    """
+    Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+    """
+    mu0, logvar0 = enc_mod.latents_class.mu, enc_mod.latents_class.logvar
+
+    # ln p(z_k)  (not averaged)
+    log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
+    # ln q(z_0)  (not averaged)
+    log_q_z0 = log_normal_diag(enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
+    # N E_q0[ ln q(z_0) - ln p(z_k) ]
+    summed_logs = torch.sum(log_q_z0 - log_p_zk)
+
+    # sum over batches
+    summed_ldj = torch.sum(enc_mod.log_det_j)
+
+    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+    KLD = (summed_logs - summed_ldj)
+
     if norm_value is not None:
         KLD = KLD / float(norm_value)
+
+    return KLD
+
+
+def calc_kl_divergence(distr0: Distr, distr1: Distr = None, enc_mod: BaseEncMod = None,
+                       norm_value: int = None) -> Tensor:
+    mu0, logvar0 = distr0.mu, distr0.logvar
+
+    if distr1 is None:
+        KLD = -0.5 * torch.sum(1 - logvar0.exp() - mu0.pow(2) + logvar0)
+
+    else:
+        mu1, logvar1 = distr1.mu, distr1.logvar
+        KLD = -0.5 * (
+            torch.sum(1 - logvar0.exp() / logvar1.exp() - (mu0 - mu1).pow(2) / logvar1.exp() + logvar0 - logvar1))
+
+    if norm_value is not None:
+        KLD = KLD / float(norm_value)
+
     return KLD
 
 

@@ -1,13 +1,12 @@
 import math
 
 import numpy as np
-import torch
 import torch.distributions as dist
 from torch.distributions.distribution import Distribution
 
 from mmvae_hub import log
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import alpha_poe
 from mmvae_hub.base.utils import utils
+from mmvae_hub.base.utils.Dataclasses import *
 
 LOG2PI = float(np.log(2.0 * math.pi))
 
@@ -31,7 +30,7 @@ def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
     l_s = latents['style']
     l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
     l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
-    c_emb = utils.reparameterize(l_c_m_rep, l_c_lv_rep)
+    c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
     styles = {}
     c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
     if flags.factorized_representation:
@@ -46,11 +45,6 @@ def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
         for k, key in enumerate(mod_names):
             styles[key] = None
     return {'content': c, 'style': styles}
-
-
-def get_dyn_prior(weights, mus, logvars):
-    mu_poe, logvar_poe = alpha_poe(weights, mus, logvars)
-    return [mu_poe, logvar_poe]
 
 
 def log_mean_exp(x, dim=1):
