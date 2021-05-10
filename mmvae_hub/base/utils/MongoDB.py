@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
+import io
 import pathlib
+import tempfile
 from pathlib import Path
 
+import gridfs
 import torch
 from pymongo import MongoClient
 
 from mmvae_hub import log
+from mmvae_hub.base import BaseMMVae
 from mmvae_hub.base.utils.utils import json2dict
 
 
@@ -60,6 +64,38 @@ class MongoDatabase:
         """
         experiment = self.connect()
         experiment.delete_many({})
+
+    def save_networks_to_db(self, dir_checkpoints: Path, epoch: int, modalities):
+        """
+        Inspired from https://medium.com/naukri-engineering/way-to-store-large-deep-learning-models-in-production-ready-environments-d8a4c66cc04c
+        There is probably a better way to store Tensors in MongoDB.
+        """
+        client = MongoClient(self.mongodb_URI)
+        db = client.mmvae
+        fs = gridfs.GridFS(db)
+        checkpoint_dir = dir_checkpoints / str(epoch).zfill(4)
+
+        for mod_str in modalities:
+            for prefix in ['en', 'de']:
+                filename = checkpoint_dir / f"{prefix}coderM{mod_str}"
+                with io.FileIO(str(filename), 'r') as fileObject:
+                    fs.put(fileObject, filename=str(filename),
+                           _id=self.experiment_uid + f"__{prefix}coderM{mod_str}")
+
+    def load_networks_from_db(self, mmvae: BaseMMVae):
+        client = MongoClient(self.mongodb_URI)
+        db = client.mmvae
+        fs = gridfs.GridFS(db)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdirname = Path(tmpdirname)
+            for mod_str in mmvae.modalities:
+                for prefix in ['en', 'de']:
+                    filename = tmpdirname / f"{prefix}coderM{mod_str}"
+                    with open(filename, 'wb') as fileobject:
+                        fileobject.write(fs.get(self.experiment_uid + f"__{prefix}coderM{mod_str}").read())
+
+            mmvae.load_networks(tmpdirname)
+        return mmvae
 
 
 if __name__ == '__main__':

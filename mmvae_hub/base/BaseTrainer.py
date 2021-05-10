@@ -178,10 +178,17 @@ class BaseTrainer:
         test_results.experiment_duration = time.time() - self.begin_time
         dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__)
 
-        # run jupyter notebook with visualisations
-        self.run_notebook_convert(self.flags.dir_experiment_run)
+        self.exp.experiments_database.insert_dict(
+            {'end_epoch': epoch, 'experiment_duration': test_results.experiment_duration,
+             'mean_epoch_time': test_results.mean_epoch_time})
+        self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
+                                                          modalities=self.exp.mm_vae.modalities)
 
-        # todo send epoch, experiment_duration, average_epoch_time to db.
+        # run jupyter notebook with visualisations
+        try:
+            self.run_notebook_convert(self.flags.dir_experiment_run)
+        except:
+            log.info('Notebook run failed.')
 
         # send alert
         if self.flags.norby and self.flags.dataset != 'toy':
@@ -190,6 +197,7 @@ class BaseTrainer:
 
     def run_notebook_convert(self, dir_experiment_run: Path) -> None:
         """Run and convert the notebook to html."""
+        # The notebook needs data from the db
         if self.flags.use_db:
             # Copy the experiment_vis jupyter notebook to the experiment dir
             notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'

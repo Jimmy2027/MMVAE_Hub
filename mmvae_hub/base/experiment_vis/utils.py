@@ -128,12 +128,15 @@ def show_generated_figs(experiment_dir: Path):
     flags = torch.load(experiment_dir / 'flags.rar')
     if Path(flags.dir_data).name == 'polymnist':
         exp = PolymnistExperiment(flags)
-    latest_checkpoint = max(d.name for d in (experiment_dir / 'checkpoints').iterdir() if d.name.startswith('0'))
 
-    print(f'loading checkpoint from epoch {latest_checkpoint}.')
+    exp.mm_vae = exp.experiments_database.load_networks_from_db(exp.mm_vae)
 
-    latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint
-    exp.mm_vae.load_networks(latest_checkpoint_path)
+    # latest_checkpoint = max(d.name for d in (experiment_dir / 'checkpoints').iterdir() if d.name.startswith('0'))
+    #
+    # print(f'loading checkpoint from epoch {latest_checkpoint}.')
+    #
+    # latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint
+    # exp.mm_vae.load_networks(latest_checkpoint_path)
     plots = generate_plots(exp, epoch=0)
 
     for p_key, ps in plots.items():
