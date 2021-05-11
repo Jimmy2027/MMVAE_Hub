@@ -95,9 +95,8 @@ class AverageMeterLatents(AverageMeterDict):
     def update(self, val: typing.Mapping[str, BaseEncMod]):
         if not self.vals:
             lvl2_keys = ['latents_class', 'latents_style'] if self.factorized_representation else ['latents_class']
-            self.vals = init_twolevel_nested_dict(level1_keys=[k for k in val],
-                                                  level2_keys=lvl2_keys,
-                                                  init_val={'mu': [], 'logvar': []})
+            self.vals = {l1: {l2: {'mu': [], 'logvar': []} for l2 in lvl2_keys} for l1 in [k for k in val]}
+
         for mod_string, enc_mods in val.items():
             for key in self.vals[mod_string]:
                 self.vals[mod_string][key]['mu'].append(val[mod_string].__dict__[key].mu.mean().item())
