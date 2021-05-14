@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import glob
 import io
 import pathlib
 import tempfile
@@ -14,18 +15,19 @@ from mmvae_hub.base.utils.utils import json2dict
 
 
 class MongoDatabase:
-    def __init__(self, flags=None, training: bool = True):
+    def __init__(self, flags=None, training: bool = True, _id: str = None):
         """
-        training: if true, experiment_uid and flags will be send to db.
+        training: if true, experiment_uid and flags will be sent to db.
         """
         self.mongodb_URI = self.get_mongodb_uri()
 
         if flags is not None:
             self.experiment_uid = flags.experiment_uid
+        elif _id is not None:
+            self.experiment_uid = _id
 
-        # create document in db for current experiment
-        log.info('Connecting to database.')
         experiments = self.connect()
+        # create document in db for current experiment
         if training and self.experiment_uid not in [str(id) for id in experiments.find().distinct('_id')]:
             experiments.insert_one({'_id': self.experiment_uid, 'flags': self.encode_flags(flags), 'epoch_results': {},
                                     'version': flags.version})
@@ -65,6 +67,14 @@ class MongoDatabase:
         experiment = self.connect()
         experiment.delete_many({})
 
+    def delete_one(self, _id: str):
+        """
+        Removes one document from db
+        """
+        log.info(f'Deleting document with _id: {_id}.')
+        experiment = self.connect()
+        experiment.delete_one({'_id': _id})
+
     def save_networks_to_db(self, dir_checkpoints: Path, epoch: int, modalities):
         """
         Inspired from https://medium.com/naukri-engineering/way-to-store-large-deep-learning-models-in-production-ready-environments-d8a4c66cc04c
@@ -79,23 +89,64 @@ class MongoDatabase:
             for prefix in ['en', 'de']:
                 filename = checkpoint_dir / f"{prefix}coderM{mod_str}"
                 with io.FileIO(str(filename), 'r') as fileObject:
+                    log.info(f'Saving checkpoint to db: {filename}')
                     fs.put(fileObject, filename=str(filename),
                            _id=self.experiment_uid + f"__{prefix}coderM{mod_str}")
 
-    def load_networks_from_db(self, mmvae: BaseMMVae):
+    def connect_with_gridfs(self):
         client = MongoClient(self.mongodb_URI)
         db = client.mmvae
-        fs = gridfs.GridFS(db)
+        return gridfs.GridFS(db)
+
+    def load_networks_from_db(self, mmvae: BaseMMVae):
+        fs = self.connect_with_gridfs()
+        fs_ids = [elem._id for elem in fs.find({})]
+
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmpdirname = Path(tmpdirname)
             for mod_str in mmvae.modalities:
                 for prefix in ['en', 'de']:
                     filename = tmpdirname / f"{prefix}coderM{mod_str}"
+                    model_id = self.experiment_uid + f"__{prefix}coderM{mod_str}"
                     with open(filename, 'wb') as fileobject:
-                        fileobject.write(fs.get(self.experiment_uid + f"__{prefix}coderM{mod_str}").read())
+                        fileobject.write(fs.get(model_id).read())
 
             mmvae.load_networks(tmpdirname)
         return mmvae
+
+    def load_experiment_results_to_db(self, experiments_dir: Path):
+        """Iterate through the experiment_dir and load results to the db if they are not already there."""
+        experiments = self.connect()
+        exp_ids_db = [elem['_id'] for elem in experiments.find({})]
+
+        fs = self.connect_with_gridfs()
+        fs_ids = {elem._id.split('__')[0] for elem in fs.find({})}
+
+        for exp_dir in experiments_dir.iterdir():
+            print(exp_dir)
+            # get epoch results
+            if exp_dir.name not in exp_ids_db:
+                if (exp_dir / 'epoch_results').exists():
+                    for epoch_result_dir in (exp_dir / 'epoch_results').iterdir():
+                        # todo load epoch results to db
+                        pass
+
+            # get models
+            if exp_dir.name not in fs_ids:
+                if (exp_dir / 'checkpoints').exists():
+
+                    self.experiment_uid = exp_dir.name
+
+                    latest_checkpoint = max(
+                        int(d.name) for d in (exp_dir / 'checkpoints').iterdir() if d.name.isdigit())
+                    dir_checkpoints = (exp_dir / 'checkpoints' / str(latest_checkpoint).zfill(4))
+                    modalities = {Path(e).name.replace('decoderM', '') for e in
+                                  glob.glob(str(dir_checkpoints / 'decoderM*'))}
+                    self.save_networks_to_db(
+                        dir_checkpoints=(exp_dir / 'checkpoints'),
+                        epoch=latest_checkpoint, modalities=modalities)
+                else:
+                    print('checkpoint dir does not exist')
 
 
 if __name__ == '__main__':
@@ -109,5 +160,7 @@ if __name__ == '__main__':
 
     dc = DC()
 
-    db = MongoDatabase(dc, training=False)
-    db.delete_all()
+    mongo_db = MongoDatabase(dc, training=False)
+    mongo_db.delete_one('polymnist_planar_mixture_2021_05_04_09_21_38_767516')
+
+    sdfg = 0
