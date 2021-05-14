@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import os
 import shutil
 import time
 from abc import abstractmethod
 from pathlib import Path
 
+import nbformat
+from nbconvert import HTMLExporter
+from nbconvert.preprocessors import ExecutePreprocessor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -21,7 +23,8 @@ from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.average_meters import *
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
+from mmvae_hub.base.utils.utils import dict2json
+from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict
 
 
 class BaseTrainer:
@@ -32,6 +35,9 @@ class BaseTrainer:
         self.callback: BaseCallback = self._set_callback()
 
         self.begin_time = time.time()
+
+        if self.flags.kl_annealing:
+            self.exp.mm_vae.flags.beta = 0
 
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
@@ -57,7 +63,8 @@ class BaseTrainer:
             train_results: BaseBatchResults = self.train()
             test_results = self.test(epoch)
 
-            self.callback.update_epoch(train_results, test_results, epoch, time.time() - end)
+            self.exp.mm_vae.flags.beta = self.callback.update_epoch(train_results, test_results, epoch,
+                                                                    time.time() - end)
 
         self.finalize(test_results, epoch, average_epoch_time=self.callback.epoch_time.get_average())
         return test_results
@@ -88,12 +95,14 @@ class BaseTrainer:
                 'log_probs': get_items_from_dict(log_probs),
                 'joint_divergence': results['joint_divergence'].item(),
                 'latents': forward_results.enc_mods,
+                'joint_latents': forward_results.joint_latents
             }
 
             for key, value in batch_results.items():
                 average_meters[key].update(value)
+
         train_results = {k: v.get_average() for k, v in average_meters.items()}
-        self.tb_logger.write_training_logs(**train_results)
+        self.tb_logger.write_training_logs(**{k: v for k, v in train_results.items() if k != 'joint_latents'})
         return BaseBatchResults(**train_results)
 
     def test(self, epoch) -> BaseTestResults:
@@ -105,6 +114,7 @@ class BaseTrainer:
             for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
                 batch_d = model.batch_to_device(batch_d)
                 forward_results: BaseForwardResults = model(batch_d)
+
                 # calculate the loss
                 total_loss, joint_divergence, log_probs, klds = model.calculate_loss(forward_results, batch_d)
                 results = {**forward_results.__dict__, 'joint_divergence': joint_divergence}
@@ -115,13 +125,15 @@ class BaseTrainer:
                     'log_probs': get_items_from_dict(log_probs),
                     'joint_divergence': results['joint_divergence'].item(),
                     'latents': forward_results.enc_mods,
+                    'joint_latents': forward_results.joint_latents
                 }
 
                 for key in batch_results:
                     average_meters[key].update(batch_results[key])
 
             averages = {k: v.get_average() for k, v in average_meters.items()}
-            self.tb_logger.write_testing_logs(**averages)
+
+            self.tb_logger.write_testing_logs(**{k: v for k, v in averages.items() if k != 'joint_latents'})
 
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
@@ -158,8 +170,10 @@ class BaseTrainer:
 
     def setup_phase(self):
         """Setup for train or test phase."""
+
         d_loader = DataLoader(self.exp.dataset_test, batch_size=self.flags.batch_size, shuffle=True,
                               num_workers=self.flags.dataloader_workers, drop_last=True)
+
         training_steps = self.flags.steps_per_training_epoch
 
         average_meters = {
@@ -168,27 +182,28 @@ class BaseTrainer:
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
             'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
+            'joint_latents': AverageMeterJointLatents(method=self.flags.method, name='joint_latents',
+                                                      factorized_representation=self.flags.factorized_representation)
         }
         return d_loader, training_steps, average_meters
 
     def finalize(self, test_results: BaseTestResults, epoch: int, average_epoch_time):
         # write results as json to experiment folder
-        test_results.end_epoch = epoch
-        test_results.mean_epoch_time = self.callback.epoch_time.get_average()
-        test_results.experiment_duration = time.time() - self.begin_time
-        dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__)
+        run_metadata = {'end_epoch': epoch, 'experiment_duration': time.time() - self.begin_time,
+                        'mean_epoch_time': self.callback.epoch_time.get_average()}
 
-        self.exp.experiments_database.insert_dict(
-            {'end_epoch': epoch, 'experiment_duration': test_results.experiment_duration,
-             'mean_epoch_time': test_results.mean_epoch_time})
-        self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
-                                                          modalities=self.exp.mm_vae.modalities)
+        dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__ | run_metadata)
+
+        if self.flags.log_file.exists():
+            shutil.move(self.flags.log_file, self.flags.dir_experiment_run)
+
+        if self.flags.use_db == 1:
+            self.exp.experiments_database.insert_dict(run_metadata)
+            self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
+                                                              modalities=self.exp.mm_vae.modalities)
 
         # run jupyter notebook with visualisations
-        try:
-            self.run_notebook_convert(self.flags.dir_experiment_run)
-        except:
-            log.info('Notebook run failed.')
+        self.run_notebook_convert(self.flags.dir_experiment_run)
 
         # send alert
         if self.flags.norby and self.flags.dataset != 'toy':
@@ -197,6 +212,7 @@ class BaseTrainer:
 
     def run_notebook_convert(self, dir_experiment_run: Path) -> None:
         """Run and convert the notebook to html."""
+
         # The notebook needs data from the db
         if self.flags.use_db:
             # Copy the experiment_vis jupyter notebook to the experiment dir
@@ -206,12 +222,25 @@ class BaseTrainer:
             # copy notebook to experiment run
             shutil.copyfile(notebook_path, dest_notebook_path)
 
+            log.info('Executing experiment vis notebook.')
+            with open(dest_notebook_path) as f:
+                nb = nbformat.read(f, as_version=4)
+            ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+            ep.preprocess(nb, {'metadata': {'path': str(dest_notebook_path.parent)}})
+
             nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
 
-            log.info('Executing experiment vis notebook.')
-            os.system(f'jupyter nbconvert --to notebook --execute {dest_notebook_path}')
-            log.info('Converting notebook to html.')
-            os.system(f'jupyter nbconvert --to html {nbconvert_path}')
+            with open(nbconvert_path, 'w', encoding='utf-8') as f:
+                nbformat.write(nb, f)
 
+            log.info('Converting notebook to html.')
             html_path = nbconvert_path.with_suffix('.html')
-            assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'
+            html_exporter = HTMLExporter()
+            html_exporter.template_name = 'classic'
+            (body, resources) = html_exporter.from_notebook_node(nb)
+            with open(html_path, 'w') as f:
+                f.write(body)
+
+            # os.system(f'jupyter nbconvert --to html {nbconvert_path}')
+
+            # assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'

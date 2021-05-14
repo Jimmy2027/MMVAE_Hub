@@ -11,6 +11,8 @@ import warnings
 # https://github.com/numpy/numpy/issues/14920#issuecomment-554672523
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
+warnings.filterwarnings("ignore", message="OpenBLAS Warning : Detect OpenMP Loop and this application may hang. Please rebuild the library with USE_OPENMP=1 option.")
+
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
 # Based in part on
@@ -20,7 +22,8 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 try:
     LOG_FILE = pathlib.Path('/usr/local/var/logs/mmvae_hub')
     LOG_FILE.mkdir(exist_ok=True, parents=True)
-except:
+except Exception as e:
+    print(e)
     LOG_FILE = (pathlib.Path(__file__).parent / "logs")
     LOG_FILE.mkdir(exist_ok=True, parents=True)
 

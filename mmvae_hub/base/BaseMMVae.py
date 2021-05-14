@@ -15,13 +15,18 @@ from mmvae_hub.base.utils.fusion_functions import *
 
 
 class BaseMMVAE(ABC, nn.Module):
-    def __init__(self, flags, modalities, subsets):
+    def __init__(self, exp, flags, modalities, subsets):
         super(BaseMMVAE, self).__init__()
+        self.exp = exp
         self.flags = flags
         self.modalities = modalities
         self.subsets = subsets
         self.metrics = None
         self.mm_div: Optional[BaseMMDiv] = None
+
+    # ==================================================================================================================
+    # Basic functions
+    # ==================================================================================================================
 
     def forward(self, input_batch: dict) -> BaseForwardResults:
         enc_mods, joint_latents = self.inference(input_batch)
@@ -29,6 +34,15 @@ class BaseMMVAE(ABC, nn.Module):
         rec_mods = self.decode(enc_mods, joint_latents)
 
         return BaseForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=rec_mods)
+
+    def inference(self, input_batch) -> tuple[Mapping[str, Union[BaseEncMod, EncModPlanarMixture]], JointLatents]:
+        # encode input
+        enc_mods = self.encode(input_batch)
+        batch_mods = [k for k in input_batch]
+        # fuse latents
+        joint_latent = self.fuse_modalities(enc_mods, batch_mods)
+
+        return enc_mods, joint_latent
 
     def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, BaseEncMod]:
         enc_mods = {}
@@ -61,30 +75,6 @@ class BaseMMVAE(ABC, nn.Module):
             rec_mods[mod_str] = mod.likelihood(*mod.decoder(style_embeddings, class_embeddings))
         return rec_mods
 
-    def get_random_styles(self, num_samples: int) -> Mapping[str, Optional[Tensor]]:
-        styles = {}
-        for mod_str in self.modalities:
-            if self.flags.factorized_representation:
-                z_style_m = torch.randn(num_samples, self.flags.style_dim)
-                z_style_m = z_style_m.to(self.flags.device)
-            else:
-                z_style_m = None
-            styles[mod_str] = z_style_m
-        return styles
-
-    def get_random_style_dists(self, num_samples: int) -> Mapping[str, Distr]:
-        styles = {}
-        for mod_str in self.modalities:
-            s_mu_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
-            s_logvar_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
-            dist_m = Distr(mu=s_mu_m, logvar=s_logvar_m)
-            styles[mod_str] = dist_m
-        return styles
-
-    def batch_to_device(self, batch):
-        """Send the batch to device as Variable."""
-        return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
-
     def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
 
@@ -105,8 +95,10 @@ class BaseMMVAE(ABC, nn.Module):
             kld_style = 0.0
         kld_weighted = beta_style * kld_style + self.flags.beta_content * joint_divergence
         rec_weight = 1.0
-
         total_loss = rec_weight * weighted_log_prob + self.flags.beta * kld_weighted
+
+        # temp
+        assert not np.isnan(total_loss.cpu().item())
 
         return total_loss, joint_divergence, log_probs, klds
 
@@ -120,6 +112,10 @@ class BaseMMVAE(ABC, nn.Module):
 
             weighted_log_prob += mod.rec_weight * log_probs[mod.name]
         return log_probs, weighted_log_prob
+
+    # ==================================================================================================================
+    # Generation
+    # ==================================================================================================================
 
     def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
         cond_gen = {}
@@ -137,6 +133,83 @@ class BaseMMVAE(ABC, nn.Module):
             cond_gen_m = mod.likelihood(*mod.decoder(style_m, content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
+
+    def get_random_styles(self, num_samples: int) -> Mapping[str, Optional[Tensor]]:
+        styles = {}
+        for mod_str in self.modalities:
+            if self.flags.factorized_representation:
+                z_style_m = torch.randn(num_samples, self.flags.style_dim)
+                z_style_m = z_style_m.to(self.flags.device)
+            else:
+                z_style_m = None
+            styles[mod_str] = z_style_m
+        return styles
+
+    def get_random_style_dists(self, num_samples: int) -> Mapping[str, Distr]:
+        styles = {}
+        for mod_str in self.modalities:
+            s_mu_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
+            s_logvar_m = torch.zeros(num_samples, self.flags.style_dim).to(self.flags.device)
+            dist_m = Distr(mu=s_mu_m, logvar=s_logvar_m)
+            styles[mod_str] = dist_m
+        return styles
+
+    def generate(self, num_samples=None) -> Mapping[str, Tensor]:
+        """
+        Generate from latents that were sampled from a normal distribution.
+        """
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        mu = torch.zeros(num_samples,
+                         self.flags.class_dim).to(self.flags.device)
+        logvar = torch.zeros(num_samples,
+                             self.flags.class_dim).to(self.flags.device)
+        z_class = Distr(mu, logvar).reparameterize()
+
+        z_styles = self.get_random_styles(num_samples)
+        random_latents = ReparamLatent(content=z_class, style=z_styles)
+        return self.generate_from_latents(random_latents)
+
+    def cond_generation(self, joint_latent: JointLatents, num_samples=None) -> Mapping[str, Mapping[str, Tensor]]:
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        style_latents = self.get_random_styles(num_samples)
+        cond_gen_samples = {}
+        for key in joint_latent.subsets:
+            content_rep = joint_latent.get_subset_embedding(key)
+            latents = ReparamLatent(content=content_rep, style=style_latents)
+            cond_gen_samples[key] = self.generate_from_latents(latents)
+        return cond_gen_samples
+
+    def cond_generation_2a(self, latent_distribution_pairs, num_samples=None):
+        # question was macht diese Funktion?
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        style_latents = self.get_random_styles(num_samples)
+        cond_gen_2a = {}
+        for p, pair in enumerate(latent_distribution_pairs.keys()):
+            ld_pair = latent_distribution_pairs[pair]
+            mu_list = []
+            logvar_list = []
+            for k, key in enumerate(ld_pair['latents'].keys()):
+                mu_list.append(ld_pair['latents'][key][0].unsqueeze(0))
+                logvar_list.append(ld_pair['latents'][key][1].unsqueeze(0))
+            mus = torch.cat(mu_list, dim=0)
+            logvars = torch.cat(logvar_list, dim=0)
+            # weights_pair = utils.reweight_weights(torch.Tensor(ld_pair['weights']))
+            # mu_joint, logvar_joint = self.modality_fusion(mus, logvars, weights_pair)
+            mu_joint, logvar_joint = poe(mus, logvars)
+            c_emb = utils.reparameterize(mu_joint, logvar_joint)
+            l_2a = {'content': c_emb, 'style': style_latents}
+            cond_gen_2a[pair] = self.generate_from_latents(l_2a)
+        return cond_gen_2a
+
+    # ==================================================================================================================
+    # Helper functions
+    # ==================================================================================================================
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatents:
         """
@@ -168,15 +241,6 @@ class BaseMMVAE(ABC, nn.Module):
 
         return JointLatents(fusion_subsets_keys, joint_distr=joint_distr, subsets=distr_subsets)
 
-    def inference(self, input_batch) -> tuple[Mapping[str, Union[BaseEncMod, EncModPlanarMixture]], JointLatents]:
-        # encode input
-        enc_mods = self.encode(input_batch)
-        batch_mods = [k for k in input_batch]
-        # fuse latents
-        joint_latent = self.fuse_modalities(enc_mods, batch_mods)
-
-        return enc_mods, joint_latent
-
     def fuse_subset(self, enc_mods, s_key: str) -> Distr:
         """Fuse encoded modalities in subset."""
         mods = self.subsets[s_key]
@@ -204,56 +268,9 @@ class BaseMMVAE(ABC, nn.Module):
         weights = utils.reweight_weights(weights)
         return utils.mixture_component_selection(self.flags, mus, logvars, weights)
 
-    def generate(self, num_samples=None) -> Mapping[str, Tensor]:
-        if num_samples is None:
-            num_samples = self.flags.batch_size
-
-        mu = torch.zeros(num_samples,
-                         self.flags.class_dim).to(self.flags.device)
-        logvar = torch.zeros(num_samples,
-                             self.flags.class_dim).to(self.flags.device)
-        z_class = Distr(mu, logvar).reparameterize()
-
-        z_styles = self.get_random_styles(num_samples)
-        random_latents = ReparamLatent(content=z_class, style=z_styles)
-        return self.generate_from_latents(random_latents)
-
-    def cond_generation(self, latent_distributions, num_samples=None) -> Mapping[str, Mapping[str, Tensor]]:
-        if num_samples is None:
-            num_samples = self.flags.batch_size
-
-        style_latents = self.get_random_styles(num_samples)
-        cond_gen_samples = {}
-        for key in latent_distributions:
-            latent_distr = latent_distributions[key]
-            content_rep = latent_distr.reparameterize()
-            latents = ReparamLatent(content=content_rep, style=style_latents)
-            cond_gen_samples[key] = self.generate_from_latents(latents)
-        return cond_gen_samples
-
-    def cond_generation_2a(self, latent_distribution_pairs, num_samples=None):
-        # question was macht diese Funktion?
-        if num_samples is None:
-            num_samples = self.flags.batch_size
-
-        style_latents = self.get_random_styles(num_samples)
-        cond_gen_2a = {}
-        for p, pair in enumerate(latent_distribution_pairs.keys()):
-            ld_pair = latent_distribution_pairs[pair]
-            mu_list = []
-            logvar_list = []
-            for k, key in enumerate(ld_pair['latents'].keys()):
-                mu_list.append(ld_pair['latents'][key][0].unsqueeze(0))
-                logvar_list.append(ld_pair['latents'][key][1].unsqueeze(0))
-            mus = torch.cat(mu_list, dim=0)
-            logvars = torch.cat(logvar_list, dim=0)
-            # weights_pair = utils.reweight_weights(torch.Tensor(ld_pair['weights']))
-            # mu_joint, logvar_joint = self.modality_fusion(mus, logvars, weights_pair)
-            mu_joint, logvar_joint = poe(mus, logvars)
-            c_emb = utils.reparameterize(mu_joint, logvar_joint)
-            l_2a = {'content': c_emb, 'style': style_latents}
-            cond_gen_2a[pair] = self.generate_from_latents(l_2a)
-        return cond_gen_2a
+    def batch_to_device(self, batch):
+        """Send the batch to device as Variable."""
+        return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
 
     def save_networks(self, epoch: int):
         dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
@@ -265,13 +282,15 @@ class BaseMMVAE(ABC, nn.Module):
 
     def load_networks(self, dir_checkpoint: Path):
         for mod_str, mod in self.modalities.items():
-            mod.encoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}"))
-            mod.decoder.load_state_dict(state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}"))
+            mod.encoder.load_state_dict(
+                state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}", map_location=self.flags.device))
+            mod.decoder.load_state_dict(
+                state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
 
 
 class MOEMMVae(BaseMMVAE):
-    def __init__(self, flags, modalities, subsets):
-        super(MOEMMVae, self).__init__(flags, modalities, subsets)
+    def __init__(self, exp, flags, modalities, subsets):
+        super(MOEMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = MixtureMMDiv()
 
     @staticmethod
@@ -286,7 +305,7 @@ class MOEMMVae(BaseMMVAE):
 
 
 class POEMMVae(BaseMMVAE):
-    def __init__(self, flags, modalities, subsets):
+    def __init__(self, exp, flags, modalities, subsets):
         super(POEMMVae, self).__init__(flags, modalities, subsets)
         self.mm_div = POEMMDiv()
 
@@ -306,8 +325,8 @@ class POEMMVae(BaseMMVAE):
 
 
 class JointElboMMVae(MOEMMVae):
-    def __init__(self, flags, modalities, subsets):
-        super(JointElboMMVae, self).__init__(flags, modalities, subsets)
+    def __init__(self, exp, flags, modalities, subsets):
+        super(JointElboMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = JointElbowMMDiv()
 
     def modality_fusion(self, flags, mus, logvars, weights=None) -> Distr:
@@ -348,8 +367,8 @@ class JointElboMMVae(MOEMMVae):
 
 
 class BaseFlowMMVAE(MOEMMVae):
-    def __init__(self, flags, modalities, subsets):
-        super(BaseFlowMMVAE, self).__init__(flags, modalities, subsets)
+    def __init__(self, exp, flags, modalities, subsets):
+        super(BaseFlowMMVAE, self).__init__(exp, flags, modalities, subsets)
         self.flow = None
 
     @abstractmethod
@@ -363,8 +382,8 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
     Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
     """
 
-    def __init__(self, flags, modalities, subsets):
-        super(PlanarFlowMMVae, self).__init__(flags, modalities, subsets)
+    def __init__(self, exp, flags, modalities, subsets):
+        super(PlanarFlowMMVae, self).__init__(exp, flags, modalities, subsets)
 
         self.mm_div = FlowMMDiv()
 
@@ -376,9 +395,10 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
         self.num_flows = flags.num_flows
 
         # Amortized flow parameters
-        self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-        self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-        self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
+        if self.num_flows:
+            self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
+            self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
+            self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
 
         # Normalizing flow layers
         for k in range(self.num_flows):
@@ -394,13 +414,16 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
             if mod_str in input_batch:
                 x_m = input_batch[mod_str]
                 style_mu, style_logvar, class_mu, class_logvar, h = mod.encoder(x_m)
-
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
+
                 # get amortized u an w for all flows
-                flow_params = {
-                    'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
-                    'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
-                    'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1)}
+                if self.num_flows:
+                    flow_params = {
+                        'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
+                        'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
+                        'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1)}
+                else:
+                    flow_params = {k: None for k in ['u', 'w', 'b']}
 
                 enc_mods[mod_str] = EncModPlanarMixture(latents_class=latents_class,
                                                         flow_params=PlanarFlowParams(**flow_params))
@@ -426,12 +449,13 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
             # Normalizing flows
             for k in range(self.num_flows):
                 flow_k = getattr(self, 'flow_' + str(k))
+                # z' = z + u h( w^T z + b)
                 z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
                                                flow_params.b[:, k, :, :])
                 z.append(z_k)
                 log_det_j += log_det_jacobian
             enc_mods[mod_str].z0 = z[0]
-            enc_mods[mod_str].zk = z[-1] if self.num_flows else torch.zeros_like(z[0])
+            enc_mods[mod_str].zk = z[-1]
             enc_mods[mod_str].log_det_j = log_det_j
         return enc_mods
 
@@ -472,6 +496,6 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
 
 
 class JSDMMVae(JointElboMMVae):
-    def __init__(self, flags, modalities, subsets):
-        super(JSDMMVae, self).__init__(flags, modalities, subsets)
+    def __init__(self, exp, flags, modalities, subsets):
+        super(JSDMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = JSDMMDiv()
