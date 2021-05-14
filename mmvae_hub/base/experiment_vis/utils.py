@@ -98,6 +98,29 @@ def plot_basic_batch_logs(phase: str, logs_dict: dict):
         plt.show()
 
 
+def show_latents(logs_dict: dict) -> None:
+    enc_mods_mus = {}
+    enc_mods_logvars = {}
+
+    for epoch, epoch_values in logs_dict['epoch_results'].items():
+        if epoch_values['test_results']['latents']:
+            for mod_str, v in epoch_values['test_results']['latents'].items():
+                if mod_str not in enc_mods_mus:
+                    enc_mods_mus[mod_str] = [v['latents_class']['mu']]
+                    enc_mods_logvars[mod_str] = [v['latents_class']['logvar']]
+                else:
+                    enc_mods_mus[mod_str].append(v['latents_class']['mu'])
+                    enc_mods_logvars[mod_str].append(v['latents_class']['logvar'])
+
+    for k, d in {'mus': enc_mods_mus, 'logvars': enc_mods_logvars}.items():
+        plt.figure(figsize=(10, 5))
+        plt.title(f'Latent {k}.')
+        for mod_str, values in d.items():
+            plt.plot(values)
+        plt.legend([s for s in d])
+        plt.show()
+
+
 def plot_coherence_accuracy(logs_dict: dict) -> None:
     gen_eval_logs = {}
     epochs = [epoch for epoch in logs_dict['epoch_results'] if
@@ -124,19 +147,23 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
         plt.show()
 
 
-def show_generated_figs(experiment_dir: Path):
-    flags = torch.load(experiment_dir / 'flags.rar')
+def show_generated_figs(experiment_dir: Path = None, flags=None):
+    if not flags:
+        flags = torch.load(experiment_dir / 'flags.rar')
     if Path(flags.dir_data).name == 'polymnist':
         exp = PolymnistExperiment(flags)
 
-    exp.mm_vae = exp.experiments_database.load_networks_from_db(exp.mm_vae)
+    if experiment_dir and (experiment_dir / 'checkpoints').exists():
+        latest_checkpoint = max(int(d.name) for d in (experiment_dir / 'checkpoints').iterdir() if d.name.isdigit())
 
-    # latest_checkpoint = max(d.name for d in (experiment_dir / 'checkpoints').iterdir() if d.name.startswith('0'))
-    #
-    # print(f'loading checkpoint from epoch {latest_checkpoint}.')
-    #
-    # latest_checkpoint_path = experiment_dir / 'checkpoints' / latest_checkpoint
-    # exp.mm_vae.load_networks(latest_checkpoint_path)
+        print(f'loading checkpoint from epoch {latest_checkpoint}.')
+
+        latest_checkpoint_path = experiment_dir / 'checkpoints' / str(latest_checkpoint).zfill(4)
+        exp.mm_vae.load_networks(latest_checkpoint_path)
+    else:
+        # load networks from database
+        exp.mm_vae = exp.experiments_database.load_networks_from_db(exp.mm_vae)
+
     plots = generate_plots(exp, epoch=0)
 
     for p_key, ps in plots.items():
