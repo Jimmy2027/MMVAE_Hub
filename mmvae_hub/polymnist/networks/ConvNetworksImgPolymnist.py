@@ -29,7 +29,10 @@ class EncoderImg(nn.Module):
 
         # content branch
         self.class_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
-        self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
+        # temp
+        # self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
+        self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Sigmoid())
+
         # optional style branch
         if flags.factorized_representation:
             self.style_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.style_dim)
