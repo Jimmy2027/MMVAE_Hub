@@ -78,6 +78,21 @@ def test_static_results_2mods(method: str):
             static_results[method]['latents_class']['mu'], 2)
 
 
+@pytest.mark.tox
+def test_run_planar_mixture_no_flow():
+    """
+    Test if the main training loop runs.
+    Assert if the total_test loss is constant. If the assertion fails, it means that the model or the evaluation has
+    changed, perhaps involuntarily.
+    """
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        method = 'planar_mixture'
+        additional_attrs = {'num_flows': 0, 'num_mods': 1}
+        mst = set_me_up(tmpdirname, method, attributes=additional_attrs)
+        trainer = PolymnistTrainer(mst)
+        test_results = trainer.run_epochs()
+
+
 def test_generate_plots():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname)
@@ -92,10 +107,11 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
-    test_static_results_2mods('joint_elbo')
-    test_static_results_2mods('moe')
+    # test_static_results_2mods('joint_elbo')
+    # test_static_results_2mods('moe')
     # test_run_epochs_polymnist(method='joint_elbo')
     # test_run_epochs_polymnist(method='moe')
-    # test_run_epochs_polymnist(method='planar_mixture')
+    test_run_epochs_polymnist(method='planar_mixture')
+    # test_run_planar_mixture_no_flow()
     # test_generate_plots()
     # test_test_generation()
