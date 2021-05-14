@@ -14,14 +14,15 @@ LOG2PI = float(np.log(2.0 * math.pi))
 
 
 # at the moment: only marginals and joint
-def calc_log_likelihood_batch(exp, latents, subset_key, subset, batch, num_imp_samples=10):
+def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, batch, num_imp_samples=10):
+    # question wie macht man das für planar mixture?
     flags = exp.flags
     model = exp.mm_vae
     mod_weights = exp.style_weights
     mods = exp.modalities
 
     s_dist = latents.subsets[subset_key]
-    n_total_samples = s_dist.mu.shape[0] * num_imp_samples
+    n_total_samples = batch[list(batch)[0]].shape[0] * num_imp_samples
 
     if flags.factorized_representation:
         enc_mods = latents['modalities']

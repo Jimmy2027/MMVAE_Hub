@@ -242,7 +242,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         # classifies them and stores the classifier predictions
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
         lr_subsets = joint_latent.subsets
-        cg = mm_vae.module.cond_generation(lr_subsets) if args.distributed else mm_vae.cond_generation(lr_subsets)
+        cg = mm_vae.module.cond_generation(joint_latent) if args.distributed else mm_vae.cond_generation(joint_latent)
         cg: typing.Mapping[subsets, typing.Mapping[mods, Tensor]]
         # classify the cond. generated samples
         for subset, cond_val in cg.items():

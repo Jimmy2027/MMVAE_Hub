@@ -72,6 +72,10 @@ class JointLatents:
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key].reparameterize()
 
+    def get_lr_data(self, subset_key: str):
+        """Return the mean of the subset."""
+        return self.subsets[subset_key].mu
+
 
 @dataclass
 class JointEmbeddingPlanarMixture:
@@ -90,6 +94,10 @@ class JointLatentsPlanarMixture:
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key]
 
+    def get_lr_data(self, subset_key: str):
+        """Return the embedding of the subset."""
+        return self.subsets[subset_key]
+
 
 @dataclass
 class BaseForwardResults:
@@ -105,6 +113,7 @@ class BaseBatchResults:
     log_probs: dict
     joint_divergence: dict
     latents: Mapping[str, BaseEncMod]
+    joint_latents: Mapping[str, Tensor]
 
 
 @dataclass
@@ -121,5 +130,6 @@ class BaseTestResults(BaseBatchResults):
 
 @dataclass
 class ReparamLatent:
+    """Mean of latent with multiple styles."""
     content: Tensor
     style: Optional[Mapping[str, Tensor]] = None

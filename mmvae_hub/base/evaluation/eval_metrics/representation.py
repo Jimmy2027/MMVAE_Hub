@@ -43,7 +43,7 @@ def train_clf_lr_all_subsets(exp):
         lr_subsets = joint_latent.subsets
         all_labels = torch.cat((all_labels, batch_l), 0)
         for key in lr_subsets:
-            data_train[key] = torch.cat((data_train[key], lr_subsets[key].mu.cpu()), 0)
+            data_train[key] = torch.cat((data_train[key], joint_latent.get_lr_data(key).cpu()), 0)
 
     # get random labels such that it contains both classes
     # labels, rand_ind_train = get_random_labels(all_labels.shape[0], n_train_samples, all_labels)
@@ -104,7 +104,7 @@ def test_clf_lr_all_subsets(clf_lr, exp):
 
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
         lr_subsets = joint_latent.subsets
-        data_test = {key: lr_subsets[key].mu.cpu().data.numpy() for key in lr_subsets}
+        data_test = {key: joint_latent.get_lr_data(key).cpu().data.numpy() for key in lr_subsets}
 
         clf_predictions_batch = classify_latent_representations(exp, clf_lr, data_test)
         clf_predictions_batch: Mapping[str, Mapping[str, np.array]]
