@@ -38,8 +38,8 @@ class AverageMeter(object):
 
     def get_average(self):
         if self.precision:
-            return np.round(self.val, self.precision)
-        return self.val
+            return np.round(self.avg, self.precision)
+        return self.avg
 
 
 class AverageMeterNestedDict:
@@ -105,3 +105,36 @@ class AverageMeterLatents(AverageMeterDict):
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
         return {mod_str: {k: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for k, v in enc_mods.items()} for
                 mod_str, enc_mods in self.vals.items()}
+
+
+class AverageMeterJointLatents(AverageMeterDict):
+    def __init__(self, name: str, factorized_representation: bool, method: str):
+        super().__init__(name=name)
+        self.factorized_representation = factorized_representation
+        self.method = method
+        self.vals = None
+
+    def update(self, val: typing.Union[JointLatents, JointLatentsPlanarMixture]):
+        if not self.vals:
+            init_val = [] if self.method == 'planar_mixture' else {'mu': [], 'logvar': []}
+            self.vals = {k: init_val for k in list(val.subsets)}
+            self.vals['joint'] = init_val
+
+        if self.method == 'planar_mixture':
+            for subset_key, subset in val.subsets.items():
+                self.vals[subset_key].append(subset.mean().item())
+            self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
+
+        else:
+
+            for subset_key, subset in val.subsets.items():
+                self.vals[subset_key]['mu'].append(subset.mu.mean().item())
+                self.vals[subset_key]['logvar'].append(subset.logvar.mean().item())
+            self.vals['joint']['mu'].append(val.joint_distr.mu.mean().item())
+            self.vals['joint']['logvar'].append(val.joint_distr.logvar.mean().item())
+
+    def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
+        if self.method == 'planar_mixture':
+            return {k: np.mean(v) for k, v in self.vals.items()}
+        else:
+            return {mod_str: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for mod_str, v in self.vals.items()}
