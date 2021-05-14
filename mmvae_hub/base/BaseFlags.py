@@ -6,10 +6,11 @@ parser.add_argument('--config_path', type=str, default=None, help="Path to the j
 parser.add_argument('--norby', type=bool, default=False,
                     help="If true use norby package to send training updates via telegram. "
                          "(Needs norby to be configured on system)")
-parser.add_argument('--use_db', default=False, action="store_true", help="If set, will send experiment results to a "
-                                                                         "database for further analysis. "
-                                                                         "The configuration file for the db needs to be"
-                                                                         " under configs/mmvaedb_config.py.")
+parser.add_argument('--use_db', default=False, action="store_true",
+                    help="If set, will send experiment results to a database for further analysis. "
+                         "The configuration file containing the URI to connect to the db needs to be"
+                         " under configs/mmvaedb_config.py. If this flag is set to True and the db is unreachable, "
+                         "the results will be stored such that they can then be easily uploaded to the db.")
 
 parser.add_argument('--use_cuda', type=bool, default=True, help="Bool to indicate if GPU should be used.")
 parser.add_argument('--deterministic', type=bool, default=False,

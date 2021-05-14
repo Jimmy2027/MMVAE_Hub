@@ -29,20 +29,23 @@ class BaseExperiment(ABC):
         self.plot_img_size = None
 
         if flags.use_db:
-            self.experiments_database = MongoDatabase(flags)
+            try:
+                self.experiments_database = MongoDatabase(flags)
+            except:
+                self.flags.use_db = 2
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
         if self.flags.method == 'joint_elbo':
-            model = JointElboMMVae(self.flags, self.modalities, self.subsets)
+            model = JointElboMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'moe':
-            model = MOEMMVae(self.flags, self.modalities, self.subsets)
+            model = MOEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'poe':
-            model = POEMMVae(self.flags, self.modalities, self.subsets)
+            model = POEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_mixture':
-            model = PlanarFlowMMVae(self.flags, self.modalities, self.subsets)
+            model = PlanarFlowMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'jsd':
-            model = JSDMMVae(self.flags, self.modalities, self.subsets)
+            model = JSDMMVae(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
