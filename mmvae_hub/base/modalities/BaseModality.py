@@ -7,7 +7,8 @@ class BaseModality(ABC):
     def __init__(self, flags, name):
         self.flags = flags
         self.name = name
-        self.clf = self.set_clf()
+        if flags.use_clf:
+            self.clf = self.set_clf()
         self.rec_weight = None
 
         self.encoder = None
