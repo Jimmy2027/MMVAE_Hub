@@ -1,8 +1,8 @@
 import argparse
 import os
 import shutil
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
 
 from mmvae_hub import log
 

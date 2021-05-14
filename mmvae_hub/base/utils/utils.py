@@ -3,14 +3,13 @@ import itertools
 import json
 import os
 import subprocess as sp
+from collections import namedtuple
 from collections.abc import MutableMapping
 from pathlib import Path
 
 import numpy as np
-import torch
 import torch.distributed as dist
 from torch import device as Device
-from torch.autograd import Variable
 
 from mmvae_hub import log
 from mmvae_hub.base.utils.Dataclasses import *
@@ -36,7 +35,6 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
     # Print New Line on Complete
     if iteration == total:
         print()
-
 
 
 def reweight_weights(w):
@@ -259,3 +257,8 @@ def json2dict(json_path: Path) -> dict:
     with open(json_path, 'rt') as json_file:
         json_config = json.load(json_file)
     return json_config
+
+
+def dict2pyobject(d: dict, name: str = 'mystruct') -> namedtuple:
+    MyStruct = namedtuple(name, ' '.join(d))
+    return MyStruct(**d)
