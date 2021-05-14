@@ -34,6 +34,7 @@ class PolymnistExperiment(BaseExperiment):
         self.dataset_train, self.dataset_test = self.set_dataset()
 
         self.mm_vae = self.set_model()
+        print(self.mm_vae)
         self.optimizer = None
         self.rec_weights = self.set_rec_weights()
         self.style_weights = self.set_style_weights()
