@@ -21,7 +21,6 @@ class PolymnistMod(BaseModality):
         self.encoder = EncoderImg(flags).to(flags.device)
         self.decoder = DecoderImg(flags).to(flags.device)
         self.likelihood = get_likelihood(self.likelihood_name)
-        self.clf = self.set_clf()
         self.rec_weight = 1.0
         # self.transform = transforms.Compose([transforms.ToTensor()])
 
