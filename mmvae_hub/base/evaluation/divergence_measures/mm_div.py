@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+import numpy as np
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_entropy_gauss
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.base.utils.Dataclasses import *
@@ -35,6 +35,8 @@ class BaseMMDiv:
         return [klds, klds_modonly]
 
     def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
+        """Calculate the Kl divergences for all subsets and the joint latent distribution."""
+
         latent_subsets = forward_results.joint_latents.subsets
         klds = self.calc_subset_divergences(latent_subsets)
 
@@ -45,6 +47,7 @@ class BaseMMDiv:
         weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
         joint_div = (weights * joint_div).sum(dim=0)
 
+        # normalize klds with number of modalities in subset and batch_size
         for subset_key, subset in subsets.items():
             weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(joint_div.device)
             klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
@@ -185,9 +188,15 @@ class JSDMMDiv(MixtureMMDiv, POEMMDiv):
 class FlowMMDiv(MixtureMMDiv):
     def __init__(self):
         super().__init__()
+
         self.calc_kl_divergence = calc_kl_divergence_flow
 
     def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
+        """
+        Calculate the Kl divergences for all subsets and the joint latent distribution.
+        Calculate first the single mod divergences that are then used to compute the subset divergences.
+        """
+
         klds = self.calc_singlemod_divergences(forward_results.enc_mods)
         klds = self.calc_subset_divergence(klds, subsets)
 
@@ -197,6 +206,8 @@ class FlowMMDiv(MixtureMMDiv):
 
         weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
         joint_div = (weights * joint_div).sum(dim=0)
+
+        assert not np.isnan(joint_div.cpu().item())
 
         for subset_key, subset in subsets.items():
             weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(joint_div.device)
@@ -219,6 +230,8 @@ class FlowMMDiv(MixtureMMDiv):
             )
             for mod_str, enc_mod in enc_mods.items()
         }
+
+
 
 
 class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
