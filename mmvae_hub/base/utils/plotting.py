@@ -16,9 +16,9 @@ def generate_plots(exp, epoch):
         swapping_figs = generate_swapping_plot(exp, epoch)
         plots['swapping'] = swapping_figs
 
-    for k in range(len(exp.modalities.keys())):
-        cond_k = generate_conditional_fig_M(exp, epoch, k + 1)
-        plots['cond_gen_' + str(k + 1).zfill(2)] = cond_k
+    for M in range(len(exp.modalities.keys())):
+        cond_k = generate_conditional_fig_M(exp, epoch, M + 1)
+        plots['cond_gen_' + str(M + 1).zfill(2)] = cond_k
 
     plots['random'] = generate_random_samples_plots(exp, epoch)
     return plots
