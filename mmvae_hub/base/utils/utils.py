@@ -8,6 +8,7 @@ from collections.abc import MutableMapping
 from pathlib import Path
 
 import numpy as np
+import torch
 import torch.distributed as dist
 from torch import device as Device
 
