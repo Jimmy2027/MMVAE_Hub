@@ -203,8 +203,8 @@ class BaseTrainer:
             self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
                                                               modalities=self.exp.mm_vae.modalities)
 
-        # run jupyter notebook with visualisations
-        pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
+            # run jupyter notebook with visualisations
+            pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
 
         # send alert
         if self.flags.norby and self.flags.dataset != 'toy':
@@ -215,44 +215,42 @@ class BaseTrainer:
             norby.send_msg(f'Experiment {self.flags.experiment_uid} has finished. The experiment visualisation can be '
                            f'found here: {expvis_url}')
 
-    def run_notebook_convert(self, dir_experiment_run: Path) -> Path:
-        """Run and convert the notebook to html."""
+    @staticmethod
+    def run_notebook_convert(dir_experiment_run: Path) -> Path:
+        """Run and convert the notebook to html and pdf."""
 
-        # The notebook needs data from the db
-        if self.flags.use_db:
-            # Copy the experiment_vis jupyter notebook to the experiment dir
-            notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
-            dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
+        # Copy the experiment_vis jupyter notebook to the experiment dir
+        notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
+        dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
 
-            # copy notebook to experiment run
-            shutil.copyfile(notebook_path, dest_notebook_path)
+        # copy notebook to experiment run
+        shutil.copyfile(notebook_path, dest_notebook_path)
 
-            log.info('Executing experiment vis notebook.')
-            with open(dest_notebook_path) as f:
-                nb = nbformat.read(f, as_version=4)
-            ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-            ep.preprocess(nb, {'metadata': {'path': str(dest_notebook_path.parent)}})
+        log.info('Executing experiment vis notebook.')
+        with open(dest_notebook_path) as f:
+            nb = nbformat.read(f, as_version=4)
+        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+        ep.preprocess(nb, {'metadata': {'path': str(dest_notebook_path.parent)}})
 
-            nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
+        nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
 
-            with open(nbconvert_path, 'w', encoding='utf-8') as f:
-                nbformat.write(nb, f)
+        with open(nbconvert_path, 'w', encoding='utf-8') as f:
+            nbformat.write(nb, f)
 
-            log.info('Converting notebook to html.')
-            html_path = nbconvert_path.with_suffix('.html')
-            html_exporter = HTMLExporter()
-            html_exporter.template_name = 'classic'
-            (body, resources) = html_exporter.from_notebook_node(nb)
-            with open(html_path, 'w') as f:
-                f.write(body)
+        log.info('Converting notebook to html.')
+        html_path = nbconvert_path.with_suffix('.html')
+        html_exporter = HTMLExporter()
+        html_exporter.template_name = 'classic'
+        (body, resources) = html_exporter.from_notebook_node(nb)
+        with open(html_path, 'w') as f:
+            f.write(body)
 
-            log.info('Converting notebook to pdf.')
-            pdf_path = nbconvert_path.with_suffix('.pdf')
-            pdf_exporter = PDFExporter()
-            pdf_exporter.template_name = 'classic'
-            (body, resources) = pdf_exporter.from_notebook_node(nb)
-            pdf_path.write_bytes(body)
+        log.info('Converting notebook to pdf.')
+        pdf_path = nbconvert_path.with_suffix('.pdf')
+        pdf_exporter = PDFExporter()
+        pdf_exporter.template_name = 'classic'
+        (body, resources) = pdf_exporter.from_notebook_node(nb)
+        pdf_path.write_bytes(body)
 
-            return pdf_path
+        return pdf_path
 
-            # assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'
