@@ -6,6 +6,7 @@ from abc import abstractmethod
 from pathlib import Path
 
 import nbformat
+import torch
 from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 from torch.utils.data import DataLoader
@@ -38,6 +39,7 @@ class BaseTrainer:
 
         if self.flags.kl_annealing:
             self.exp.mm_vae.flags.beta = 0
+
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
         tb_logger = BaseTBLogger(self.flags.str_experiment, writer)
@@ -213,6 +215,7 @@ class BaseTrainer:
             self.exp.experiments_database.insert_dict({'expvis_url': expvis_url})
             norby.send_msg(f'Experiment {self.flags.experiment_uid} has finished. The experiment visualisation can be '
                            f'found here: {expvis_url}')
+
     def run_notebook_convert(self, dir_experiment_run: Path) -> Path:
         """Run and convert the notebook to html."""
 
