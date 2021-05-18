@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from typing import Mapping, Optional, Iterable
 
-import torch
 from torch import Tensor
 from torch.autograd import Variable
 
@@ -30,7 +29,6 @@ class Distr:
         Sample z from a multivariate Gaussian with diagonal covariance matrix using the
          reparameterization trick.
         """
-        torch.manual_seed(42)
         std = self.logvar.mul(0.5).exp_()
         eps = Variable(std.data.new(std.size()).normal_())
         return eps.mul(std).add_(self.mu)
