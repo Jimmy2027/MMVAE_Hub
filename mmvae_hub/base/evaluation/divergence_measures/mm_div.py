@@ -1,5 +1,8 @@
 from abc import abstractmethod
+
 import numpy as np
+import torch
+
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_entropy_gauss
 from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.base.utils.Dataclasses import *
@@ -230,8 +233,6 @@ class FlowMMDiv(MixtureMMDiv):
             )
             for mod_str, enc_mod in enc_mods.items()
         }
-
-
 
 
 class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
