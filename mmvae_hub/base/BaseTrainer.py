@@ -207,8 +207,7 @@ class BaseTrainer:
         pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
 
         # send alert
-        # if self.flags.norby and self.flags.dataset != 'toy':
-        if True:
+        if self.flags.norby and self.flags.dataset != 'toy':
             import ppb
             import norby
             expvis_url = ppb.upload(pdf_path, plain=True)
