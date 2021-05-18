@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mmvae_hub.base.networks.utils import Flatten, Unflatten
+from mmvae_hub.networks.utils.layers import Flatten, Unflatten
 
 
 class EncoderImg(nn.Module):
@@ -30,8 +30,8 @@ class EncoderImg(nn.Module):
         # content branch
         self.class_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
         # temp
-        # self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
-        self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Softplus())
+        self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
+        # self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Softplus())
 
         # optional style branch
         if flags.factorized_representation:
@@ -43,7 +43,8 @@ class EncoderImg(nn.Module):
         if self.flags.factorized_representation:
             return self.style_mu(h), self.style_logvar(h), self.class_mu(h), self.class_logvar(h), h
         else:
-            return None, None, self.class_mu(h), self.class_logvar(h).log(), h
+            # return None, None, self.class_mu(h), self.class_logvar(h).log(), h
+            return None, None, self.class_mu(h), self.class_logvar(h), h
 
 
 class DecoderImg(nn.Module):

@@ -1,10 +1,10 @@
 import random
 
-import numpy as np
-
 from mmvae_hub.base.BaseMMVae import *
 from mmvae_hub.base.modalities.BaseModality import BaseModality
 from mmvae_hub.base.utils.MongoDB import MongoDatabase
+from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae
+from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 
 
 class BaseExperiment(ABC):
@@ -43,7 +43,7 @@ class BaseExperiment(ABC):
         elif self.flags.method == 'poe':
             model = POEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_mixture':
-            model = PlanarFlowMMVae(self, self.flags, self.modalities, self.subsets)
+            model = PlanarMixtureMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'jsd':
             model = JSDMMVae(self, self.flags, self.modalities, self.subsets)
         else:

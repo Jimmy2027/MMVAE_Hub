@@ -10,8 +10,8 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-# @pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture'])
-@pytest.mark.parametrize("method", ['joint_elbo'])
+@pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture'])
+# @pytest.mark.parametrize("method", ['joint_elbo'])
 def test_run_epochs_polymnist(method: str):
     """
     Test if the main training loop runs.

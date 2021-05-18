@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from mmvae_hub.base.networks.layers import MaskedConv2d, MaskedLinear
+from mmvae_hub.networks.utils.layers import MaskedConv2d, MaskedLinear
 
 
 class Planar(nn.Module):
