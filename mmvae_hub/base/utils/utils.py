@@ -262,3 +262,9 @@ def json2dict(json_path: Path) -> dict:
 def dict2pyobject(d: dict, name: str = 'mystruct') -> namedtuple:
     MyStruct = namedtuple(name, ' '.join(d))
     return MyStruct(**d)
+
+
+def split_int_to_bins(number: int, nbr_bins: int):
+    values = np.arange(number, dtype=int)
+    bins = np.histogram(values, bins=nbr_bins)
+    return bins[0]
