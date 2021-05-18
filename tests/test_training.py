@@ -24,7 +24,7 @@ def test_run_epochs_polymnist(method: str):
         test_results = trainer.run_epochs()
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 @pytest.mark.parametrize("method", ['moe', 'joint_elbo'])
 def test_static_results_2mods(method: str):
     """
