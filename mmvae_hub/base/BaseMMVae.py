@@ -3,6 +3,7 @@ from abc import ABC
 from pathlib import Path
 from typing import Tuple, Union
 
+import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
 
@@ -12,6 +13,7 @@ from mmvae_hub.base.networks import flows
 from mmvae_hub.base.utils import utils
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.fusion_functions import *
+from mmvae_hub.base.utils.utils import split_int_to_bins
 
 
 class BaseMMVAE(ABC, nn.Module):
@@ -470,7 +472,7 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
 
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
-            z_subset = self.fuse_subset(enc_mods, s_key)
+            z_subset = self.mixture_component_selection(enc_mods, s_key)
             distr_subsets[s_key] = z_subset
 
             if len(self.subsets[s_key]) == len(batch_mods):
@@ -493,6 +495,25 @@ class PlanarFlowMMVae(BaseFlowMMVAE, ABC):
 
         # fuse enc_mods
         return (weights_subset * zk_subset).sum(dim=0)
+
+    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> Distr:
+        """For each element in batch select an expert from subset with equal probability."""
+        num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
+        mods = self.subsets[s_key]
+        # fuse the subset
+        zk_subset = torch.Tensor().to(self.flags.device)
+
+        # fill zk_subset with an equal amount of each expert
+        bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
+
+        # get enc_mods for subset
+        for chunk_size, mod in zip(bins, mods):
+            zk_subset = torch.cat((zk_subset, enc_mods[mod.name].zk[:chunk_size]), dim=0)
+
+        # normalize latents by number of modalities in subset
+        weights_subset = ((1 / float(len(mods))) * torch.ones_like(zk_subset).to(self.flags.device))
+
+        return (weights_subset * zk_subset)
 
 
 class JSDMMVae(JointElboMMVae):
