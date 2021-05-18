@@ -5,8 +5,9 @@ from mmvae_hub.base.utils.utils import reweight_weights
 
 
 def log_normal_diag(x, mean, log_var, average=False, reduce=True, dim=None):
+    # print('logvar: ', log_var.mean().item())
     log_norm = -0.5 * (log_var + (x - mean) * (x - mean) * log_var.exp().reciprocal())
-    print('log_norm_diag: ', log_norm.mean().item())
+    # print('log_norm_diag: ', log_norm.mean().item())
     if reduce:
         if average:
             return torch.mean(log_norm, dim)
@@ -18,7 +19,7 @@ def log_normal_diag(x, mean, log_var, average=False, reduce=True, dim=None):
 
 def log_normal_standard(x, average=False, reduce=True, dim=None):
     log_norm = -0.5 * x * x
-    print('log_norm: ', log_norm.mean().item())
+    # print('log_norm: ', log_norm.mean().item())
 
     if reduce:
         if average:
@@ -40,11 +41,11 @@ def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod:
 
     # ln p(z_k)  (not averaged)
     log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
-    print('z0: ', (enc_mod.z0.mean().item(), enc_mod.z0.std().item()), 'z_k: ', (enc_mod.zk.mean().item(), enc_mod.zk.std().item()))
+    # print('z0: ', (enc_mod.z0.mean().item(), enc_mod.z0.std().item()), 'z_k: ', (enc_mod.zk.mean().item(), enc_mod.zk.std().item()))
     # ln q(z_0)  (not averaged)
     # fixme logvar (et du coup z0) gets huge and log_q_z0 contains nans.
     log_q_z0 = log_normal_diag(x=enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
-    print('log_q_z0', log_q_z0.mean().item(), 'log_p_zk: ', log_p_zk.mean().item())
+    # print('log_q_z0', log_q_z0.mean().item(), 'log_p_zk: ', log_p_zk.mean().item())
     # log_q_z0 = torch.nan_to_num(log_q_z0)
 
     # N E_q0[ ln q(z_0) - ln p(z_k) ]
@@ -57,8 +58,8 @@ def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod:
 
     # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
     KLD = (summed_logs - summed_ldj)
-    print('summed_ldj: ', summed_ldj)
-    print('KLD: ', KLD, '\n')
+    # print('summed_ldj: ', summed_ldj)
+    # print('KLD: ', KLD, '\n')
 
     if norm_value is not None:
         KLD = KLD / float(norm_value)
@@ -82,7 +83,7 @@ def calc_kl_divergence(distr0: Distr, distr1: Distr = None, enc_mod: BaseEncMod 
 
     if norm_value is not None:
         KLD = KLD / float(norm_value)
-    print('KLD: ', KLD, '\n')
+
     return KLD
 
 
