@@ -35,17 +35,6 @@ parser.add_argument('--steps_per_training_epoch', type=int, default=None,
 # DATA DEPENDENT
 parser.add_argument('--class_dim', type=int, default=20, help="dimension of common factor latent space")
 parser.add_argument('--dataloader_workers', type=int, default=8, help="number of workers used for the Dataloader")
-# to be set by experiments themselves
-# parser.add_argument('--style_m1_dim', type=int, default=0, help="dimension of varying factor latent space")
-# parser.add_argument('--style_m2_dim', type=int, default=0, help="dimension of varying factor latent space")
-# parser.add_argument('--style_m3_dim', type=int, default=0, help="dimension of varying factor latent space")
-# parser.add_argument('--len_sequence', type=int, default=8, help="length of sequence")
-# parser.add_argument('--dim', type=int, default=64, help="number of classes on which the data set trained")
-# parser.add_argument('--data_multiplications', type=int, default=20, help="number of pairs per sample")
-# parser.add_argument('--num_hidden_layers', type=int, default=1, help="number of channels in images")
-# parser.add_argument('--likelihood_m1', type=str, default='laplace', help="output distribution")
-# parser.add_argument('--likelihood_m2', type=str, default='laplace', help="output distribution")
-# parser.add_argument('--likelihood_m3', type=str, default='categorical', help="output distribution")
 
 # SAVE and LOAD
 parser.add_argument('--mm_vae_save', type=str, default='mm_vae', help="model save for vae_bimodal")
@@ -53,16 +42,6 @@ parser.add_argument('--load_saved', type=bool, default=False, help="flag to indi
 parser.add_argument('--load_flags', type=str, default=None, help="overwrite all values with parameters from an old "
                                                                  "experiment. Give the path to the flags.rar "
                                                                  "file as input.")
-# to bet set by experiments themselves
-# parser.add_argument('--encoder_save_m1', type=str, default='encoderM1', help="model save for encoder")
-# parser.add_argument('--encoder_save_m2', type=str, default='encoderM2', help="model save for encoder")
-# parser.add_argument('--encoder_save_m3', type=str, default='encoderM3', help="model save for decoder")
-# parser.add_argument('--decoder_save_m1', type=str, default='decoderM1', help="model save for decoder")
-# parser.add_argument('--decoder_save_m2', type=str, default='decoderM2', help="model save for decoder")
-# parser.add_argument('--decoder_save_m3', type=str, default='decoderM3', help="model save for decoder")
-# parser.add_argument('--clf_save_m1', type=str, default='clf_m1', help="model save for clf")
-# parser.add_argument('--clf_save_m2', type=str, default='clf_m2', help="model save for clf")
-# parser.add_argument('--clf_save_m3', type=str, default='clf_m3', help="model save for clf")
 
 # DIRECTORIES
 # clfs
@@ -109,6 +88,9 @@ parser.add_argument('--joint_elbo', type=bool, default=False, help="modality_moe
 parser.add_argument('--poe_unimodal_elbos', type=bool, default=False, help="unimodal_klds")
 parser.add_argument('--factorized_representation', action='store_true', default=False,
                     help="factorized_representation")
+parser.add_argument('--weighted_mixture', type=bool, default=False,
+                    help="Flag that indicates if the experts are selected randomly or with a probability that is "
+                         "weighted by the inverse of the variance of the expert during the mixture.")
 parser.add_argument('--feature_extractor_img', type=str, default='resnet', help='which feature extractor model to use',
                     choices=['resnet', 'densenet'])
 
