@@ -6,7 +6,7 @@ from abc import abstractmethod
 from pathlib import Path
 
 import nbformat
-from nbconvert import HTMLExporter
+from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -38,7 +38,6 @@ class BaseTrainer:
 
         if self.flags.kl_annealing:
             self.exp.mm_vae.flags.beta = 0
-
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
         tb_logger = BaseTBLogger(self.flags.str_experiment, writer)
@@ -203,14 +202,18 @@ class BaseTrainer:
                                                               modalities=self.exp.mm_vae.modalities)
 
         # run jupyter notebook with visualisations
-        self.run_notebook_convert(self.flags.dir_experiment_run)
+        pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
 
         # send alert
-        if self.flags.norby and self.flags.dataset != 'toy':
+        # if self.flags.norby and self.flags.dataset != 'toy':
+        if True:
+            import ppb
             import norby
-            norby.send_msg('Training has finished.')
-
-    def run_notebook_convert(self, dir_experiment_run: Path) -> None:
+            expvis_url = ppb.upload(pdf_path, plain=True)
+            self.exp.experiments_database.insert_dict({'expvis_url': expvis_url})
+            norby.send_msg(f'Experiment {self.flags.experiment_uid} has finished. The experiment visualisation can be '
+                           f'found here: {expvis_url}')
+    def run_notebook_convert(self, dir_experiment_run: Path) -> Path:
         """Run and convert the notebook to html."""
 
         # The notebook needs data from the db
@@ -241,6 +244,13 @@ class BaseTrainer:
             with open(html_path, 'w') as f:
                 f.write(body)
 
-            # os.system(f'jupyter nbconvert --to html {nbconvert_path}')
+            log.info('Converting notebook to pdf.')
+            pdf_path = nbconvert_path.with_suffix('.pdf')
+            pdf_exporter = PDFExporter()
+            pdf_exporter.template_name = 'classic'
+            (body, resources) = pdf_exporter.from_notebook_node(nb)
+            pdf_path.write_bytes(body)
+
+            return pdf_path
 
             # assert html_path.exists(), f'html notebook does not exist in destination {html_path}.'
