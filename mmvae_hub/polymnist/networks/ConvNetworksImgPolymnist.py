@@ -31,7 +31,7 @@ class EncoderImg(nn.Module):
         self.class_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
         # temp
         # self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
-        self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Sigmoid())
+        self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Softplus())
 
         # optional style branch
         if flags.factorized_representation:
@@ -43,7 +43,7 @@ class EncoderImg(nn.Module):
         if self.flags.factorized_representation:
             return self.style_mu(h), self.style_logvar(h), self.class_mu(h), self.class_logvar(h), h
         else:
-            return None, None, self.class_mu(h), self.class_logvar(h), h
+            return None, None, self.class_mu(h), self.class_logvar(h).log(), h
 
 
 class DecoderImg(nn.Module):
