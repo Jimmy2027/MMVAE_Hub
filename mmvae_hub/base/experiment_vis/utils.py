@@ -5,8 +5,8 @@ from pathlib import Path
 import torch
 from matplotlib import pyplot as plt
 
+from mmvae_hub.base.utils.flags_utils import get_experiment
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
 def write_experiment_vis_config(experiment_dir: Path) -> Path:
@@ -150,8 +150,8 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 def show_generated_figs(experiment_dir: Path = None, flags=None):
     if not flags:
         flags = torch.load(experiment_dir / 'flags.rar')
-    if Path(flags.dir_data).name == 'polymnist':
-        exp = PolymnistExperiment(flags)
+
+    exp = get_experiment(flags)
 
     if experiment_dir and (experiment_dir / 'checkpoints').exists():
         latest_checkpoint = max(int(d.name) for d in (experiment_dir / 'checkpoints').iterdir() if d.name.isdigit())

@@ -12,6 +12,7 @@ import mmvae_hub
 from mmvae_hub import log
 from mmvae_hub.base.utils.filehandling import create_dir_structure
 from mmvae_hub.base.utils.utils import json2dict
+from mmvae_hub.polymnist import PolymnistExperiment
 
 
 class BaseFlagsSetup:
@@ -58,7 +59,7 @@ class BaseFlagsSetup:
 
         flags = self.flags_set_alpha_modalities(flags)
 
-        flags.log_file = log.manager.root.handlers[1].baseFilename
+        flags.log_file = Path(log.manager.root.handlers[1].baseFilename)
 
         if flags.load_flags:
             old_flags = torch.load(Path(flags.load_flags).expanduser())
@@ -142,3 +143,12 @@ def get_config_path(flags=None):
             return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/local_config.json")
     else:
         return flags.config_path
+
+
+def get_experiment(flags):
+    if Path(flags.dir_data).name == 'polymnist':
+        return PolymnistExperiment(flags)
+    elif flags.dataset == 'toy':
+        return PolymnistExperiment(flags)
+    else:
+        raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')
