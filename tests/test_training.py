@@ -18,9 +18,9 @@ def test_run_epochs_polymnist(method: str):
     changed, perhaps involuntarily.
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
-        if method in ['planar_mixture', 'pfom']:
-            # todo implement calc likelihood for flow based methods
-            calc_nll = False
+
+        # todo implement calc likelihood for flow based methods
+        calc_nll = False if method in ['planar_mixture', 'pfom'] else True
         mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll})
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
