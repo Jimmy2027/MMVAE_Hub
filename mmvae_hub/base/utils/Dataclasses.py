@@ -98,6 +98,35 @@ class JointLatentsPlanarMixture:
 
 
 @dataclass
+class SubsetPFoM:
+    z0: Optional[Tensor] = None
+    zk: Optional[Tensor] = None
+    log_det_j: Optional[Tensor] = None
+
+
+@dataclass
+class JointEmbeddingPFoM:
+    embedding: Tensor
+    mod_strs: Iterable[str]
+    log_det_j: Tensor
+
+@dataclass
+class JointLatentsPFoM:
+    joint_embedding: JointEmbeddingPFoM
+    subsets: Mapping[str, SubsetPFoM]
+
+    def get_joint_embeddings(self):
+        return self.joint_embedding.embedding
+
+    def get_subset_embedding(self, s_key: str):
+        return self.subsets[s_key].zk
+
+    def get_lr_data(self, subset_key: str):
+        """Return the embedding of the subset."""
+        return self.subsets[subset_key].zk
+
+
+@dataclass
 class BaseForwardResults:
     enc_mods: Mapping[str, BaseEncMod]
     joint_latents: JointLatents
