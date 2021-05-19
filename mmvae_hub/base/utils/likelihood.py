@@ -1,6 +1,7 @@
 import math
 
 import numpy as np
+import torch
 import torch.distributions as dist
 from torch.distributions.distribution import Distribution
 
@@ -26,6 +27,8 @@ def get_likelihood(str) -> Distribution:
 
 
 def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
+    """Sample n_imp_samples from the latents."""
+    # question how to do this for flow based methods?
     l_c = latents['content']
     l_s = latents['style']
     l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
@@ -33,6 +36,7 @@ def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
     c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
     styles = {}
     c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
+
     if flags.factorized_representation:
         for k, key in enumerate(l_s.keys()):
             l_s_mod = l_s[key]
@@ -44,6 +48,7 @@ def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
     else:
         for k, key in enumerate(mod_names):
             styles[key] = None
+
     return {'content': c, 'style': styles}
 
 
