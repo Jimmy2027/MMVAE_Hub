@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 
@@ -150,7 +151,8 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 def show_generated_figs(experiment_dir: Path = None, flags=None):
     if not flags:
         flags = torch.load(experiment_dir / 'flags.rar')
-
+    if not hasattr(flags, 'weighted_mixture'):
+        flags.weighted_mixture = False
     exp = get_experiment(flags)
 
     if experiment_dir and (experiment_dir / 'checkpoints').exists():
@@ -172,6 +174,51 @@ def show_generated_figs(experiment_dir: Path = None, flags=None):
             plt.imshow(fig)
             plt.title(p_key + '_' + name)
             plt.show()
+
+
+def make_experiments_dataframe(experiments):
+    df = pd.DataFrame()
+    for exp in experiments.find({}):
+        if exp['epoch_results'] is not None and exp['epoch_results']:
+            last_epoch = str(max(int(epoch) for epoch in exp['epoch_results']))
+            last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
+
+            if exp['flags']['method'] == 'planar_mixture':
+                exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
+
+            if last_epoch_results['lr_eval'] and last_epoch_results['gen_eval']:
+
+                results_dict = {**exp['flags'], 'end_epoch': last_epoch, '_id': exp['_id']}
+
+                scores = []
+                scores_lr = []
+                # get lr_eval results
+                for key, val in last_epoch_results['lr_eval'].items():
+                    results_dict[f'lr_eval_{key}'] = val['accuracy']
+                    scores.append(val['accuracy'])
+                    scores_lr.append(val['accuracy'])
+
+                scores_gen = []
+                # get gen_eval results
+                for key, val in last_epoch_results['gen_eval'].items():
+                    key = key.replace('digit_', '')
+                    results_dict[f'gen_eval_{key}'] = val
+                    scores.append(val)
+                    scores_gen.append(val)
+
+                scores_prd = []
+
+                if 'prd_scores' in last_epoch_results and last_epoch_results['prd_scores']:
+                    for key, val in last_epoch_results['prd_scores'].items():
+                        results_dict[f'prd_score_{key}'] = val
+                        scores_prd.append(val)
+
+                results_dict['score'] = sum(scores)
+                results_dict['score_lr'] = sum(scores_lr)
+                results_dict['score_gen'] = sum(scores_gen)
+                results_dict['score_prd'] = sum(scores_prd)
+                df = df.append(results_dict, ignore_index=True)
+    return df
 
 
 if __name__ == '__main__':
