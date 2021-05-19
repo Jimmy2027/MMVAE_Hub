@@ -26,7 +26,7 @@ def test_run_epochs_polymnist(method: str):
         test_results = trainer.run_epochs()
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 def test_run_planar_mixture_no_flow():
     """
     Test if the main training loop runs.

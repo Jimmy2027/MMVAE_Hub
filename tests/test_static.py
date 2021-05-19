@@ -42,13 +42,14 @@ def test_static_results_1mod(method: str, update_static_results=False):
             write_to_jsonfile(jsonfile, [(f'static_results_1mod.{method}', static_results)])
 
         are_they_equal = {
-            'joint_div': np.round(test_results.joint_div, 7) == np.round(static_results['joint_div'], 7),
-            'klds': np.round(test_results.klds['m0'], 7) == np.round(static_results['klds'], 7),
-            'lhoods': test_results.lhoods['m0']['m0'] == static_results['lhoods'],
+            'joint_div': np.round(test_results.joint_div, 5) == np.round(static_results['joint_div'], 5),
+            'klds': np.round(test_results.klds['m0'], 5) == np.round(static_results['klds'], 5),
+            'lhoods': np.round(test_results.lhoods['m0']['m0'], 5) == np.round(static_results['lhoods'], 5),
             'log_probs': test_results.log_probs['m0'] == static_results['log_probs'],
             'total_loss': test_results.total_loss == static_results['total_loss'],
             'lr_eval': test_results.lr_eval['m0']['accuracy'] == static_results['lr_eval'],
-            'latents_class_mu': np.round(test_results.latents['m0']['latents_class']['mu'], 8) == np.round(static_results['latents_class']['mu'], 8)
+            'latents_class_mu': np.round(test_results.latents['m0']['latents_class']['mu'], 8) == np.round(
+                static_results['latents_class']['mu'], 8)
         }
 
         assert all(v for _, v in are_they_equal.items()), f'Some results changed: {are_they_equal}'
