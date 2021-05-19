@@ -99,6 +99,7 @@ class MongoDatabase:
         return gridfs.GridFS(db)
 
     def load_networks_from_db(self, mmvae: BaseMMVae):
+        log.info(f'Loading networks from database for model {mmvae}.')
         fs = self.connect_with_gridfs()
         fs_ids = [elem._id for elem in fs.find({})]
 
