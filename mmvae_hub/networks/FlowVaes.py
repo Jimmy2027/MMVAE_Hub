@@ -107,8 +107,8 @@ class PfomMMVAE(PlanarFlowMMVAE):
             # define confidence of expert by the inverse of the logvar. Sample experts with probability proportional to confidence.
             confidences = [1 / enc_mods[mod.name].latents_class.logvar.mean().abs() for mod in mods]
             bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
-            if sum(bins) != len(mods):
-                bins[confidences.index(max(confidences))] += 1
+            if sum(bins) != num_samples:
+                bins[confidences.index(max(confidences))] += num_samples - sum(bins)
         else:
             # fill zk_subset with an equal amount of each expert
             bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
@@ -267,8 +267,8 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
             # define confidence of expert by the mean of zk. Sample experts with probability proportional to confidence.
             confidences = [enc_mods[mod.name].zk.mean().abs() for mod in mods]
             bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
-            if sum(bins) != len(mods):
-                bins[confidences.index(max(confidences))] += 1
+            if sum(bins) != num_samples:
+                bins[confidences.index(max(confidences))] += num_samples - sum(bins)
         else:
             # fill zk_subset with an equal amount of each expert
             bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
