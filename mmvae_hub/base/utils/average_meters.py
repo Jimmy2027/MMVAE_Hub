@@ -5,7 +5,6 @@ import typing
 import numpy as np
 
 from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
 
 
 class AverageMeter(object):
@@ -116,17 +115,22 @@ class AverageMeterJointLatents(AverageMeterDict):
 
     def update(self, val: typing.Union[JointLatents, JointLatentsPlanarMixture]):
         if not self.vals:
-            init_val = [] if self.method == 'planar_mixture' else {'mu': [], 'logvar': []}
+            init_val = [] if self.method in ['planar_mixture', 'pfom'] else {'mu': [], 'logvar': []}
             self.vals = {k: init_val for k in list(val.subsets)}
             self.vals['joint'] = init_val
 
-        if self.method == 'planar_mixture':
+        if self.method in ['planar_mixture']:
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key].append(subset.mean().item())
             self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
 
-        else:
+        elif self.method in ['pfom']:
+            for subset_key, subset in val.subsets.items():
+                self.vals[subset_key].append(subset.zk.mean().item())
+            self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
 
+
+        else:
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key]['mu'].append(subset.mu.mean().item())
                 self.vals[subset_key]['logvar'].append(subset.logvar.mean().item())
@@ -134,7 +138,8 @@ class AverageMeterJointLatents(AverageMeterDict):
             self.vals['joint']['logvar'].append(val.joint_distr.logvar.mean().item())
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
-        if self.method == 'planar_mixture':
+        if self.method in ['planar_mixture', 'pfom']:
             return {k: np.mean(v) for k, v in self.vals.items()}
         else:
-            return {mod_str: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for mod_str, v in self.vals.items()}
+            return {mod_str: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for mod_str, v in
+                    self.vals.items()}
