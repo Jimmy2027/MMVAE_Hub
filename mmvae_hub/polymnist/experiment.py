@@ -1,5 +1,3 @@
-import os
-import random
 from pathlib import Path
 from typing import Mapping, Iterable
 
@@ -51,8 +49,8 @@ class PolymnistExperiment(BaseExperiment):
     def set_dataset(self):
         transform = transforms.Compose([transforms.ToTensor()])
         if self.flags.dataset == 'toy':
-            train = ToyPolymnistDataset(num_modalities=self.num_modalities, seed = self.flags.seed)
-            test = ToyPolymnistDataset(num_modalities=self.num_modalities, seed = self.flags.seed)
+            train = ToyPolymnistDataset(num_modalities=self.num_modalities, seed=self.flags.seed)
+            test = ToyPolymnistDataset(num_modalities=self.num_modalities, seed=self.flags.seed)
         else:
             train = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform,
                                      num_modalities=self.num_modalities)
@@ -90,13 +88,18 @@ class PolymnistExperiment(BaseExperiment):
         return transforms.Compose([transforms.ToTensor()])
 
     def get_test_samples(self, num_images=10) -> Iterable[Mapping[str, Tensor]]:
+        """
+        Gets random samples for the cond. generation.
+        """
         n_test = len(self.dataset_test)
         samples = []
         for i in range(num_images):
             while True:
                 # loop until sample with label i is found
-                ix = random.randint(0, n_test - 1)
+                # ix = random.randint(0, n_test - 1)
+                ix = 0
                 sample, target = self.dataset_test[ix]
+                ix += 1
                 if target == i:
                     samples.append(dict_to_device(sample, self.flags.device))
                     break
