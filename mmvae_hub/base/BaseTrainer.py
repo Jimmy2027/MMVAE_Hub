@@ -73,7 +73,7 @@ class BaseTrainer:
     def train(self):
         model = self.exp.mm_vae.train()
 
-        d_loader, training_steps, average_meters = self.setup_phase()
+        d_loader, training_steps, average_meters = self.setup_phase('train')
 
         for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
             batch_d = model.batch_to_device(batch_d)
@@ -110,7 +110,7 @@ class BaseTrainer:
         with torch.no_grad():
             model = self.exp.mm_vae.eval()
 
-            d_loader, training_steps, average_meters = self.setup_phase()
+            d_loader, training_steps, average_meters = self.setup_phase('test')
 
             for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
                 batch_d = model.batch_to_device(batch_d)
@@ -169,10 +169,10 @@ class BaseTrainer:
                     test_results.prd_scores = prd_scores
         return test_results
 
-    def setup_phase(self):
+    def setup_phase(self, phase: str):
         """Setup for train or test phase."""
-
-        d_loader = DataLoader(self.exp.dataset_test, batch_size=self.flags.batch_size, shuffle=True,
+        dataset = getattr(self.exp, f'dataset_{phase}')
+        d_loader = DataLoader(dataset, batch_size=self.flags.batch_size, shuffle=True,
                               num_workers=self.flags.dataloader_workers, drop_last=True)
 
         training_steps = self.flags.steps_per_training_epoch
@@ -253,4 +253,3 @@ class BaseTrainer:
         pdf_path.write_bytes(body)
 
         return pdf_path
-
