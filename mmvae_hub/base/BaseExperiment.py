@@ -69,10 +69,6 @@ class BaseExperiment(ABC):
         pass
 
     @abstractmethod
-    def get_test_samples(self):
-        pass
-
-    @abstractmethod
     def mean_eval_metric(self, values):
         pass
 
@@ -123,3 +119,17 @@ class BaseExperiment(ABC):
 
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
+
+    def get_test_samples(self, num_images=10) -> typing.Iterable[typing.Mapping[str, Tensor]]:
+        """
+        Gets random samples for the cond. generation.
+        """
+        n_test = self.dataset_test.__len__()
+        samples = []
+        for _ in range(num_images):
+            sample, _ = self.dataset_test.__getitem__(random.randint(0, n_test - 1))
+            sample = utils.dict_to_device(sample, self.flags.device)
+
+            samples.append(sample)
+
+        return samples
