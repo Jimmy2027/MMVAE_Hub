@@ -61,7 +61,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
         super(PfomMMVAE, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = PfomMMDiv()
 
-    def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, EncModPlanarMixture]:
+    def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, EncModPFoM]:
         """
         Encoder that outputs parameters for base distribution of z and flow parameters.
         """
@@ -72,17 +72,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
                 style_mu, style_logvar, class_mu, class_logvar, h = mod.encoder(x_m)
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
 
-                # get amortized u an w for all flows
-                if self.num_flows:
-                    flow_params = {
-                        'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
-                        'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
-                        'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1)}
-                else:
-                    flow_params = {k: None for k in ['u', 'w', 'b']}
-
-                enc_mods[mod_str] = EncModPlanarMixture(latents_class=latents_class,
-                                                        flow_params=PlanarFlowParams(**flow_params))
+                enc_mods[mod_str] = EncModPFoM(latents_class=latents_class, h=h)
                 if style_mu:
                     latents_style = Distr(mu=style_mu, logvar=style_logvar)
 
@@ -90,7 +80,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
 
         return enc_mods
 
-    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> typing.Tuple[
+    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPFoM], s_key: str) -> typing.Tuple[
         Distr, PlanarFlowParams]:
         """For each element in batch select an expert from subset with equal probability."""
         num_samples = enc_mods[list(enc_mods)[0]].latents_class.mu.shape[0]
@@ -99,12 +89,11 @@ class PfomMMVAE(PlanarFlowMMVAE):
         # fuse the subset
         joint_mus = torch.Tensor().to(self.flags.device)
         joint_logvars = torch.Tensor().to(self.flags.device)
-        joint_flow_params = PlanarFlowParams(u=torch.Tensor().to(self.flags.device),
-                                             w=torch.Tensor().to(self.flags.device),
-                                             b=torch.Tensor().to(self.flags.device))
+        joint_h = torch.Tensor().to(self.flags.device)
 
         if self.flags.weighted_mixture:
-            # define confidence of expert by the inverse of the logvar. Sample experts with probability proportional to confidence.
+            # define confidence of expert by the inverse of the logvar.
+            # Sample experts with probability proportional to confidence.
             confidences = [1 / enc_mods[mod.name].latents_class.logvar.mean().abs() for mod in mods]
             bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
             if sum(bins) != num_samples:
@@ -113,20 +102,27 @@ class PfomMMVAE(PlanarFlowMMVAE):
             # fill zk_subset with an equal amount of each expert
             bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
 
-        # get enc_mods for subset
+        # get latents and flow params for each expert
         for chunk_size, mod in zip(bins, mods):
+            expert = enc_mods[mod.name]
             joint_mus = torch.cat(
-                (joint_mus, enc_mods[mod.name].latents_class.mu[joint_mus.shape[0]:joint_mus.shape[0] + chunk_size]),
+                (joint_mus, expert.latents_class.mu[joint_mus.shape[0]:joint_mus.shape[0] + chunk_size]),
                 dim=0)
             joint_logvars = torch.cat(
                 (joint_logvars,
-                 enc_mods[mod.name].latents_class.logvar[joint_logvars.shape[0]:joint_logvars.shape[0] + chunk_size]),
+                 expert.latents_class.logvar[
+                 joint_logvars.shape[0]:joint_logvars.shape[0] + chunk_size]),
                 dim=0)
-            for p in ['u', 'w', 'b']:
-                idx = getattr(joint_flow_params, p).shape[0]
-                new_val = torch.cat((getattr(joint_flow_params, p), getattr(enc_mods[mod.name].flow_params, p)[
-                                                                    idx:idx + chunk_size]), dim=0)
-                setattr(joint_flow_params, p, new_val)
+            joint_h = torch.cat((joint_h, expert.h[joint_h.shape[0]:joint_h.shape[0] + chunk_size]))
+
+        if self.num_flows:
+            # get amortized parameters
+            joint_flow_params = PlanarFlowParams(**{
+                'u': self.amor_u(joint_h).view(joint_h.shape[0], self.num_flows, self.flags.class_dim, 1),
+                'w': self.amor_w(joint_h).view(joint_h.shape[0], self.num_flows, 1, self.flags.class_dim),
+                'b': self.amor_b(joint_h).view(joint_h.shape[0], self.num_flows, 1, 1)})
+        else:
+            joint_flow_params = {k: None for k in ['u', 'w', 'b']}
 
         assert joint_mus.shape == joint_logvars.shape == torch.Size([num_samples, self.flags.class_dim])
 
@@ -136,7 +132,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
 
         return Distr(mu=joint_mus, logvar=joint_logvars), joint_flow_params
 
-    def fuse_modalities(self, enc_mods: Mapping[str, EncModPlanarMixture],
+    def fuse_modalities(self, enc_mods: Mapping[str, EncModPFoM],
                         batch_mods: typing.Iterable[str]) -> JointLatentsPFoM:
         """
         Create a subspace for all the combinations of the encoded modalities by combining them.
@@ -284,3 +280,26 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
         weights_subset = ((1 / float(len(mods))) * torch.ones_like(zk_subset).to(self.flags.device))
 
         return (weights_subset * zk_subset)
+
+    # def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> Distr:
+    #     num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
+    #     mods = self.subsets[s_key]
+    #
+    #     w_modalities = torch.Tensor(self.flags.alpha_modalities).to(self.flags.device)
+    #
+    #     idx_start = []
+    #     idx_end = []
+    #     for k in range(len(mods)):
+    #         i_start = 0 if k == 0 else int(idx_end[k - 1])
+    #         if k == w_modalities.shape[0] - 1:
+    #             i_end = num_samples
+    #         else:
+    #             i_end = i_start + int(torch.floor(num_samples * w_modalities[k]))
+    #         idx_start.append(i_start)
+    #         idx_end.append(i_end)
+    #
+    #     idx_end[-1] = num_samples
+    #
+    #     zk_sel = torch.cat([enc_mods[mod.name].zk[idx_start[k]:idx_end[k], :] for k, mod in enumerate(mods)])
+    #
+    #     return zk_sel
