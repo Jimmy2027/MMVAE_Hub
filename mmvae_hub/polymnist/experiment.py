@@ -7,7 +7,7 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from torch import Tensor
 from torchvision import transforms
-
+import random
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.base.modalities.BaseModality import BaseModality
 from mmvae_hub.base.utils.utils import dict_to_device
@@ -91,15 +91,15 @@ class PolymnistExperiment(BaseExperiment):
         """
         Gets random samples for the cond. generation.
         """
+        random.seed(42)
         n_test = len(self.dataset_test)
         samples = []
+
         for i in range(num_images):
             while True:
                 # loop until sample with label i is found
-                # ix = random.randint(0, n_test - 1)
-                ix = 0
+                ix = random.randint(0, n_test - 1)
                 sample, target = self.dataset_test[ix]
-                ix += 1
                 if target == i:
                     samples.append(dict_to_device(sample, self.flags.device))
                     break
