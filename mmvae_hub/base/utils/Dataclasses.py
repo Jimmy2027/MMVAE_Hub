@@ -52,6 +52,13 @@ class EncModPlanarMixture:
 
 
 @dataclass
+class EncModPFoM:
+    latents_class: Distr
+    h: Tensor
+    latents_style: Optional[Distr] = None
+
+
+@dataclass
 class BaseEncMod:
     # latents have shape [batch_size, class_dim]
     latents_class: Distr
@@ -109,6 +116,7 @@ class JointEmbeddingPFoM:
     embedding: Tensor
     mod_strs: Iterable[str]
     log_det_j: Tensor
+
 
 @dataclass
 class JointLatentsPFoM:
