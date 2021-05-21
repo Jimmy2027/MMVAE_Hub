@@ -220,7 +220,7 @@ class BaseTrainer:
         """Run and convert the notebook to html and pdf."""
 
         # Copy the experiment_vis jupyter notebook to the experiment dir
-        notebook_path = Path(__file__).parent / 'experiment_vis/experiment_vis.ipynb'
+        notebook_path = Path(__file__).parent.parent / 'experiment_vis/experiment_vis.ipynb'
         dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
 
         # copy notebook to experiment run

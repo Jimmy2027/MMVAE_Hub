@@ -183,12 +183,15 @@ def make_experiments_dataframe(experiments):
             last_epoch = str(max(int(epoch) for epoch in exp['epoch_results']))
             last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
 
-            if exp['flags']['method'] == 'planar_mixture':
+            if exp['flags']['method'] in ['planar_mixture', 'pfom']:
                 exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
 
             if last_epoch_results['lr_eval'] and last_epoch_results['gen_eval']:
 
                 results_dict = {**exp['flags'], 'end_epoch': last_epoch, '_id': exp['_id']}
+
+                if 'expvis_url' in exp:
+                    results_dict['expvis_url'] = exp['expvis_url']
 
                 scores = []
                 scores_lr = []
