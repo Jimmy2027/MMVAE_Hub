@@ -2,6 +2,7 @@
 import argparse
 import configparser
 import os
+import zipfile
 from abc import abstractmethod
 from pathlib import Path
 
@@ -20,8 +21,9 @@ class BaseFlagsSetup:
         self.config_path = config_path
         self.parser = None
 
-    def setup(self, flags, testing=False, additional_args=None):
+    def setup(self, flags, testing=False, additional_args=None, leomed=False):
         """
+        leomed bool: if True, use TMPDIR as experiment_dir and dir_data
         Setup the flags:
             - update_flags_with_config
             - expand user in paths and set paths if not given
@@ -40,10 +42,15 @@ class BaseFlagsSetup:
                 setattr(flags, k, v)
 
         if flags.calc_prd:
+            # calc_prd needs saved figures
             flags.save_figure = True
 
+        if leomed:
+            flags = self.setup_leomed(flags)
+
         if not flags.dir_fid:
-            flags.dir_fid = flags.dir_experiment
+            flags.dir_fid = flags.dir_experiment / 'fid'
+            flags.dir_fid.mkdir()
 
         flags.version = self.get_version_from_setup_config()
 
@@ -101,6 +108,21 @@ class BaseFlagsSetup:
         config = configparser.ConfigParser()
         config.read(Path(__file__).parent.parent.parent.parent / 'setup.cfg')
         return config['metadata']['version']
+
+    def setup_leomed(self, flags):
+        polymnist_zip_path = Path('/cluster/work/vogtlab/Projects/Polymnist/PolyMNIST.zip')
+        tmpdir = Path(os.getenv("TMPDIR"))
+        out_dir = tmpdir / 'polymnist'
+        out_dir.mkdir()
+
+        with zipfile.ZipFile(polymnist_zip_path) as z:
+            z.extractall(str(out_dir))
+
+        flags.dir_data = out_dir
+        flags.dir_fid = tmpdir
+        flags.dir_experiment = tmpdir / flags.dir_experiment.name
+
+        return flags
 
 
 def get_freer_gpu() -> int:
