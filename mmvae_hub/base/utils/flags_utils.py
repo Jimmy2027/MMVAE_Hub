@@ -50,7 +50,6 @@ class BaseFlagsSetup:
 
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
-            flags.dir_fid.mkdir()
 
         if leomed:
             flags = self.setup_leomed(flags)
