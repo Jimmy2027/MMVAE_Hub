@@ -6,10 +6,11 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
-from mmvae import log
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
+
+from mmvae_hub import log
 
 
 class PolymnistDataset(Dataset):
