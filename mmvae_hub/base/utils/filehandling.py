@@ -36,8 +36,7 @@ def create_dir_structure(flags: argparse.ArgumentParser(), train: bool = True) -
     Under flags.dir_experiment/plots, create:
     cond_gen, random_samples, swapping
     """
-    experiment_uid = get_experiment_uid(flags)
-    flags.experiment_uid = experiment_uid
+    experiment_uid = flags.experiment_uid
     if train:
         flags.dir_experiment_run = flags.dir_experiment / experiment_uid
         flags.str_experiment = experiment_uid

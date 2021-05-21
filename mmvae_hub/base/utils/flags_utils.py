@@ -11,7 +11,7 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
-from mmvae_hub.base.utils.filehandling import create_dir_structure
+from mmvae_hub.base.utils.filehandling import create_dir_structure, get_experiment_uid
 from mmvae_hub.base.utils.utils import json2dict
 from mmvae_hub.polymnist import PolymnistExperiment
 
@@ -45,12 +45,15 @@ class BaseFlagsSetup:
             # calc_prd needs saved figures
             flags.save_figure = True
 
-        if leomed:
-            flags = self.setup_leomed(flags)
+        experiment_uid = get_experiment_uid(flags)
+        flags.experiment_uid = experiment_uid
 
         if not flags.dir_fid:
-            flags.dir_fid = flags.dir_experiment / 'fid'
+            flags.dir_fid = flags.dir_experiment
             flags.dir_fid.mkdir()
+
+        if leomed:
+            flags = self.setup_leomed(flags)
 
         flags.version = self.get_version_from_setup_config()
 
@@ -120,7 +123,7 @@ class BaseFlagsSetup:
 
         flags.dir_data = out_dir
         flags.dir_fid = tmpdir
-        flags.dir_experiment = tmpdir / flags.dir_experiment.name
+        flags.dir_experiment = tmpdir / flags.experiment_uid
 
         return flags
 
