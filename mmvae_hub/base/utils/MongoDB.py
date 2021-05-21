@@ -60,12 +60,17 @@ class MongoDatabase:
         experiments = self.connect()
         return experiments.find_one({'_id': self.experiment_uid})
 
-    def delete_all(self):
+    def delete_many(self, selection: dict, delete_all: bool = False):
         """
-        Removes all documents in database.
+        Delete all elements from database that correspond to selection.
+
+        delete_all bool: If True, remove all documents in database.
         """
         experiment = self.connect()
-        experiment.delete_many({})
+        if delete_all:
+            experiment.delete_many({})
+        else:
+            experiment.delete_many(selection)
 
     def delete_one(self, _id: str):
         """
@@ -151,17 +156,6 @@ class MongoDatabase:
 
 
 if __name__ == '__main__':
-    from dataclasses import dataclass
+    mongo_db = MongoDatabase(training=False)
+    mongo_db.delete_many({'flags.version': '0.0.4-dev', 'flags.method': 'pfom'})
 
-
-    @dataclass()
-    class DC:
-        experiment_uid: str = 'temp_uid'
-
-
-    dc = DC()
-
-    mongo_db = MongoDatabase(dc, training=False)
-    mongo_db.delete_one('polymnist_planar_mixture_2021_05_04_09_21_38_767516')
-
-    sdfg = 0
