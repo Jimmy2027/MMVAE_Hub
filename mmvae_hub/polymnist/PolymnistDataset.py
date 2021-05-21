@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
+from mmvae import log
 from torch.utils.data import Dataset
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
@@ -24,6 +25,14 @@ class PolymnistDataset(Dataset):
                 num_modalities (int):  number of modalities.
         """
         super().__init__()
+
+        if not dir_data.exists():
+            log.info(f'data dir {dir_data} does not exist. Creating PolyMNIST dataset. This may take a while...')
+            self.create_polymnist_dataset((dir_data / 'train'), Path(__file__).parent / 'polymnist_background_images',
+                                          num_modalities, train=True)
+            self.create_polymnist_dataset((dir_data / 'test'), Path(__file__).parent / 'polymnist_background_images',
+                                          num_modalities, train=False)
+
         self.num_modalities = num_modalities
         self.unimodal_datapaths = sorted(glob.glob(str(dir_data / 'm*')))[:num_modalities]
         self.transform = transform
@@ -32,7 +41,9 @@ class PolymnistDataset(Dataset):
         # save all paths to individual files
         self.file_paths = {dp: [] for dp in self.unimodal_datapaths}
         for dp in self.unimodal_datapaths:
+            assert Path(dp).exists(), f'data path {dp} does not exist.'
             files = glob.glob(os.path.join(dp, "*.png"))
+            assert files, f'No png file found under {dp}'
             self.file_paths[dp] = files
         # assert that each modality has the same number of images
         num_files = len(self.file_paths[dp])
