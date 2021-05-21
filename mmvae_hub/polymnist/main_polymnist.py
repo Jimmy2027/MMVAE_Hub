@@ -10,7 +10,7 @@ from mmvae_hub.polymnist.flags import FlagsSetup, parser
 if __name__ == '__main__':
     flags = parser.parse_args()
     flags_setup = FlagsSetup(get_config_path(flags))
-    flags = flags_setup.setup(flags, additional_args=sp)
+    flags = flags_setup.setup(flags)
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
                      f'Experiment {flags.experiment_uid} finished.'):
         flags = flags_setup.setup(flags)
