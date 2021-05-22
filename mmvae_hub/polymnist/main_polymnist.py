@@ -16,6 +16,7 @@ if __name__ == '__main__':
     flags_setup = FlagsSetup(get_config_path(flags))
     flags = flags_setup.setup(flags)
 
+    log.info(f'dir_experiment_run: {flags.dir_experiment_run}')
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
                      f'Experiment {flags.experiment_uid} finished.'):
         mst = PolymnistExperiment(flags)
@@ -25,10 +26,16 @@ if __name__ == '__main__':
 
     # move zipped experiment_dir_run in TMPDIR to experiment_dir
     if flags.leomed:
-        dir_experiment = json2dict(get_config_path())['dir_experiment']
+        dir_experiment = Path(json2dict(get_config_path())['dir_experiment'])
+        dir_experiment.mkdir(exist_ok=True)
 
         # zip dir_experiment_run
-        shutil.make_archive((Path(dir_experiment) / flags.experiment_uid).with_suffix('zip'), 'zip',
+        log.info(f'zipping {flags.dir_experiment_run} '
+                 f'to {(Path(dir_experiment) / flags.experiment_uid).with_suffix("zip")}.')
+        dir_experiment_zipped = (Path(dir_experiment) / flags.experiment_uid).with_suffix('zip')
+        shutil.make_archive(dir_experiment_zipped, 'zip',
                             flags.dir_experiment_run)
+
+        assert dir_experiment_zipped.exists(), f'{dir_experiment_zipped} does not exist. Zipping of dir_experiment_run failed.'
 
     log.info('Done.')
