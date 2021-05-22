@@ -115,7 +115,7 @@ class BaseFlagsSetup:
         polymnist_zip_path = Path('/cluster/work/vogtlab/Projects/Polymnist/PolyMNIST.zip')
         tmpdir = Path(os.getenv("TMPDIR"))
         out_dir = tmpdir
-        out_dir.mkdir()
+
         log.info(f'Extracting data from {polymnist_zip_path} to {out_dir}.')
         with zipfile.ZipFile(polymnist_zip_path) as z:
             z.extractall(str(out_dir))
