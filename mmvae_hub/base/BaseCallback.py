@@ -40,6 +40,6 @@ class BaseCallback:
             self.exp.experiments_database.insert_dict({'epoch_results': epoch_results})
 
         elif self.flags.use_db == 2:
-            epoch_results_dir = self.flags.dir_experiment / 'epoch_results' / str(epoch)
+            epoch_results_dir = self.flags.dir_experiment_run / 'epoch_results'
             epoch_results_dir.mkdir(parents=True)
             dict2json(out_path=epoch_results_dir / f'{epoch}.json', d=epoch_results_dict)
