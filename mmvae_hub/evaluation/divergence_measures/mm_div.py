@@ -3,8 +3,8 @@ from abc import abstractmethod
 import numpy as np
 import torch
 
-from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_entropy_gauss
-from mmvae_hub.base.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
+from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss
+from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.utils import reweight_weights
 

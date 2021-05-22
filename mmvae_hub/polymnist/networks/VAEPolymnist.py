@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from mmvae_hub.base.BaseMMVae import BaseMMVae_
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import poe
+from mmvae_hub.evaluation.divergence_measures.mm_div import poe
 from mmvae_hub.base.utils import utils
 
 

@@ -2,11 +2,11 @@ import glob
 import os
 
 import numpy as np
-from mmvae_hub.base.evaluation.fid.fid_score import calculate_frechet_distance
-from mmvae_hub.base.evaluation.fid.fid_score import get_activations
-from mmvae_hub.base.evaluation.fid.inception import InceptionV3
+from mmvae_hub.evaluation.fid.fid_score import calculate_frechet_distance
+from mmvae_hub.evaluation.fid.fid_score import get_activations
+from mmvae_hub.evaluation.fid.inception import InceptionV3
 
-from mmvae_hub.base.evaluation.prd_score import prd_score as prd
+from mmvae_hub.evaluation.prd_score import prd_score as prd
 
 
 def calc_inception_features(exp, dims=2048, batch_size=128):

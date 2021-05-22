@@ -23,7 +23,7 @@ from __future__ import print_function
 import unittest
 
 import numpy as np
-from mmvae_hub.base.evaluation.prd_score import prd_score as prd
+from mmvae_hub.evaluation.prd_score import prd_score as prd
 
 
 class PRDTest(unittest.TestCase):

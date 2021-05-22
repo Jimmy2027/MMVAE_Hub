@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from mmvae_hub.base import BaseTrainer, BaseCallback
+from mmvae_hub.base.BaseCallback import BaseCallback
+from mmvae_hub.base.BaseTrainer import BaseTrainer
 
 
 class PolymnistTrainer(BaseTrainer):

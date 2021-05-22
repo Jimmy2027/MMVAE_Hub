@@ -16,11 +16,11 @@ from tqdm import tqdm
 from mmvae_hub import log
 from mmvae_hub.base import BaseCallback
 from mmvae_hub.base import BaseExperiment
-from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
-from mmvae_hub.base.evaluation.eval_metrics.likelihood import estimate_likelihoods
-from mmvae_hub.base.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
-from mmvae_hub.base.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
-from mmvae_hub.base.evaluation.eval_metrics.sample_quality import calc_prd_score
+from mmvae_hub.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
+from mmvae_hub.evaluation.eval_metrics.likelihood import estimate_likelihoods
+from mmvae_hub.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
+from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
+from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.base.utils import BaseTBLogger
 from mmvae_hub.base.utils.average_meters import *
 from mmvae_hub.base.utils.plotting import generate_plots

@@ -3,14 +3,16 @@ from abc import ABC
 from pathlib import Path
 from typing import Tuple, Union
 
+import numpy as np
+import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
-
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import *
-from mmvae_hub.base.evaluation.losses import calc_style_kld
+from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.base.utils import utils
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.fusion_functions import *
+from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
+from mmvae_hub.evaluation.losses import calc_style_kld
 
 
 class BaseMMVAE(ABC, nn.Module):
@@ -305,5 +307,3 @@ class POEMMVae(BaseMMVAE):
     @staticmethod
     def fusion_condition(subset, input_batch=None):
         return len(subset) == len(input_batch.keys())
-
-

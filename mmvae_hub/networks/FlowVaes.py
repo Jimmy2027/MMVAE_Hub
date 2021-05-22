@@ -4,7 +4,7 @@ import typing
 import torch
 from torch import nn as nn
 
-from mmvae_hub.base.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.fusion_functions import subsets_from_batchmods
 from mmvae_hub.base.utils.utils import split_int_to_bins

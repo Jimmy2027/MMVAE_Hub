@@ -1,7 +1,7 @@
 import torch
 
-import mmvae_hub.base.modalities.utils
-from mmvae_hub.base.modalities.BaseModality import Modality
+import mmvae_hub.modalities.utils
+from mmvae_hub.modalities.BaseModality import Modality
 from mmvae_hub.base.utils import plot
 from mmvae_hub.base.utils.save_samples import write_samples_text_to_file
 from mmvae_hub.base.utils.text import tensor_to_text
@@ -21,7 +21,7 @@ class Text(Modality):
         self.file_suffix = '.txt';
         self.encoder = enc;
         self.decoder = dec;
-        self.likelihood = mmvae_hub.base.modalities.utils.get_likelihood(self.likelihood_name);
+        self.likelihood = mmvae_hub.modalities.utils.get_likelihood(self.likelihood_name);
 
     def save_data(self, d, fn, args):
         write_samples_text_to_file(tensor_to_text(self.alphabet,

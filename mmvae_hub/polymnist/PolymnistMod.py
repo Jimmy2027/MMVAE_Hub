@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from mmvae_hub.base.modalities import BaseModality
+from mmvae_hub.modalities import BaseModality
 from mmvae_hub.base.utils.likelihood import get_likelihood
 from mmvae_hub.base.utils.save_samples import write_samples_img_to_file
 from mmvae_hub.polymnist.networks.ConvNetworkImgClfPolymnist import ClfImg

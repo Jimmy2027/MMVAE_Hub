@@ -2,7 +2,7 @@ import tempfile
 
 import pytest
 
-from mmvae_hub.base.evaluation.eval_metrics.coherence import test_generation
+from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.base.utils.plotting import generate_plots
 from mmvae_hub.polymnist import PolymnistTrainer
 from tests.utils import set_me_up

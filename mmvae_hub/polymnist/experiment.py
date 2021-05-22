@@ -9,7 +9,7 @@ from torch import Tensor
 from torchvision import transforms
 import random
 from mmvae_hub.base.BaseExperiment import BaseExperiment
-from mmvae_hub.base.modalities.BaseModality import BaseModality
+from mmvae_hub.modalities import BaseModality
 from mmvae_hub.base.utils.utils import dict_to_device
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
 from mmvae_hub.polymnist.PolymnistMod import PolymnistMod

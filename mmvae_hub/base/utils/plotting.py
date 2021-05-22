@@ -3,7 +3,7 @@ import os
 import torch
 
 from mmvae_hub.base import BaseExperiment
-from mmvae_hub.base.modalities.BaseModality import BaseModality
+from mmvae_hub.modalities import BaseModality
 from mmvae_hub.base.utils import plot
 from mmvae_hub.base.utils import utils
 from mmvae_hub.base.utils.Dataclasses import *
