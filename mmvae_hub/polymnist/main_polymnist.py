@@ -28,6 +28,7 @@ if __name__ == '__main__':
         dir_experiment = json2dict(get_config_path())['dir_experiment']
 
         # zip dir_experiment_run
-        shutil.make_archive(Path(dir_experiment) / flags.experiment_uid, 'zip', flags.dir_experiment_run)
+        shutil.make_archive((Path(dir_experiment) / flags.experiment_uid).with_suffix('zip'), 'zip',
+                            flags.dir_experiment_run)
 
     log.info('Done.')
