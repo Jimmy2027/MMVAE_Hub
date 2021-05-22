@@ -88,32 +88,40 @@ class MongoDatabase:
         """
         fs = self.connect_with_gridfs()
         checkpoint_dir = dir_checkpoints / str(epoch).zfill(4)
+        fs_ids = [elem._id for elem in fs.find({})]
 
         for mod_str in modalities:
             for prefix in ['en', 'de']:
                 filename = checkpoint_dir / f"{prefix}coderM{mod_str}"
-                with io.FileIO(str(filename), 'r') as fileObject:
-                    log.info(f'Saving checkpoint to db: {filename}')
-                    fs.put(fileObject, filename=str(filename),
-                           _id=self.experiment_uid + f"__{prefix}coderM{mod_str}")
+                _id = self.experiment_uid + f"__{prefix}coderM{mod_str}"
+                if _id not in fs_ids:
+                    with io.FileIO(str(filename), 'r') as fileObject:
+                        log.info(f'Saving checkpoint to db: {filename}')
+                        fs.put(fileObject, filename=str(filename), _id=_id)
 
     def upload_logfile(self, logfile_path: Path) -> None:
         fs = self.connect_with_gridfs()
+        fs_ids = [elem._id for elem in fs.find({})]
 
-        with io.FileIO(str(logfile_path), 'r') as fileObject:
-            fs.put(fileObject, filename=str(logfile_path.name),
-                   _id=self.experiment_uid + f"logfile")
+        logfile_id = self.experiment_uid + f"__logfile"
+        if logfile_id not in fs_ids:
+            with io.FileIO(str(logfile_path), 'r') as fileObject:
+                fs.put(fileObject, filename=str(logfile_path.name), _id=logfile_id)
 
     def upload_tensorbardlogs(self, tensorboard_logdir: Path) -> None:
         """zip tensorboard logs and save them to db."""
         fs = self.connect_with_gridfs()
+        fs_ids = [elem._id for elem in fs.find({})]
 
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            shutil.make_archive(Path(tmpdirname) / tensorboard_logdir.name, 'zip', tensorboard_logdir, verbose=True)
+        file_id = self.experiment_uid + f"__tensorboard_logs"
+        if file_id not in fs_ids:
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                zipfile = Path(tmpdirname) / tensorboard_logdir.name
+                shutil.make_archive(zipfile, 'zip', tensorboard_logdir, verbose=True)
 
-            with io.FileIO(str(Path(tmpdirname) / tensorboard_logdir.name), 'r') as fileObject:
-                fs.put(fileObject, filename=str(tensorboard_logdir.name),
-                       _id=self.experiment_uid + f"tensorboard_logs")
+                with io.FileIO(str(zipfile.with_suffix('.zip')), 'r') as fileObject:
+                    fs.put(fileObject, filename=str(tensorboard_logdir.name),
+                           _id=file_id)
 
     def connect_with_gridfs(self):
         client = MongoClient(self.mongodb_URI)
