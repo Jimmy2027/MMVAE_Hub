@@ -116,7 +116,7 @@ class BaseFlagsSetup:
         tmpdir = Path(os.getenv("TMPDIR"))
         out_dir = tmpdir / 'polymnist'
         out_dir.mkdir()
-
+        log.info(f'Extracting data from {polymnist_zip_path} to {out_dir}.')
         with zipfile.ZipFile(polymnist_zip_path) as z:
             z.extractall(str(out_dir))
 
