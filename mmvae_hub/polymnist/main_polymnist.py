@@ -32,11 +32,11 @@ if __name__ == '__main__':
         # zip dir_experiment_run
         log.info(f'zipping {flags.dir_experiment_run} '
                  f'to {(Path(dir_experiment) / flags.experiment_uid).with_suffix(".zip")}.')
-        dir_experiment_zipped = (dir_experiment / flags.experiment_uid).with_suffix('.zip')
+        dir_experiment_zipped = (dir_experiment / flags.experiment_uid)
 
         shutil.make_archive(dir_experiment_zipped, 'zip', flags.dir_experiment_run, verbose=True)
 
-        assert dir_experiment_zipped.exists(), f'{dir_experiment_zipped} does not exist. ' \
-                                               f'Zipping of dir_experiment_run failed.'
+        assert dir_experiment_zipped.with_suffix('.zip').exists(), f'{dir_experiment_zipped} does not exist. ' \
+                                                                   f'Zipping of dir_experiment_run failed.'
 
     log.info('Done.')
