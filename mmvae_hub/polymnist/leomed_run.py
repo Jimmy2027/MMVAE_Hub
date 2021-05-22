@@ -10,7 +10,7 @@ search_space_joint_elbo = {
     'gpu_mem': [10000],
     'beta': [2.5],
     "num_mods": [3],
-    "end_epoch": [900],
+    "end_epoch": [1],
 }
 
 search_space_moe = {
@@ -44,7 +44,8 @@ search_space_planar_pfom = {
     "weighted_mixture": [True]
 }
 
-for search_space in [search_space_joint_elbo, search_space_moe, search_space_planar_mixture]:
+# for search_space in [search_space_joint_elbo, search_space_moe, search_space_planar_mixture]:
+for search_space in [search_space_joint_elbo]:
 
     # for search_space in [search_space_text_enc, search_space_class_dim, search_space_img]:
     for params in ParameterGrid(search_space):
