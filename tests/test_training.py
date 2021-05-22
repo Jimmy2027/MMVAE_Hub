@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     # test_run_epochs_polymnist(method='joint_elbo')
     # test_run_epochs_polymnist(method='moe')
-    test_run_epochs_polymnist(method='planar_mixture')
+    # test_run_epochs_polymnist(method='planar_mixture')
     test_run_epochs_polymnist(method='pfom')
     # test_run_planar_mixture_no_flow()
     # test_generate_plots()
