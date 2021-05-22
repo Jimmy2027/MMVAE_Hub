@@ -6,8 +6,9 @@ import pandas as pd
 import torch
 from matplotlib import pyplot as plt
 
-from mmvae_hub.base.utils.flags_utils import get_experiment
+from mmvae_hub.base.utils.flags_utils import get_experiment, get_config_path, BaseFlagsSetup
 from mmvae_hub.base.utils.plotting import generate_plots
+from mmvae_hub.base.utils.utils import json2dict
 
 
 def write_experiment_vis_config(experiment_dir: Path) -> Path:
@@ -153,6 +154,10 @@ def show_generated_figs(experiment_dir: Path = None, flags=None):
         flags = torch.load(experiment_dir / 'flags.rar')
     if not hasattr(flags, 'weighted_mixture'):
         flags.weighted_mixture = False
+
+    flags = BaseFlagsSetup.set_paths_with_config(json2dict(get_config_path()), flags)
+    flags.save_figure = False
+
     exp = get_experiment(flags)
 
     if experiment_dir and (experiment_dir / 'checkpoints').exists():
@@ -226,7 +231,5 @@ def make_experiments_dataframe(experiments):
 
 if __name__ == '__main__':
     # show_generated_figs(Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_joint_elbo_2021_05_01_12_20_00_169344'))
-    experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_planar_mixture_2021_04_29_23_06_00_937191')
-    tensorboard_logs_dir = experiment_dir / 'logs'
-    logs_dict = get_logs_dict(tensorboard_logs_dir)
-    plot_logs('Generation', logs_dict, together=True)
+    experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_joint_elbo_2021_05_04_09_21_34_487039')
+    show_generated_figs(experiment_dir)
