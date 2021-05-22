@@ -41,5 +41,5 @@ class BaseCallback:
 
         elif self.flags.use_db == 2:
             epoch_results_dir = self.flags.dir_experiment_run / 'epoch_results'
-            epoch_results_dir.mkdir(parents=True)
+            epoch_results_dir.mkdir(parents=True, exist_ok=True)
             dict2json(out_path=epoch_results_dir / f'{epoch}.json', d=epoch_results_dict)
