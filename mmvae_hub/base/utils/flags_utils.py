@@ -21,7 +21,7 @@ class BaseFlagsSetup:
         self.config_path = config_path
         self.parser = None
 
-    def setup(self, flags, testing=False, additional_args=None, leomed=False):
+    def setup(self, flags, testing=False, additional_args=None):
         """
         leomed bool: if True, use TMPDIR as experiment_dir and dir_data
         Setup the flags:
@@ -51,7 +51,7 @@ class BaseFlagsSetup:
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
 
-        if leomed:
+        if flags.leomed:
             flags = self.setup_leomed(flags)
 
         flags.version = self.get_version_from_setup_config()
@@ -121,8 +121,8 @@ class BaseFlagsSetup:
             z.extractall(str(out_dir))
 
         flags.dir_data = out_dir
-        flags.dir_fid = tmpdir
-        flags.dir_experiment = tmpdir / flags.experiment_uid
+        flags.dir_fid = tmpdir / 'fid'
+        flags.dir_experiment = tmpdir
 
         return flags
 

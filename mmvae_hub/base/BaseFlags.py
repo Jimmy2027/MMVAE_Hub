@@ -3,6 +3,9 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
+parser.add_argument('--leomed', type=bool, default=False,
+                    help="If experiment is running on the leomed cluster, set this flag to True. This will make sure "
+                         "to set the temporary directories to TMPDIR.")
 parser.add_argument('--norby', type=bool, default=False,
                     help="If true use norby package to send training updates via telegram. "
                          "(Needs norby to be configured on system)")
