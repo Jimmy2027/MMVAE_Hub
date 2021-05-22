@@ -2,6 +2,7 @@
 import glob
 import io
 import pathlib
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -85,9 +86,7 @@ class MongoDatabase:
         Inspired from https://medium.com/naukri-engineering/way-to-store-large-deep-learning-models-in-production-ready-environments-d8a4c66cc04c
         There is probably a better way to store Tensors in MongoDB.
         """
-        client = MongoClient(self.mongodb_URI)
-        db = client.mmvae
-        fs = gridfs.GridFS(db)
+        fs = self.connect_with_gridfs()
         checkpoint_dir = dir_checkpoints / str(epoch).zfill(4)
 
         for mod_str in modalities:
@@ -97,6 +96,24 @@ class MongoDatabase:
                     log.info(f'Saving checkpoint to db: {filename}')
                     fs.put(fileObject, filename=str(filename),
                            _id=self.experiment_uid + f"__{prefix}coderM{mod_str}")
+
+    def upload_logfile(self, logfile_path: Path) -> None:
+        fs = self.connect_with_gridfs()
+
+        with io.FileIO(str(logfile_path), 'r') as fileObject:
+            fs.put(fileObject, filename=str(logfile_path.name),
+                   _id=self.experiment_uid + f"logfile")
+
+    def upload_tensorbardlogs(self, tensorboard_logdir: Path) -> None:
+        """zip tensorboard logs and save them to db."""
+        fs = self.connect_with_gridfs()
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            shutil.make_archive(Path(tmpdirname) / tensorboard_logdir.name, 'zip', tensorboard_logdir, verbose=True)
+
+            with io.FileIO(str(Path(tmpdirname) / tensorboard_logdir.name), 'r') as fileObject:
+                fs.put(fileObject, filename=str(tensorboard_logdir.name),
+                       _id=self.experiment_uid + f"tensorboard_logs")
 
     def connect_with_gridfs(self):
         client = MongoClient(self.mongodb_URI)
@@ -158,4 +175,3 @@ class MongoDatabase:
 if __name__ == '__main__':
     mongo_db = MongoDatabase(training=False)
     mongo_db.delete_many({'flags.version': '0.0.4-dev', 'flags.method': 'pfom'})
-

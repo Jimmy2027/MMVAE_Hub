@@ -202,6 +202,8 @@ class BaseTrainer:
             self.exp.experiments_database.insert_dict(run_metadata)
             self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
                                                               modalities=self.exp.mm_vae.modalities)
+            self.exp.experiments_database.upload_logfile(self.flags.log_file)
+            self.exp.experiments_database.upload_tensorbardlogs(self.flags.dir_experiment_run / 'logs')
 
             # run jupyter notebook with visualisations
             pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
