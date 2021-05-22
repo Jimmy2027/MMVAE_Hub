@@ -129,6 +129,23 @@ class BaseFlagsSetup:
 
         return flags
 
+    @staticmethod
+    def set_paths_with_config(config: dict, flags, is_dict:bool = False):
+        """
+        Update paths in flags with paths from config.
+        Use this if experiment was run on another machine to update the paths in flags.
+        Since the attributes of the flag object cannot be set, the input "flags" needs to be a dict.
+        """
+
+        for key in config:
+            if key in ['dir_experiment', 'dir_clf', 'dir_data']:
+                if is_dict:
+                    flags[key] = Path(config[key]).expanduser()
+                else:
+                    setattr(flags, key, Path(config[key]).expanduser())
+
+        return flags
+
 
 def get_freer_gpu() -> int:
     """
@@ -173,7 +190,7 @@ def get_config_path(flags=None):
 
 
 def get_experiment(flags):
-    if Path(flags.dir_data).name == 'polymnist':
+    if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
         return PolymnistExperiment(flags)
     elif flags.dataset == 'toy':
         return PolymnistExperiment(flags)
