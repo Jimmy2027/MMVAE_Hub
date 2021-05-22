@@ -121,6 +121,9 @@ class BaseFlagsSetup:
             z.extractall(str(out_dir))
 
         flags.dir_data = out_dir
+
+        assert out_dir.exists(), f'Data dir {out_dir} does not exist.'
+
         flags.dir_fid = tmpdir / 'fid'
         flags.dir_experiment = tmpdir
 
