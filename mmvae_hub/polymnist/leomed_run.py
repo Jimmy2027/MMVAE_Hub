@@ -56,7 +56,8 @@ for search_space in [search_space_joint_elbo]:
         )
         if 'gpu_mem' not in params:
             params['gpu_mem'] = 10000
-        command = f'bsub -n 1 -W 8:00 -R "rusage[mem=10000,ngpus_excl_p={params["n_gpus"]}]" -R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" python polymnist/main_polymnist.py {flags}'
+        command = f'bsub -n 4 -W 8:00 -R "rusage[mem=8000,ngpus_excl_p={params["n_gpus"]}, scratch=10000]" -R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" python polymnist/main_polymnist.py {flags}'
+
         # add boolean flags
         if 'factorized_representation' in params and params['factorized_representation']:
             command += ' --factorized_representation'
