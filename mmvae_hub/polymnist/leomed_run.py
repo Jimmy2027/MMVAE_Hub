@@ -9,7 +9,7 @@ search_space_joint_elbo = {
     'method': ['joint_elbo'],
     'beta': [2.5],
     "num_mods": [3],
-    "end_epoch": [1],
+    "end_epoch": [900],
 }
 
 search_space_moe = {
@@ -27,7 +27,7 @@ search_space_planar_mixture = {
     "num_mods": [3],
     "num_flows": [5],
     "end_epoch": [900],
-    "weighted_mixture": [True]
+    "weighted_mixture": [True, False]
 }
 
 search_space_planar_pfom = {
