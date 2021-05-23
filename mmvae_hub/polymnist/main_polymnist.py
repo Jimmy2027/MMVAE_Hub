@@ -38,5 +38,7 @@ if __name__ == '__main__':
 
         assert dir_experiment_zipped.with_suffix('.zip').exists(), f'{dir_experiment_zipped} does not exist. ' \
                                                                    f'Zipping of dir_experiment_run failed.'
+        # delete not compressed experiment dir
+        shutil.rmtree(str(flags.dir_experiment_run))
 
     log.info('Done.')

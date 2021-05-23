@@ -125,12 +125,11 @@ class BaseFlagsSetup:
         assert out_dir.exists(), f'Data dir {out_dir} does not exist.'
 
         flags.dir_fid = tmpdir / 'fid'
-        flags.dir_experiment = tmpdir
 
         return flags
 
     @staticmethod
-    def set_paths_with_config(config: dict, flags, is_dict:bool = False):
+    def set_paths_with_config(config: dict, flags, is_dict: bool = False):
         """
         Update paths in flags with paths from config.
         Use this if experiment was run on another machine to update the paths in flags.
