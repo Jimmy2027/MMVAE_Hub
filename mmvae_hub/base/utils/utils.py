@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import subprocess as sp
+import zipfile
 from collections import namedtuple
 from collections.abc import MutableMapping
 from pathlib import Path
@@ -269,3 +270,9 @@ def split_int_to_bins(number: int, nbr_bins: int):
     values = np.arange(number, dtype=int)
     bins = np.histogram(values, bins=nbr_bins)
     return bins[0]
+
+
+def unpack_zipfile(zip_file_path: Path, dest_path=Path) -> None:
+    """Extract zip to destination."""
+    with zipfile.ZipFile(zip_file_path) as z:
+        z.extractall(str(dest_path))

@@ -2,7 +2,6 @@
 import argparse
 import configparser
 import os
-import zipfile
 from abc import abstractmethod
 from pathlib import Path
 
@@ -12,8 +11,8 @@ import torch
 import mmvae_hub
 from mmvae_hub import log
 from mmvae_hub.base.utils.filehandling import create_dir_structure, get_experiment_uid
-from mmvae_hub.base.utils.utils import json2dict
-from mmvae_hub.polymnist import PolymnistExperiment
+from mmvae_hub.base.utils.utils import json2dict, unpack_zipfile
+from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
 class BaseFlagsSetup:
@@ -117,8 +116,7 @@ class BaseFlagsSetup:
         out_dir = tmpdir
 
         log.info(f'Extracting data from {polymnist_zip_path} to {out_dir}.')
-        with zipfile.ZipFile(polymnist_zip_path) as z:
-            z.extractall(str(out_dir))
+        unpack_zipfile(polymnist_zip_path, out_dir)
 
         flags.dir_data = out_dir / 'PolyMNIST'
 
