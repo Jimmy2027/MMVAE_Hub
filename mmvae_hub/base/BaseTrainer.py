@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import shutil
 import time
 from abc import abstractmethod
-from pathlib import Path
 
-import nbformat
 import torch
-from nbconvert import HTMLExporter, PDFExporter
-from nbconvert.preprocessors import ExecutePreprocessor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -16,16 +11,16 @@ from tqdm import tqdm
 from mmvae_hub import log
 from mmvae_hub.base import BaseCallback
 from mmvae_hub.base import BaseExperiment
+from mmvae_hub.base.utils import BaseTBLogger
+from mmvae_hub.base.utils.average_meters import *
+from mmvae_hub.base.utils.plotting import generate_plots
+from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
 from mmvae_hub.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
-from mmvae_hub.base.utils import BaseTBLogger
-from mmvae_hub.base.utils.average_meters import *
-from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import dict2json
-from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict
+from mmvae_hub.experiment_vis.utils import run_notebook_convert
 
 
 class BaseTrainer:
@@ -206,7 +201,7 @@ class BaseTrainer:
             self.exp.experiments_database.upload_tensorbardlogs(self.flags.dir_experiment_run / 'logs')
 
             # run jupyter notebook with visualisations
-            pdf_path = self.run_notebook_convert(self.flags.dir_experiment_run)
+            pdf_path = run_notebook_convert(self.flags.dir_experiment_run)
 
         # send alert
         if self.flags.norby and self.flags.dataset != 'toy':
@@ -216,42 +211,3 @@ class BaseTrainer:
             self.exp.experiments_database.insert_dict({'expvis_url': expvis_url})
             norby.send_msg(f'Experiment {self.flags.experiment_uid} has finished. The experiment visualisation can be '
                            f'found here: {expvis_url}')
-
-    @staticmethod
-    def run_notebook_convert(dir_experiment_run: Path) -> Path:
-        """Run and convert the notebook to html and pdf."""
-
-        # Copy the experiment_vis jupyter notebook to the experiment dir
-        notebook_path = Path(__file__).parent.parent / 'experiment_vis/experiment_vis.ipynb'
-        dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
-
-        # copy notebook to experiment run
-        shutil.copyfile(notebook_path, dest_notebook_path)
-
-        log.info('Executing experiment vis notebook.')
-        with open(dest_notebook_path) as f:
-            nb = nbformat.read(f, as_version=4)
-        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-        ep.preprocess(nb, {'metadata': {'path': str(dest_notebook_path.parent)}})
-
-        nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
-
-        with open(nbconvert_path, 'w', encoding='utf-8') as f:
-            nbformat.write(nb, f)
-
-        log.info('Converting notebook to html.')
-        html_path = nbconvert_path.with_suffix('.html')
-        html_exporter = HTMLExporter()
-        html_exporter.template_name = 'classic'
-        (body, resources) = html_exporter.from_notebook_node(nb)
-        with open(html_path, 'w') as f:
-            f.write(body)
-
-        log.info('Converting notebook to pdf.')
-        pdf_path = nbconvert_path.with_suffix('.pdf')
-        pdf_exporter = PDFExporter()
-        pdf_exporter.template_name = 'classic'
-        (body, resources) = pdf_exporter.from_notebook_node(nb)
-        pdf_path.write_bytes(body)
-
-        return pdf_path

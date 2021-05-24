@@ -1,14 +1,79 @@
 # -*- coding: utf-8 -*-
 import json
+import shutil
+import tempfile
 from pathlib import Path
 
+import nbformat
 import pandas as pd
 import torch
 from matplotlib import pyplot as plt
+from nbconvert import HTMLExporter, PDFExporter
+from nbconvert.preprocessors import ExecutePreprocessor
 
+from mmvae_hub import log
+from mmvae_hub.base.utils.MongoDB import MongoDatabase
 from mmvae_hub.base.utils.flags_utils import get_experiment, get_config_path, BaseFlagsSetup
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import json2dict
+from mmvae_hub.base.utils.utils import json2dict, dict2json, dict2pyobject
+
+
+def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
+    """
+    Run and convert the notebook to html and pdf.
+    """
+    # Copy the experiment_vis jupyter notebook to the experiment dir
+    notebook_path = Path(__file__).parent.parent / 'experiment_vis/experiment_vis.ipynb'
+    dest_notebook_path = dir_experiment_run / 'experiment_vis.ipynb'
+
+    # copy notebook to experiment run
+    shutil.copyfile(notebook_path, dest_notebook_path)
+
+    log.info('Executing experiment vis notebook.')
+    with open(dest_notebook_path) as f:
+        nb = nbformat.read(f, as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+    ep.preprocess(nb, {'metadata': {'path': str(dest_notebook_path.parent)}})
+
+    nbconvert_path = dest_notebook_path.with_suffix('.nbconvert.ipynb')
+
+    with open(nbconvert_path, 'w', encoding='utf-8') as f:
+        nbformat.write(nb, f)
+
+    log.info('Converting notebook to html.')
+    html_path = nbconvert_path.with_suffix('.html')
+    html_exporter = HTMLExporter()
+    html_exporter.template_name = 'classic'
+    (body, resources) = html_exporter.from_notebook_node(nb)
+    with open(html_path, 'w') as f:
+        f.write(body)
+
+    log.info('Converting notebook to pdf.')
+    pdf_path = nbconvert_path.with_suffix('.pdf')
+    pdf_exporter = PDFExporter()
+    pdf_exporter.template_name = 'classic'
+    (body, resources) = pdf_exporter.from_notebook_node(nb)
+    pdf_path.write_bytes(body)
+
+    return pdf_path
+
+
+def upload_notebook_to_db(experiment_uid: str) -> None:
+    """
+    Run the experiment vis notebook and upload it with ppb to db.
+    """
+    import ppb
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        dir_experiment_run = Path(tmpdirname)
+        db = MongoDatabase(training=False, _id=experiment_uid)
+        dict2json(dir_experiment_run / 'flags.json', db.get_experiment_dict()['flags'])
+
+        pdf_path = run_notebook_convert(dir_experiment_run=dir_experiment_run)
+
+        expvis_url = ppb.upload(pdf_path, plain=True)
+        log.info(f'Experiment_vis was uploaded to {expvis_url}')
+        db.insert_dict({'expvis_url': expvis_url})
 
 
 def write_experiment_vis_config(experiment_dir: Path) -> Path:
@@ -152,11 +217,20 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 def show_generated_figs(experiment_dir: Path = None, flags=None):
     if not flags:
         flags = torch.load(experiment_dir / 'flags.rar')
+
+    flags_is_dict = type(flags) == dict
+
+    flags = BaseFlagsSetup.set_paths_with_config(json2dict(get_config_path()), flags, flags_is_dict)
+
+    if flags_is_dict:
+        flags['save_figure'] = False
+        # becomes immutable..
+        flags = dict2pyobject(flags, 'flags')
+    else:
+        flags.save_figure = False
+
     if not hasattr(flags, 'weighted_mixture'):
         flags.weighted_mixture = False
-
-    flags = BaseFlagsSetup.set_paths_with_config(json2dict(get_config_path()), flags)
-    flags.save_figure = False
 
     exp = get_experiment(flags)
 
@@ -183,9 +257,16 @@ def show_generated_figs(experiment_dir: Path = None, flags=None):
 
 def make_experiments_dataframe(experiments):
     df = pd.DataFrame()
-    for exp in experiments.find({}):
+    # for exp in experiments.find({}):
+    for exp in experiments.find({'flags.leomed': True}):
         if exp['epoch_results'] is not None and exp['epoch_results']:
-            last_epoch = str(max(int(epoch) for epoch in exp['epoch_results']))
+            max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
+
+            # get the last epoch where evaluation was run.
+            if max_epoch % int(exp['flags']['eval_freq']):
+                last_epoch = str(max_epoch - max_epoch % int(exp['flags']['eval_freq']) - 1)
+            else:
+                last_epoch = str(max_epoch)
             last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
 
             if exp['flags']['method'] in ['planar_mixture', 'pfom']:
@@ -226,10 +307,11 @@ def make_experiments_dataframe(experiments):
                 results_dict['score_gen'] = sum(scores_gen)
                 results_dict['score_prd'] = sum(scores_prd)
                 df = df.append(results_dict, ignore_index=True)
+        else:
+            print(f'skipping experiment {exp["_id"]}')
     return df
 
 
 if __name__ == '__main__':
-    # show_generated_figs(Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_joint_elbo_2021_05_01_12_20_00_169344'))
-    experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_joint_elbo_2021_05_04_09_21_34_487039')
-    show_generated_figs(experiment_dir)
+    for id in ['polymnist_planar_mixture_2021_05_23_12_10_02_979139']:
+        upload_notebook_to_db(id)
