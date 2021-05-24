@@ -12,7 +12,7 @@ from pymongo import MongoClient
 
 from mmvae_hub import log
 from mmvae_hub.base import BaseMMVae
-from mmvae_hub.base.utils.utils import json2dict
+from mmvae_hub.base.utils.utils import json2dict, unpack_zipfile
 
 
 class MongoDatabase:
@@ -179,7 +179,20 @@ class MongoDatabase:
                 else:
                     print('checkpoint dir does not exist')
 
+    def get_tensorboardlogs(self, dest_dir: Path) -> None:
+        """Get the tensorboard logs from the db as a zipfolder, unzip them and save them to dest_dir."""
+        fs = self.connect_with_gridfs()
+
+        log_id = self.experiment_uid + f"__tensorboard_logs"
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            zip_file = Path(tmpdirname) / 'my_zip.zip'
+            with open(zip_file, 'wb') as fileobject:
+                fileobject.write(fs.get(log_id).read())
+
+            unpack_zipfile(zip_file, dest_dir)
+
 
 if __name__ == '__main__':
-    mongo_db = MongoDatabase(training=False)
-    mongo_db.delete_many({'flags.version': '0.0.4-dev', 'flags.method': 'pfom'})
+    db = MongoDatabase(_id='polymnist_joint_elbo_2021_05_23_12_09_30_507370')
+    db.get_tensorboardlogs(dest_dir=Path('/Users/Hendrik/Desktop/plz_just_work') / 'logs')
