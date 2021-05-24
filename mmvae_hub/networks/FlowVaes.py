@@ -252,7 +252,7 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
         # fuse enc_mods
         return (weights_subset * zk_subset).sum(dim=0)
 
-    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> Distr:
+    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str, weight_joint :bool = True) -> Distr:
         """For each element in batch select an expert from subset with equal probability."""
         num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
         mods = self.subsets[s_key]
@@ -276,10 +276,13 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
 
         assert zk_subset.shape == torch.Size([num_samples, self.flags.class_dim])
 
-        # normalize latents by number of modalities in subset
-        weights_subset = ((1 / float(len(mods))) * torch.ones_like(zk_subset).to(self.flags.device))
+        if weight_joint:
+            # normalize latents by number of modalities in subset
+            weights_subset = ((1 / float(len(mods))) * torch.ones_like(zk_subset).to(self.flags.device))
 
-        return (weights_subset * zk_subset)
+            return (weights_subset * zk_subset)
+        else:
+            return zk_subset
 
     # def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> Distr:
     #     num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
