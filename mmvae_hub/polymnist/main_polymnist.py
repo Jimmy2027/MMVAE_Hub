@@ -6,7 +6,7 @@ from norby.utils import maybe_norby
 from mmvae_hub import log
 from mmvae_hub.base.utils.flags_utils import get_config_path
 from mmvae_hub.base.utils.utils import json2dict
-from mmvae_hub.polymnist import PolymnistTrainer
+from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
 
