@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import mmvae_hub
-from mmvae_hub.polymnist import PolymnistExperiment
+from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
 
 
