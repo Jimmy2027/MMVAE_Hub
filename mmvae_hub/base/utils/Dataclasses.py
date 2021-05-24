@@ -43,6 +43,9 @@ class PlanarFlowParams:
 
 @dataclass
 class EncModPlanarMixture:
+    """
+    zk: embedding after the kth flow. Has shape (bs, class_dim)
+    """
     latents_class: Distr
     flow_params: PlanarFlowParams
     z0: Optional[Tensor] = None
