@@ -5,6 +5,7 @@ import torch
 
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae
+from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from tests.utils import set_me_up
 
 
@@ -97,5 +98,35 @@ def test_fuse_modalities_3():
                                  [2., 2., 2.]]))
 
 
+@pytest.mark.tox
+def test_fuse_modalities_4():
+    """
+    With 3 experts and a batch size of 3, the mixture selection should select each of the experts one time.
+    """
+    class_dim = 3
+    batch_size = 3
+    num_mods = 3
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        mst = set_me_up(tmpdirname, method='moe',
+                        attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
+                                    'batch_size': batch_size, 'weighted_mixture': False})
+
+        model: MOEMMVae = mst.mm_vae
+
+        mus = torch.ones((num_mods, batch_size, class_dim))
+        mus[0] = mus[0] * 0
+        mus[2] = mus[2] * 2
+
+        logvars = torch.zeros((num_mods, batch_size, class_dim))
+
+        w_modalities = torch.ones((num_mods,)) * (1/3)
+
+        joint_distr = model.mixture_component_selection(mst.flags, mus, logvars, w_modalities)
+        assert torch.all(joint_distr.mu ==
+                         Tensor([[0., 0., 0.],
+                                 [1., 1., 1.],
+                                 [2., 2., 2.]]))
+
+
 if __name__ == '__main__':
-    test_fuse_modalities_3()
+    test_fuse_modalities_4()

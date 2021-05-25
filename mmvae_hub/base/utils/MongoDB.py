@@ -194,5 +194,9 @@ class MongoDatabase:
 
 
 if __name__ == '__main__':
-    db = MongoDatabase(_id='polymnist_joint_elbo_2021_05_23_12_09_30_507370')
-    db.get_tensorboardlogs(dest_dir=Path('/Users/Hendrik/Desktop/plz_just_work') / 'logs')
+    id = 'polymnist_planar_mixture_2021_05_17_10_59_48_027991'
+    out_dir = Path('/Users/Hendrik/Desktop/tensorboard_logs') / id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    db = MongoDatabase(_id=id)
+    db.get_tensorboardlogs(dest_dir=out_dir)

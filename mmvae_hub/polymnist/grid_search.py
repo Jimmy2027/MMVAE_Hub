@@ -12,9 +12,9 @@ search_spaces = {
     # 'method': ['joint_elbo'],
     'class_dim': [512],
     "beta": [1],
-    "num_flows": [5],
+    "num_flows": [0],
     "num_mods": [3],
-    "end_epoch": [600],
+    "end_epoch": [99],
     "weighted_mixture": [True]
 }
 
