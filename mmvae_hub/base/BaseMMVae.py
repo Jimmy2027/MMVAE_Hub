@@ -7,12 +7,14 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
-from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
+
 from mmvae_hub.base.utils import utils
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.fusion_functions import *
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
+from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 
 
 class BaseMMVAE(ABC, nn.Module):
@@ -263,12 +265,12 @@ class BaseMMVAE(ABC, nn.Module):
         subset_distr = self.modality_fusion(self.flags, mus_subset, logvars_subset, weights_subset)
         return subset_distr
 
-    # def moe_fusion(self, mus, logvars, weights=None) -> Distr:
-    #     if weights is None:
-    #         weights = self.weights
-    #
-    #     weights = utils.reweight_weights(weights)
-    #     return utils.mixture_component_selection(self.flags, mus, logvars, weights)
+    def moe_fusion(self, mus, logvars, weights=None) -> Distr:
+        if weights is None:
+            weights = self.weights
+
+        weights = utils.reweight_weights(weights)
+        return mixture_component_selection(self.flags, mus, logvars, weights)
 
     def batch_to_device(self, batch):
         """Send the batch to device as Variable."""
@@ -292,7 +294,7 @@ class BaseMMVAE(ABC, nn.Module):
 
 class POEMMVae(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
-        super(POEMMVae, self).__init__(flags, modalities, subsets)
+        super(POEMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = POEMMDiv()
 
     def modality_fusion(self, flags, mus, logvars, weights=None) -> Distr:
@@ -307,4 +309,4 @@ class POEMMVae(BaseMMVAE):
 
     @staticmethod
     def fusion_condition(subset, input_batch=None):
-        return len(subset) == len(input_batch.keys())
+        return len(subset) == len(input_batch)
