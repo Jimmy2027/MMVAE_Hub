@@ -23,11 +23,11 @@ search_space_moe = {
 search_space_planar_mixture = {
     'n_gpus': [1],
     'method': ['planar_mixture'],
-    'beta': [1, 2.5],
+    'beta': [1],
     "num_mods": [3],
     "num_flows": [5],
-    "end_epoch": [900],
-    "weighted_mixture": [True, False]
+    "end_epoch": [600],
+    "weighted_mixture": [False]
 }
 
 search_space_planar_pfom = {
@@ -40,8 +40,8 @@ search_space_planar_pfom = {
     "weighted_mixture": [True]
 }
 
-for search_space in [search_space_joint_elbo, search_space_moe, search_space_planar_mixture]:
-# for search_space in [search_space_joint_elbo]:
+# for search_space in [search_space_joint_elbo, search_space_moe, search_space_planar_mixture]:
+for search_space in [search_space_planar_mixture]:
 
     for params in ParameterGrid(search_space):
 
@@ -51,7 +51,11 @@ for search_space in [search_space_joint_elbo, search_space_moe, search_space_pla
         )
         if 'gpu_mem' not in params:
             params['gpu_mem'] = 5000
-        command = f'bsub -n 8 -W 8:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]}]" -R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" python polymnist/main_polymnist.py {flags}'
+
+        # 100 epochs need a bit less than 2 hours
+        num_hours = (params['end_epoch'] // 100) * 2
+
+        command = f'bsub -n 8 -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]}]" -R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" python polymnist/main_polymnist.py {flags}'
 
         # add boolean flags
         if 'factorized_representation' in params and params['factorized_representation']:
