@@ -11,7 +11,7 @@ import torch
 import mmvae_hub
 from mmvae_hub import log
 from mmvae_hub.base.utils.filehandling import create_dir_structure, get_experiment_uid
-from mmvae_hub.base.utils.utils import json2dict, unpack_zipfile
+from mmvae_hub.base.utils.utils import json2dict, unpack_zipfile, dict2pyobject
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
@@ -143,6 +143,38 @@ class BaseFlagsSetup:
 
         return flags
 
+    def load_old_flags(self, flags_path: Path, is_dict: bool = False, add_args: dict = None):
+        """
+        Load flags from old experiments, either from a directory or from the db.
+        Add parameters for backwards compatibility and adapt paths for current system.
+        """
+        if is_dict:
+            flags = json2dict(flags_path)
+            flags = self.set_paths_with_config(json2dict(self.config_path), flags, True)
+
+            if 'weighted_mixture' not in flags:
+                flags['weighted_mixture'] = False
+
+            if add_args is not None:
+                for k, v in add_args.items():
+                    flags[k] = v
+
+            # becomes immutable..
+            flags = dict2pyobject(flags, 'flags')
+
+        else:
+            flags = torch.load(flags_path)
+            flags = self.set_paths_with_config(json2dict(self.config_path), flags, False)
+
+            if not hasattr(flags, 'weighted_mixture'):
+                flags.weighted_mixture = False
+
+            if add_args is not None:
+                for k, v in add_args.items():
+                    setattr(flags, k, v)
+
+        return flags
+
 
 def get_freer_gpu() -> int:
     """
@@ -187,6 +219,9 @@ def get_config_path(flags=None):
 
 
 def get_experiment(flags):
+    """
+    Get experiments class from dir_data flag.
+    """
     if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
         return PolymnistExperiment(flags)
     elif flags.dataset == 'toy':

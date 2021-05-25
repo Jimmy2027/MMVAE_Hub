@@ -6,7 +6,6 @@ from pathlib import Path
 
 import nbformat
 import pandas as pd
-import torch
 from matplotlib import pyplot as plt
 from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
@@ -15,7 +14,7 @@ from mmvae_hub import log
 from mmvae_hub.base.utils.MongoDB import MongoDatabase
 from mmvae_hub.base.utils.flags_utils import get_experiment, get_config_path, BaseFlagsSetup
 from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import json2dict, dict2json, dict2pyobject
+from mmvae_hub.base.utils.utils import dict2json
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
@@ -216,21 +215,8 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 
 def show_generated_figs(experiment_dir: Path = None, flags=None):
     if not flags:
-        flags = torch.load(experiment_dir / 'flags.rar')
-
-    flags_is_dict = type(flags) == dict
-
-    flags = BaseFlagsSetup.set_paths_with_config(json2dict(get_config_path()), flags, flags_is_dict)
-
-    if flags_is_dict:
-        flags['save_figure'] = False
-        # becomes immutable..
-        flags = dict2pyobject(flags, 'flags')
-    else:
-        flags.save_figure = False
-
-    if not hasattr(flags, 'weighted_mixture'):
-        flags.weighted_mixture = False
+        flags_setup = BaseFlagsSetup(get_config_path())
+        flags = flags_setup.load_old_flags(Path('flags.rar'), add_args={'save_figure': False})
 
     exp = get_experiment(flags)
 
@@ -257,13 +243,12 @@ def show_generated_figs(experiment_dir: Path = None, flags=None):
 
 def make_experiments_dataframe(experiments):
     df = pd.DataFrame()
-    # for exp in experiments.find({}):
-    for exp in experiments.find({'flags.leomed': True}):
+    for exp in experiments.find({}):
         if exp['epoch_results'] is not None and exp['epoch_results']:
             max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
 
             # get the last epoch where evaluation was run.
-            if max_epoch % int(exp['flags']['eval_freq']):
+            if exp['epoch_results'][str(max_epoch)]['test_results']['lr_eval'] is None:
                 last_epoch = str(max_epoch - max_epoch % int(exp['flags']['eval_freq']) - 1)
             else:
                 last_epoch = str(max_epoch)
@@ -313,5 +298,5 @@ def make_experiments_dataframe(experiments):
 
 
 if __name__ == '__main__':
-    for id in ['polymnist_planar_mixture_2021_05_23_12_10_02_979139']:
+    for id in ['polymnist_planar_mixture_2021_05_17_10_59_48_027991']:
         upload_notebook_to_db(id)
