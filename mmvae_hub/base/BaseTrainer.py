@@ -190,8 +190,7 @@ class BaseTrainer:
 
         dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__ | run_metadata)
 
-        if self.flags.log_file.exists():
-            shutil.move(self.flags.log_file, self.flags.dir_experiment_run)
+
 
         if self.flags.use_db == 1:
             self.exp.experiments_database.insert_dict(run_metadata)
@@ -211,3 +210,6 @@ class BaseTrainer:
             self.exp.experiments_database.insert_dict({'expvis_url': expvis_url})
             norby.send_msg(f'Experiment {self.flags.experiment_uid} has finished. The experiment visualisation can be '
                            f'found here: {expvis_url}')
+
+        if self.flags.log_file.exists():
+            shutil.move(self.flags.log_file, self.flags.dir_experiment_run)
