@@ -263,11 +263,12 @@ class BaseMMVAE(ABC, nn.Module):
         subset_distr = self.modality_fusion(self.flags, mus_subset, logvars_subset, weights_subset)
         return subset_distr
 
-    def moe_fusion(self, mus, logvars, weights=None) -> Distr:
-        if weights is None:
-            weights = self.weights
-        weights = utils.reweight_weights(weights)
-        return utils.mixture_component_selection(self.flags, mus, logvars, weights)
+    # def moe_fusion(self, mus, logvars, weights=None) -> Distr:
+    #     if weights is None:
+    #         weights = self.weights
+    #
+    #     weights = utils.reweight_weights(weights)
+    #     return utils.mixture_component_selection(self.flags, mus, logvars, weights)
 
     def batch_to_device(self, batch):
         """Send the batch to device as Variable."""
