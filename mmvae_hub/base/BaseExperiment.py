@@ -45,7 +45,7 @@ class BaseExperiment(ABC):
         elif self.flags.method == 'moe':
             model = MOEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'poe':
-            model = POEMMVae(self, self.flags, self.modalities, self.subsets)
+            model = POEMMVae(self, flags = self.flags, modalities=self.modalities,subsets=self.subsets)
         elif self.flags.method == 'planar_mixture':
             model = PlanarMixtureMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'jsd':
