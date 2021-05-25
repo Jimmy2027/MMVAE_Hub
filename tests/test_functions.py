@@ -6,6 +6,7 @@ import torch
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
+from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 from tests.utils import set_me_up
 
 
@@ -121,7 +122,7 @@ def test_fuse_modalities_4():
 
         w_modalities = torch.ones((num_mods,)) * (1/3)
 
-        joint_distr = model.mixture_component_selection(mst.flags, mus, logvars, w_modalities)
+        joint_distr = mixture_component_selection(mst.flags, mus, logvars, w_modalities)
         assert torch.all(joint_distr.mu ==
                          Tensor([[0., 0., 0.],
                                  [1., 1., 1.],
