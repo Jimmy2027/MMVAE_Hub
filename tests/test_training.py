@@ -21,7 +21,9 @@ def test_run_epochs_polymnist(method: str):
 
         # todo implement calc likelihood for flow based methods
         calc_nll = False if method in ['planar_mixture', 'pfom'] else True
-        mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll})
+        mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll,
+                                                        'amortized_flow':False
+                                                        })
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
 
@@ -54,11 +56,11 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
-    test_run_epochs_polymnist(method='poe')
-    test_run_epochs_polymnist(method='joint_elbo')
-    test_run_epochs_polymnist(method='moe')
+    # test_run_epochs_polymnist(method='poe')
+    # test_run_epochs_polymnist(method='joint_elbo')
+    # test_run_epochs_polymnist(method='moe')
     test_run_epochs_polymnist(method='planar_mixture')
-    test_run_epochs_polymnist(method='pfom')
+    # test_run_epochs_polymnist(method='pfom')
     # test_run_planar_mixture_no_flow()
     # test_generate_plots()
     # test_test_generation()
