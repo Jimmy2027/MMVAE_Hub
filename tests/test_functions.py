@@ -1,4 +1,5 @@
 import tempfile
+from typing import Mapping
 
 import pytest
 import torch
@@ -6,6 +7,7 @@ import torch
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
+from mmvae_hub.utils.Dataclasses import *
 from tests.utils import set_me_up
 
 
