@@ -6,8 +6,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from mmvae_hub.utils import json2dict, write_to_jsonfile
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
+from mmvae_hub.utils.utils import json2dict, write_to_jsonfile
 from tests.utils import set_me_up
 
 
