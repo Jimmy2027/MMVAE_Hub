@@ -24,10 +24,12 @@ search_space_planar_mixture = {
     'n_gpus': [1],
     'method': ['planar_mixture'],
     'beta': [1],
+    'class_dim': [256],
     "num_mods": [3],
     "num_flows": [5],
     "end_epoch": [600],
-    "weighted_mixture": [False]
+    "weighted_mixture": [False],
+    "amortized_flow": [True, False]
 }
 
 search_space_planar_pfom = {
@@ -55,7 +57,9 @@ for search_space in [search_space_planar_mixture]:
         # 100 epochs need a bit less than 2 hours
         num_hours = (params['end_epoch'] // 100) * 2
 
-        command = f'bsub -n 8 -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]},scratch=10000]" -R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" python polymnist/main_polymnist.py {flags}'
+        command = f'bsub -n 8 -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]},scratch=10000]" ' \
+                  f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \
+                  f'python polymnist/main_polymnist.py {flags}'
 
         # add boolean flags
         if 'factorized_representation' in params and params['factorized_representation']:
