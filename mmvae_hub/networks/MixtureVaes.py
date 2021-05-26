@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import torch
 
-from mmvae_hub.base.BaseMMVae import BaseMMVAE
+from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.base.utils import utils
 from mmvae_hub.base.utils.Dataclasses import Distr
 from mmvae_hub.evaluation.divergence_measures.mm_div import MixtureMMDiv, JointElbowMMDiv, JSDMMDiv

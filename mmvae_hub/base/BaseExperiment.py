@@ -1,10 +1,7 @@
 import random
 from abc import abstractmethod
 
-import numpy as np
-import torch
-
-from mmvae_hub.base.BaseMMVae import *
+from mmvae_hub.networks.BaseMMVae import *
 from mmvae_hub.base.utils.MongoDB import MongoDatabase
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE
