@@ -14,8 +14,8 @@ import torch
 import typer
 
 from mmvae_hub.base.BaseTrainer import BaseTrainer
-from mmvae_hub.base.utils.MongoDB import MongoDatabase
-from mmvae_hub.base.utils.utils import json2dict
+from mmvae_hub.utils import MongoDatabase
+from mmvae_hub.utils import json2dict
 
 app = typer.Typer()
 

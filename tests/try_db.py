@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pymongo import MongoClient
 
-from mmvae_hub.base.utils.utils import json2dict
+from mmvae_hub.utils import json2dict
 
 dbconfig = json2dict(Path(__file__).parent.parent / 'configs/mmvae_db.json')
 client = MongoClient(dbconfig['mongodb_URI'])

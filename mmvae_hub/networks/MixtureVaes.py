@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.base.utils import utils
-from mmvae_hub.base.utils.Dataclasses import Distr
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.evaluation.divergence_measures.mm_div import MixtureMMDiv, JointElbowMMDiv, JSDMMDiv
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 

@@ -1,4 +1,4 @@
-from mmvae_hub.base.utils import utils
+from mmvae_hub.utils import utils
 
 
 def calc_log_probs(exp, result, batch_d):

@@ -4,7 +4,7 @@ import typing
 
 import numpy as np
 
-from mmvae_hub.base.utils.Dataclasses import *
+from mmvae_hub.utils.Dataclasses import *
 
 
 class AverageMeter(object):

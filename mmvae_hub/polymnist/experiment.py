@@ -10,10 +10,10 @@ from torchvision import transforms
 import random
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.base.utils.utils import dict_to_device
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
 from mmvae_hub.polymnist.PolymnistMod import PolymnistMod
 from mmvae_hub.polymnist.metrics import PolymnistMetrics
+from mmvae_hub.utils.utils import dict_to_device
 
 
 class PolymnistExperiment(BaseExperiment):

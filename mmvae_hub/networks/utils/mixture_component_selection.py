@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 
-from mmvae_hub.base.utils.Dataclasses import Distr
+from mmvae_hub.utils.Dataclasses import *
 
 
 def mixture_component_selection(flags, mus, logvars, w_modalities=None) -> Distr:

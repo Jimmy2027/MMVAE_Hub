@@ -11,8 +11,8 @@ import ppb
 import typer
 
 from mmvae_hub import log
-from mmvae_hub.base.utils.MongoDB import MongoDatabase
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
+from mmvae_hub.utils.MongoDB import MongoDatabase
 
 app = typer.Typer()
 
@@ -44,4 +44,6 @@ def run_multiple(experiments_dir: str, run_all: bool = False):
 
 
 if __name__ == '__main__':
-    app()
+    # app()
+
+    run_one('/mnt/data/hendrik/mmvae_hub/experiments/polymnist_planar_mixture_2021_05_25_09_30_13_870570')

@@ -8,9 +8,9 @@ import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
 
-from mmvae_hub.base.utils import utils
-from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.fusion_functions import *
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.fusion_functions import *
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld

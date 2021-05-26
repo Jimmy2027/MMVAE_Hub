@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import shutil
+
 import time
 from abc import abstractmethod
 
@@ -11,16 +11,16 @@ from tqdm import tqdm
 from mmvae_hub import log
 from mmvae_hub.base import BaseCallback
 from mmvae_hub.base import BaseExperiment
-from mmvae_hub.base.utils import BaseTBLogger
-from mmvae_hub.base.utils.average_meters import *
-from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
 from mmvae_hub.evaluation.eval_metrics.likelihood import estimate_likelihoods
 from mmvae_hub.evaluation.eval_metrics.representation import test_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
+from mmvae_hub.utils.BaseTBLogger import BaseTBLogger
+from mmvae_hub.utils.average_meters import *
+from mmvae_hub.utils.plotting import generate_plots
+from mmvae_hub.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
 
 
 class BaseTrainer:
@@ -189,8 +189,6 @@ class BaseTrainer:
                         'mean_epoch_time': self.callback.epoch_time.get_average()}
 
         dict2json(self.flags.dir_experiment_run / 'results.json', test_results.__dict__ | run_metadata)
-
-
 
         if self.flags.use_db == 1:
             self.exp.experiments_database.insert_dict(run_metadata)

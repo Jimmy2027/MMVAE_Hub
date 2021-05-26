@@ -7,9 +7,8 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 
 from mmvae_hub import log
-from mmvae_hub.base.utils.save_samples import save_generated_samples_singlegroup
-from mmvae_hub.base.utils.utils import dict_to_device
-from mmvae_hub.base.utils.utils import init_twolevel_nested_dict
+from mmvae_hub.utils.save_samples import save_generated_samples_singlegroup
+from mmvae_hub.utils.utils import init_twolevel_nested_dict, dict_to_device
 
 
 def classify_cond_gen_samples_(exp, labels: Tensor, cond_samples: typing.Mapping[str, Tensor]) \

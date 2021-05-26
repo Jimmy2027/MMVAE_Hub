@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from mmvae_hub.networks.BaseMMVae import BaseMMVae_
 from mmvae_hub.evaluation.divergence_measures.mm_div import poe
-from mmvae_hub.base.utils import utils
+from mmvae_hub.utils import utils
 
 
 class VAEPolymnist(BaseMMVae_, nn.Module):

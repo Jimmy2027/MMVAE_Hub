@@ -7,8 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from mmvae_hub import log
-from mmvae_hub.base.utils.utils import atleast_2d
-from mmvae_hub.base.utils.utils import dict_to_device
+from mmvae_hub.utils.utils import dict_to_device, atleast_2d
 
 
 def train_clf_lr_all_subsets(exp):

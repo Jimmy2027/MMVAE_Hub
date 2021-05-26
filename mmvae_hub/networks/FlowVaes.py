@@ -4,12 +4,12 @@ import typing
 import torch
 from torch import nn as nn
 
-from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.fusion_functions import subsets_from_batchmods
-from mmvae_hub.base.utils.utils import split_int_to_bins
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from mmvae_hub.networks.utils import flows
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
+from mmvae_hub.utils.utils import split_int_to_bins
 
 
 class PlanarFlowMMVAE(MOEMMVae):
@@ -61,7 +61,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
         super(PfomMMVAE, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = PfomMMDiv()
 
-    def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, EncModPFoM]:
+    def encode(self, input_batch: typing.Mapping[str, Tensor]) -> typing.Mapping[str, EncModPFoM]:
         """
         Encoder that outputs parameters for base distribution of z and flow parameters.
         """

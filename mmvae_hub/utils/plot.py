@@ -3,12 +3,12 @@ from typing import Optional
 
 import torch
 from PIL import Image
-from PIL import ImageDraw, ImageFont
+from PIL import ImageDraw
 from torchvision import transforms
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 
-from mmvae_hub.base.utils import text as text
+from mmvae_hub.utils import text as text
 from mmvae_hub import log
 from pathlib import Path
 

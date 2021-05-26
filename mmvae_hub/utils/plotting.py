@@ -4,9 +4,8 @@ import torch
 
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.base.utils import plot
-from mmvae_hub.base.utils import utils
-from mmvae_hub.base.utils.Dataclasses import *
+from mmvae_hub.utils import utils, plot
+from mmvae_hub.utils.Dataclasses import *
 
 
 def generate_plots(exp, epoch):

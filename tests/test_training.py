@@ -3,7 +3,7 @@ import tempfile
 import pytest
 
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
-from mmvae_hub.base.utils.plotting import generate_plots
+from mmvae_hub.utils.plotting import generate_plots
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from tests.utils import set_me_up
 
@@ -54,8 +54,8 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
-    # test_run_epochs_polymnist(method='poe')
-    # test_run_epochs_polymnist(method='joint_elbo')
+    test_run_epochs_polymnist(method='poe')
+    test_run_epochs_polymnist(method='joint_elbo')
     test_run_epochs_polymnist(method='moe')
     test_run_epochs_polymnist(method='planar_mixture')
     test_run_epochs_polymnist(method='pfom')

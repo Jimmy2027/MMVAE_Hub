@@ -1,12 +1,13 @@
 from abc import abstractmethod
+from typing import Iterable, Mapping
 
 import numpy as np
 import torch
 
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
-from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.utils import reweight_weights
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.utils import reweight_weights
 
 
 class BaseMMDiv:

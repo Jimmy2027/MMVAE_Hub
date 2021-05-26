@@ -11,10 +11,10 @@ from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from mmvae_hub import log
-from mmvae_hub.base.utils.MongoDB import MongoDatabase
-from mmvae_hub.base.utils.flags_utils import get_experiment, get_config_path, BaseFlagsSetup
-from mmvae_hub.base.utils.plotting import generate_plots
-from mmvae_hub.base.utils.utils import dict2json
+from mmvae_hub.utils.MongoDB import MongoDatabase
+from mmvae_hub.utils.flags_utils import BaseFlagsSetup, get_experiment, get_config_path
+from mmvae_hub.utils.plotting import generate_plots
+from mmvae_hub.utils.utils import dict2json
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:

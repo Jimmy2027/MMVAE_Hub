@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-
-from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.average_meters import AverageMeter
-from mmvae_hub.base.utils.utils import dict2json
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.average_meters import AverageMeter
+from mmvae_hub.utils.utils import dict2json
 
 
 class BaseCallback:

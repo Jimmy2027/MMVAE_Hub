@@ -10,8 +10,8 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
-from mmvae_hub.base.utils.filehandling import create_dir_structure, get_experiment_uid
-from mmvae_hub.base.utils.utils import json2dict, unpack_zipfile, dict2pyobject
+from mmvae_hub.utils.filehandling import create_dir_structure, get_experiment_uid
+from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2pyobject
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
@@ -107,7 +107,7 @@ class BaseFlagsSetup:
     def get_version_from_setup_config() -> str:
         """Read the package version from the setup.cfg file."""
         config = configparser.ConfigParser()
-        config.read(Path(__file__).parent.parent.parent.parent / 'setup.cfg')
+        config.read(Path(__file__).parent.parent.parent / 'setup.cfg')
         return config['metadata']['version']
 
     def setup_leomed(self, flags):

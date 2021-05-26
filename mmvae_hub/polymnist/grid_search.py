@@ -1,7 +1,7 @@
 from norby.utils import norby
 from sklearn.model_selection import ParameterGrid
 
-from mmvae_hub.base.utils.flags_utils import get_config_path
+from mmvae_hub.utils import get_config_path
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
@@ -10,28 +10,28 @@ search_spaces = {
     # 'method': ['pfom'],
     'method': ['planar_mixture'],
     # 'method': ['joint_elbo'],
-    'class_dim': [512],
+    'class_dim': [256],
     "beta": [1],
-    "num_flows": [0],
+    "num_flows": [5],
     "num_mods": [3],
     "end_epoch": [99],
-    "weighted_mixture": [True]
+    "weighted_mixture": [True, False]
 }
 
 search_spaces_1 = {
     'method': ['pfom'],
     # 'method': ['moe'],
-    'class_dim': [512],
-    "beta": [0],
+    'class_dim': [256],
+    "beta": [1],
     "num_flows": [5],
     "num_mods": [3],
     "end_epoch": [100],
-    "weighted_mixture": [True]
+    "weighted_mixture": [False]
 }
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces]:
+    for grid in [search_spaces_1]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

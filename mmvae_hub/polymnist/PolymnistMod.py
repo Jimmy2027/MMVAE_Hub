@@ -3,11 +3,12 @@ import os
 import torch
 
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.base.utils.likelihood import get_likelihood
-from mmvae_hub.base.utils.save_samples import write_samples_img_to_file
+from mmvae_hub.modalities.utils import get_likelihood
+
 from mmvae_hub.polymnist.networks.ConvNetworkImgClfPolymnist import ClfImg
 from mmvae_hub.polymnist.networks.ConvNetworksImgPolymnist import EncoderImg, DecoderImg
 from mmvae_hub.polymnist.utils import download_polymnist_clfs
+from mmvae_hub.utils.save_samples import write_samples_img_to_file
 
 
 class PolymnistMod(BaseModality):

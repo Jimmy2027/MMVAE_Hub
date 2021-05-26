@@ -1,8 +1,10 @@
 import math
 
-from mmvae_hub.base.utils.Dataclasses import *
-from mmvae_hub.base.utils.utils import reweight_weights
 import torch
+
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.utils import reweight_weights
+
 
 def log_normal_diag(x, mean, log_var, average=False, reduce=True, dim=None):
     # print('logvar: ', log_var.mean().item())

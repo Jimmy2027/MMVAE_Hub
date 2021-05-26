@@ -6,8 +6,8 @@ import torch.distributions as dist
 from torch.distributions.distribution import Distribution
 
 from mmvae_hub import log
-from mmvae_hub.base.utils import utils
-from mmvae_hub.base.utils.Dataclasses import *
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.Dataclasses import *
 
 LOG2PI = float(np.log(2.0 * math.pi))
 

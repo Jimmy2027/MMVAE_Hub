@@ -2,9 +2,9 @@ import torch
 
 import mmvae_hub.modalities.utils
 from mmvae_hub.modalities.BaseModality import Modality
-from mmvae_hub.base.utils import plot
-from mmvae_hub.base.utils.save_samples import write_samples_text_to_file
-from mmvae_hub.base.utils.text import tensor_to_text
+from mmvae_hub.utils import plot
+from mmvae_hub.utils import write_samples_text_to_file
+from mmvae_hub.utils import tensor_to_text
 
 
 class Text(Modality):
