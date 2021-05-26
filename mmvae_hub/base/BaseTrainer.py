@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import shutil
 import time
 from abc import abstractmethod
 
@@ -132,8 +132,8 @@ class BaseTrainer:
             self.tb_logger.write_testing_logs(**{k: v for k, v in averages.items() if k != 'joint_latents'})
 
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
-
-            if (epoch + 1) % self.flags.eval_freq == 0 or (epoch + 1) == self.flags.end_epoch:
+            last_epoch: bool = (epoch + 1) == self.flags.end_epoch
+            if (epoch + 1) % self.flags.eval_freq == 0 or last_epoch:
                 log.info('generating plots')
                 plots = generate_plots(self.exp, epoch)
                 self.tb_logger.write_plots(plots, epoch)
@@ -157,7 +157,7 @@ class BaseTrainer:
                     self.tb_logger.write_lhood_logs(lhoods)
                     test_results.lhoods = lhoods
 
-                if self.flags.calc_prd and ((epoch + 1) % self.flags.eval_freq_fid == 0):
+                if self.flags.calc_prd and (((epoch + 1) % self.flags.eval_freq_fid == 0) or last_epoch):
                     log.info('calculating prediction score')
                     prd_scores = calc_prd_score(self.exp)
                     self.tb_logger.write_prd_scores(prd_scores)
