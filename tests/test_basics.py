@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pymongo import MongoClient
 
-from mmvae_hub.utils import json2dict
+from mmvae_hub.utils.utils import json2dict
 
 
 @pytest.mark.tox
