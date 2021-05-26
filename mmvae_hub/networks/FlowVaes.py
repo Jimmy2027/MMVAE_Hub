@@ -4,10 +4,10 @@ import typing
 import torch
 from torch import nn as nn
 
-from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
 from mmvae_hub.base.utils.Dataclasses import *
 from mmvae_hub.base.utils.fusion_functions import subsets_from_batchmods
 from mmvae_hub.base.utils.utils import split_int_to_bins
+from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from mmvae_hub.networks.utils import flows
 
@@ -252,7 +252,8 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
         # fuse enc_mods
         return (weights_subset * zk_subset).sum(dim=0)
 
-    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str, weight_joint :bool = True) -> Distr:
+    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str,
+                                    weight_joint: bool = True) -> Distr:
         """For each element in batch select an expert from subset with equal probability."""
         num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
         mods = self.subsets[s_key]
