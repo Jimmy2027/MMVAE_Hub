@@ -25,11 +25,20 @@ class PlanarFlowMMVAE(MOEMMVae):
         flow = flows.Planar
         self.num_flows = flags.num_flows
 
-        # Amortized flow parameters
         if self.num_flows:
-            self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-            self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-            self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
+            if flags.amortized_flow:
+                # Amortized flow parameters
+                self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
+                self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
+                self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
+            else:
+                self.u = torch.empty((1, self.num_flows, flags.class_dim, 1)).requires_grad_(True).to(self.flags.device)
+                torch.nn.init.normal_(self.u)
+
+                self.w = torch.empty((1, self.num_flows, 1, flags.class_dim)).requires_grad_(True).to(self.flags.device)
+                torch.nn.init.normal_(self.w)
+
+                self.b = torch.zeros((1, self.num_flows, 1, 1)).requires_grad_(True).to(self.flags.device)
 
         # Normalizing flow layers
         for k in range(self.num_flows):
@@ -176,11 +185,12 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
 
                 # get amortized u an w for all flows
-                if self.num_flows:
+                if self.num_flows and self.flags.amortized_flow:
                     flow_params = {
                         'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
                         'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
                         'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1)}
+
                 else:
                     flow_params = {k: None for k in ['u', 'w', 'b']}
 
@@ -200,8 +210,10 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
         """Apply the flow for each modality."""
         for mod_str, enc_mod in enc_mods.items():
             latents_class = enc_mod.latents_class
-            log_det_j = torch.zeros(latents_class.mu.shape[0]).to(self.flags.device)
+            num_samples = latents_class.mu.shape[0]
+            log_det_j = torch.zeros(num_samples).to(self.flags.device)
             flow_params = enc_mod.flow_params
+
             # Sample z_0
             z = [latents_class.reparameterize()]
 
@@ -209,8 +221,13 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
             for k in range(self.num_flows):
                 flow_k = getattr(self, 'flow_' + str(k))
                 # z' = z + u h( w^T z + b)
-                z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
-                                               flow_params.b[:, k, :, :])
+                if self.flags.amortized_flow:
+                    z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
+                                                   flow_params.b[:, k, :, :])
+                else:
+                    z_k, log_det_jacobian = flow_k(z[k], self.u[:, k, :, :].repeat(num_samples, 1, 1),
+                                                   self.w[:, k, :, :].repeat(num_samples, 1, 1),
+                                                   self.b[:, k, :, :].repeat(num_samples, 1, 1))
                 z.append(z_k)
                 log_det_j += log_det_jacobian
             enc_mods[mod_str].z0 = z[0]

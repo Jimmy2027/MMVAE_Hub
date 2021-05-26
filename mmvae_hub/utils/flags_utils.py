@@ -10,9 +10,9 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
+from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.filehandling import create_dir_structure, get_experiment_uid
 from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2pyobject
-from mmvae_hub.polymnist.experiment import PolymnistExperiment
 
 
 class BaseFlagsSetup:
@@ -148,12 +148,16 @@ class BaseFlagsSetup:
         Load flags from old experiments, either from a directory or from the db.
         Add parameters for backwards compatibility and adapt paths for current system.
         """
+        defaults = [('weighted_mixture', False), ('amortized_flow', False)]
+
         if is_dict:
             flags = json2dict(flags_path)
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, True)
 
-            if 'weighted_mixture' not in flags:
-                flags['weighted_mixture'] = False
+            # get defaults from newer parameters that might not be defined in old flags
+            for k, v in defaults:
+                if k not in flags:
+                    flags[k] = v
 
             if add_args is not None:
                 for k, v in add_args.items():
@@ -166,8 +170,10 @@ class BaseFlagsSetup:
             flags = torch.load(flags_path)
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, False)
 
-            if not hasattr(flags, 'weighted_mixture'):
-                flags.weighted_mixture = False
+            # get defaults from newer parameters that might not be defined in old flags
+            for k, v in defaults:
+                if not hasattr(flags, k):
+                    setattr(flags, k, v)
 
             if add_args is not None:
                 for k, v in add_args.items():

@@ -1,10 +1,10 @@
 from norby.utils import norby
 from sklearn.model_selection import ParameterGrid
 
-from mmvae_hub.utils import get_config_path
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
+from mmvae_hub.utils.flags_utils import get_config_path
 
 search_spaces = {
     # 'method': ['pfom'],
@@ -14,8 +14,9 @@ search_spaces = {
     "beta": [1],
     "num_flows": [5],
     "num_mods": [3],
-    "end_epoch": [99],
-    "weighted_mixture": [True, False]
+    "end_epoch": [100],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
 }
 
 search_spaces_1 = {
@@ -31,7 +32,7 @@ search_spaces_1 = {
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_1]:
+    for grid in [search_spaces]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()
