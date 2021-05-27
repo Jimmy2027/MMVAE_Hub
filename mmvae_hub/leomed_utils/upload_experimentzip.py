@@ -3,8 +3,8 @@
 Upload zipped experiment folders to the mongo database.
 Use with python upload_experimentzip.py upload_all --src_dir my_src_dir
 """
-import shutil
 import glob
+import shutil
 import tempfile
 import zipfile
 from pathlib import Path
@@ -13,65 +13,82 @@ import ppb
 import torch
 import typer
 
-from mmvae_hub.base.BaseTrainer import BaseTrainer
-from mmvae_hub.utils import MongoDatabase
-from mmvae_hub.utils import json2dict
+from mmvae_hub import log
+from mmvae_hub.experiment_vis.utils import run_notebook_convert
+from mmvae_hub.utils.MongoDB import MongoDatabase
+from mmvae_hub.utils.utils import json2dict
 
 app = typer.Typer()
 
 
-@app.command()
-def upload_all(src_dir: str, is_zip: bool = True):
+def upload_one(exp_path: Path):
     """
-    If is_zip is True, unzip experiment_dir to a tmpdir.
+    Upload one experiment result to database together with the model checkpoints,
+    the logfile and tensorboardlogs, then delete zipped experiment dir.
+    """
+    is_zip = exp_path.suffix == '.zip'
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        if is_zip:
+            # unpack zip into tmpdir
+            log.info(f'Unpacking {exp_path} to {tmpdirname}.')
+            with zipfile.ZipFile(exp_path) as z:
+                z.extractall(tmpdirname)
+            exp_dir = Path(tmpdirname)
+        else:
+            exp_dir = exp_path
+
+        flags = torch.load(exp_dir / 'flags.rar')
+        db = MongoDatabase(training=True, flags=flags)
+        results = {'epoch_results': {}}
+
+        epochs = sorted(int(str(epoch.stem)) for epoch in (exp_dir / 'epoch_results').iterdir())
+
+        for epoch in epochs:
+            epoch_str = str(epoch)
+            epoch_results = (exp_dir / 'epoch_results' / epoch_str).with_suffix('.json')
+            results['epoch_results'][epoch_str] = json2dict(epoch_results)
+
+        db.insert_dict(results)
+
+        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs']]
+        dir_checkpoints = exp_dir / 'checkpoints'
+        db.save_networks_to_db(
+            dir_checkpoints=dir_checkpoints,
+            epoch=max(int(str(d.name)) for d in dir_checkpoints.iterdir()),
+            modalities=modalities,
+        )
+
+        pdf_path = run_notebook_convert(exp_dir)
+        expvis_url = ppb.upload(pdf_path, plain=True)
+        db.insert_dict({'expvis_url': expvis_url})
+
+        log_file = glob.glob(str(exp_dir) + '/*.log')
+        if len(log_file):
+            db.upload_logfile(Path(log_file[0]))
+        db.upload_tensorbardlogs(exp_dir / 'logs')
+
+    # delete exp_path
+    if is_zip:
+        exp_path.unlink()
+    else:
+        shutil.rmtree(exp_path)
+
+
+@app.command()
+def upload_all(src_dir: str):
+    """
     Upload all experiment results to database together with the model checkpoints,
-    the logfile and tensrboardlogs, then delete zipped experiment dir.
+    the logfile and tensorboardlogs, then delete zipped experiment dir.
     """
 
     src_dir = Path(src_dir).expanduser()
     for experiment_zip in src_dir.iterdir():
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            if is_zip:
-                # unpack zip into tmpdir
-                with zipfile.ZipFile(experiment_zip) as z:
-                    z.extractall(tmpdirname)
-                exp_dir = Path(tmpdirname)
-            else:
-                exp_dir = experiment_zip
-
-            flags = torch.load(exp_dir / 'flags.rar')
-            db = MongoDatabase(training=True, flags=flags)
-
-            for epoch_results in Path(exp_dir / 'epoch_results').iterdir():
-                epoch = epoch_results.stem
-                epoch_results_dict = json2dict(epoch_results)
-                epoch_results = db.get_experiment_dict()['epoch_results']
-                epoch_results[f'{epoch}'] = epoch_results_dict
-                db.insert_dict({'epoch_results': epoch_results})
-
-            # read the modality strs from results.json
-            modalities = [mod_str for mod_str in epoch_results_dict['train_results']['log_probs']]
-            dir_checkpoints = exp_dir / 'checkpoints'
-            db.save_networks_to_db(
-                dir_checkpoints=dir_checkpoints,
-                epoch=max(int(str(d.name)) for d in dir_checkpoints.iterdir()),
-                modalities=modalities,
-            )
-
-            log_file = glob.glob(str(exp_dir) + '/*.log')
-            if len(log_file):
-                db.upload_logfile(Path(log_file[0]))
-            db.upload_tensorbardlogs(exp_dir / 'logs')
-
-            pdf_path = BaseTrainer.run_notebook_convert(exp_dir)
-            expvis_url = ppb.upload(pdf_path, plain=True)
-            db.insert_dict({'expvis_url': expvis_url})
-
-        # delete experiment_zip
-        shutil.rmtree(experiment_zip)
+        upload_one(experiment_zip)
 
 
 if __name__ == '__main__':
     # app()
-    # upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
-    upload_all('/mnt/data/hendrik/leomed_results/', is_zip=False)
+    from norby.utils import norby
+
+    with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
+        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
