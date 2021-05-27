@@ -10,7 +10,6 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
-from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.filehandling import create_dir_structure, get_experiment_uid
 from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2pyobject
 
@@ -149,6 +148,7 @@ class BaseFlagsSetup:
         Add parameters for backwards compatibility and adapt paths for current system.
         """
         defaults = [('weighted_mixture', False), ('amortized_flow', False)]
+        add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict:
             flags = json2dict(flags_path)
@@ -222,15 +222,3 @@ def get_config_path(flags=None):
             return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/local_config.json")
     else:
         return flags.config_path
-
-
-def get_experiment(flags):
-    """
-    Get experiments class from dir_data flag.
-    """
-    if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
-        return PolymnistExperiment(flags)
-    elif flags.dataset == 'toy':
-        return PolymnistExperiment(flags)
-    else:
-        raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')

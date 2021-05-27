@@ -3,8 +3,8 @@ import tempfile
 import pytest
 
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
-from mmvae_hub.utils.plotting import generate_plots
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
+from mmvae_hub.utils.plotting import generate_plots
 from tests.utils import set_me_up
 
 
@@ -18,11 +18,10 @@ def test_run_epochs_polymnist(method: str):
     changed, perhaps involuntarily.
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
-
         # todo implement calc likelihood for flow based methods
         calc_nll = False if method in ['planar_mixture', 'pfom'] else True
         mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll,
-                                                        # 'amortized_flow':False
+                                                        'amortized_flow': False
                                                         })
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()

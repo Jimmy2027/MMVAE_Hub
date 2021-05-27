@@ -1,8 +1,8 @@
 import argparse
 import os
 import shutil
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from mmvae_hub import log
 
@@ -63,13 +63,12 @@ def create_dir_structure(flags: argparse.ArgumentParser(), train: bool = True) -
     if train:
         create_dir(flags.dir_inference)
 
-    if flags.dir_fid is None:
-        flags.dir_fid = flags.dir_experiment_run
-    elif not train:
+    if not train:
         flags.dir_fid = os.path.join(flags.dir_experiment_run, 'fid_eval')
         if not os.path.exists(flags.dir_fid):
             os.makedirs(flags.dir_fid)
     flags.dir_gen_eval_fid = os.path.join(flags.dir_fid, experiment_uid)
+    log.info(f'dir_gen_eval_fid: {flags.dir_gen_eval_fid}')
     create_dir(flags.dir_gen_eval_fid)
 
     flags.dir_plots = os.path.join(flags.dir_experiment_run, 'plots')
@@ -97,17 +96,3 @@ def expand_paths(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
     flags.dir_fid = os.path.expanduser(flags.dir_fid)
     flags.dir_clf = os.path.expanduser(flags.dir_clf)
     return flags
-
-# def get_method(flags: argparse.ArgumentParser()) -> argparse.ArgumentParser():
-#     if flags.method == 'poe':
-#         flags.modality_poe = True
-#         flags.poe_unimodal_elbos = True
-#     elif flags.method == 'moe':
-#         flags.modality_moe = True
-#     elif flags.method == 'jsd':
-#         flags.modality_jsd = True
-#     elif flags.method == 'joint_elbo':
-#         flags.joint_elbo = True
-#     else:
-#         NotImplementedError('method not implemented...exit!')
-#     return flags

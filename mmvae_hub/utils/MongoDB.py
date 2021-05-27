@@ -40,7 +40,7 @@ class MongoDatabase:
 
     @staticmethod
     def get_mongodb_uri():
-        dbconfig = json2dict(Path(__file__).parent.parent.parent.parent / 'configs/mmvae_db.json')
+        dbconfig = json2dict(Path(__file__).parent.parent.parent / 'configs/mmvae_db.json')
         return dbconfig['mongodb_URI']
 
     def insert_dict(self, d: dict):
@@ -116,9 +116,12 @@ class MongoDatabase:
         file_id = self.experiment_uid + f"__tensorboard_logs"
         if file_id not in fs_ids:
             with tempfile.TemporaryDirectory() as tmpdirname:
+                log.info(f'Zipping {file_id} to {tmpdirname}.')
+
                 zipfile = Path(tmpdirname) / tensorboard_logdir.name
                 shutil.make_archive(zipfile, 'zip', tensorboard_logdir, verbose=True)
 
+                log.info(f'Uploading tensorboard logs to db.')
                 with io.FileIO(str(zipfile.with_suffix('.zip')), 'r') as fileObject:
                     fs.put(fileObject, filename=str(tensorboard_logdir.name),
                            _id=file_id)

@@ -11,6 +11,8 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
 from mmvae_hub import log
+from mmvae_hub.utils.flags_utils import get_config_path
+from mmvae_hub.utils.utils import json2dict
 
 
 class PolymnistDataset(Dataset):
@@ -192,8 +194,7 @@ if __name__ == "__main__":
     # print("\nARGS:\n", args)
     from dataclasses import dataclass
     from pathlib import Path
-    from mmvae_hub.utils import get_config_path
-    from mmvae_hub.utils import json2dict
+
 
     config = json2dict(get_config_path())
 
