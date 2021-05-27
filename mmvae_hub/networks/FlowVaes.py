@@ -301,26 +301,3 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
             return (weights_subset * zk_subset)
         else:
             return zk_subset
-
-    # def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str) -> Distr:
-    #     num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
-    #     mods = self.subsets[s_key]
-    #
-    #     w_modalities = torch.Tensor(self.flags.alpha_modalities).to(self.flags.device)
-    #
-    #     idx_start = []
-    #     idx_end = []
-    #     for k in range(len(mods)):
-    #         i_start = 0 if k == 0 else int(idx_end[k - 1])
-    #         if k == w_modalities.shape[0] - 1:
-    #             i_end = num_samples
-    #         else:
-    #             i_end = i_start + int(torch.floor(num_samples * w_modalities[k]))
-    #         idx_start.append(i_start)
-    #         idx_end.append(i_end)
-    #
-    #     idx_end[-1] = num_samples
-    #
-    #     zk_sel = torch.cat([enc_mods[mod.name].zk[idx_start[k]:idx_end[k], :] for k, mod in enumerate(mods)])
-    #
-    #     return zk_sel
