@@ -15,7 +15,7 @@ search_spaces = {
     "num_flows": [5],
     "num_mods": [3],
     "end_epoch": [100],
-    "weighted_mixture": [False],
+    "weighted_mixture": [True],
     "amortized_flow": [False]
 }
 
