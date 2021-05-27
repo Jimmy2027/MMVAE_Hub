@@ -32,13 +32,13 @@ class PlanarFlowMMVAE(MOEMMVae):
                 self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
                 self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
             else:
-                self.u = torch.empty((1, self.num_flows, flags.class_dim, 1)).requires_grad_(True).to(self.flags.device)
-                torch.nn.init.normal_(self.u)
+                self.u = torch.empty((1, self.num_flows, flags.class_dim, 1)).to(self.flags.device).requires_grad_(True)
+                torch.nn.init.normal_(self.u, 0, 0.1)
 
-                self.w = torch.empty((1, self.num_flows, 1, flags.class_dim)).requires_grad_(True).to(self.flags.device)
-                torch.nn.init.normal_(self.w)
+                self.w = torch.empty((1, self.num_flows, 1, flags.class_dim)).to(self.flags.device).requires_grad_(True)
+                torch.nn.init.normal_(self.w, 0, 0.1)
 
-                self.b = torch.zeros((1, self.num_flows, 1, 1)).requires_grad_(True).to(self.flags.device)
+                self.b = torch.zeros((1, self.num_flows, 1, 1)).to(self.flags.device).requires_grad_(True)
 
         # Normalizing flow layers
         for k in range(self.num_flows):

@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 from typing import Mapping, Iterable
 
@@ -7,7 +8,7 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from torch import Tensor
 from torchvision import transforms
-import random
+
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.polymnist.PolymnistDataset import PolymnistDataset, ToyPolymnistDataset
@@ -67,7 +68,11 @@ class PolymnistExperiment(BaseExperiment):
                     params.append(p)
 
         # add flow parameters from mmvae if present
-        params.extend(list(self.mm_vae.parameters()))
+        if self.flags.amortized_flow:
+            params.extend(list(self.mm_vae.parameters()))
+        else:
+            for p in ['u', 'w', 'b']:
+                params.append(getattr(self.mm_vae, p))
 
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
