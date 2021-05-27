@@ -16,7 +16,6 @@ if __name__ == '__main__':
     flags_setup = FlagsSetup(get_config_path(flags))
     flags = flags_setup.setup(flags)
 
-    log.info(f'dir_experiment_run: {flags.dir_experiment_run}')
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
                      f'Experiment {flags.experiment_uid} finished.'):
         mst = PolymnistExperiment(flags)
