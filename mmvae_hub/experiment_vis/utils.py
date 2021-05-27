@@ -11,8 +11,9 @@ from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 
 from mmvae_hub import log
+from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.MongoDB import MongoDatabase
-from mmvae_hub.utils.flags_utils import BaseFlagsSetup, get_experiment, get_config_path
+from mmvae_hub.utils.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.plotting import generate_plots
 from mmvae_hub.utils.utils import dict2json
 
@@ -84,10 +85,14 @@ def write_experiment_vis_config(experiment_dir: Path) -> Path:
     return out_path
 
 
+def get_epochs(logs_dict: dict, metric: str):
+    return sorted([int(epoch) for epoch in logs_dict['epoch_results'] if
+                   logs_dict['epoch_results'][epoch]['test_results'][metric]])
+
+
 def plot_lr_accuracy(logs_dict: dict) -> None:
     lr_accuracy_values = {}
-    epochs = [epoch for epoch in logs_dict['epoch_results'] if
-              logs_dict['epoch_results'][epoch]['test_results']['lr_eval']]
+    epochs = get_epochs(logs_dict, 'lr_eval')
 
     for epoch, epoch_values in logs_dict['epoch_results'].items():
         if epoch_values['test_results']['lr_eval']:
@@ -107,8 +112,7 @@ def plot_lr_accuracy(logs_dict: dict) -> None:
 
 def plot_likelihoods(logs_dict: dict) -> None:
     lhoods = {}
-    epochs = [epoch for epoch in logs_dict['epoch_results'] if
-              logs_dict['epoch_results'][epoch]['test_results']['lhoods']]
+    epochs = get_epochs(logs_dict, 'lhoods')
 
     for epoch, epoch_values in logs_dict['epoch_results'].items():
         if epoch_values['test_results']['lhoods']:
@@ -189,8 +193,7 @@ def show_latents(logs_dict: dict) -> None:
 
 def plot_coherence_accuracy(logs_dict: dict) -> None:
     gen_eval_logs = {}
-    epochs = [epoch for epoch in logs_dict['epoch_results'] if
-              logs_dict['epoch_results'][epoch]['test_results']['gen_eval']]
+    epochs = get_epochs(logs_dict, 'gen_eval')
 
     for epoch, epoch_values in logs_dict['epoch_results'].items():
         if epoch_values['test_results']['gen_eval']:
@@ -248,7 +251,8 @@ def make_experiments_dataframe(experiments):
             max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
 
             # get the last epoch where evaluation was run.
-            if exp['epoch_results'][str(max_epoch)]['test_results']['lr_eval'] is None:
+            if (max_epoch - max_epoch % int(exp['flags']['eval_freq']) > 1
+                    and exp['epoch_results'][str(max_epoch)]['test_results']['lr_eval'] is None):
                 last_epoch = str(max_epoch - max_epoch % int(exp['flags']['eval_freq']) - 1)
             else:
                 last_epoch = str(max_epoch)
@@ -297,6 +301,23 @@ def make_experiments_dataframe(experiments):
     return df
 
 
+def get_experiment(flags):
+    """
+    Get experiments class from dir_data flag.
+    """
+    if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
+        return PolymnistExperiment(flags)
+    elif flags.dataset == 'toy':
+        return PolymnistExperiment(flags)
+    else:
+        raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')
+
+
 if __name__ == '__main__':
-    for id in ['polymnist_planar_mixture_2021_05_17_10_59_48_027991']:
+    # experiment_uid = 'polymnist_planar_mixture_2021_05_25_18_55_51_488540'
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiment_dict = experiments_database.get_experiment_dict()
+    # plot_lr_accuracy(experiment_dict)
+    # df = make_experiments_dataframe(experiments_database.connect())
+    for id in ['polymnist_planar_mixture_2021_05_25_11_37_30_843750']:
         upload_notebook_to_db(id)
