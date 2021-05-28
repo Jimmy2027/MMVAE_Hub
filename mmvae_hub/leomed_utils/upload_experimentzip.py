@@ -62,9 +62,11 @@ def upload_one(exp_path: Path):
         expvis_url = ppb.upload(pdf_path, plain=True)
         db.insert_dict({'expvis_url': expvis_url})
 
-        log_file = glob.glob(str(exp_dir) + '/*.log')
-        if len(log_file):
-            db.upload_logfile(Path(log_file[0]))
+        # logfile too big, takes too much time
+        # log_file = glob.glob(str(exp_dir) + '/*.log')
+        # if len(log_file):
+        #     db.upload_logfile(Path(log_file[0]))
+
         db.upload_tensorbardlogs(exp_dir / 'logs')
 
     # delete exp_path
