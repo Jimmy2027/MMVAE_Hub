@@ -26,8 +26,8 @@ class PlanarFlowMMVAE(MOEMMVae):
         self.num_flows = flags.num_flows
 
         if self.num_flows:
+            # Amortized flow parameters
             if flags.amortized_flow:
-                # Amortized flow parameters
                 self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
                 self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
                 self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
@@ -46,6 +46,7 @@ class PlanarFlowMMVAE(MOEMMVae):
             self.add_module('flow_' + str(k), flow_k)
 
     def apply_flow(self, in_distr: Distr, flow_params: PlanarFlowParams):
+        num_samples = in_distr.mu.shape[0]
         log_det_j = torch.zeros(in_distr.mu.shape[0]).to(self.flags.device)
 
         # Sample z_0
@@ -55,8 +56,13 @@ class PlanarFlowMMVAE(MOEMMVae):
         for k in range(self.num_flows):
             flow_k = getattr(self, 'flow_' + str(k))
             # z' = z + u h( w^T z + b)
-            z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
-                                           flow_params.b[:, k, :, :])
+            if self.flags.amortized_flow:
+                z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
+                                               flow_params.b[:, k, :, :])
+            else:
+                z_k, log_det_jacobian = flow_k(z[k], self.u[:, k, :, :].repeat(num_samples, 1, 1),
+                                               self.w[:, k, :, :].repeat(num_samples, 1, 1),
+                                               self.b[:, k, :, :].repeat(num_samples, 1, 1))
             z.append(z_k)
             log_det_j += log_det_jacobian
 
@@ -124,7 +130,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
                 dim=0)
             joint_h = torch.cat((joint_h, expert.h[joint_h.shape[0]:joint_h.shape[0] + chunk_size]))
 
-        if self.num_flows:
+        if self.num_flows and self.flags.amortized_flow:
             # get amortized parameters
             joint_flow_params = PlanarFlowParams(**{
                 'u': self.amor_u(joint_h).view(joint_h.shape[0], self.num_flows, self.flags.class_dim, 1),
