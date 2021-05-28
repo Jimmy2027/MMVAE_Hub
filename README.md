@@ -16,3 +16,10 @@ cd MMVAE_Hub
 path/to/conda/environment/bin/python -m pip install -e .
 
 ```
+
+### Working on leomed
+When working on leomed, please set the flag "leomed" to true.
+On leomed, several steps are taken to reduce the number of files:
+- the dataset is stored as zipfile, and will be unzipped in the $TMPDIR during runtime.
+- the `experiment_dir` will also be set to $TMPDIR during runtime. At the end of the run, this directory will be 
+  compressed to a zip file and stored in the `experiment_dir` defined in the config. 
