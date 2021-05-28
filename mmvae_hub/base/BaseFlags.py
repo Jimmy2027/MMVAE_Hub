@@ -1,12 +1,14 @@
 import argparse
 
+from mmvae_hub.utils.flags_utils import str2bool
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
-parser.add_argument('--leomed', type=bool, default=False,
+parser.add_argument('--leomed', type=str2bool, default=False,
                     help="If experiment is running on the leomed cluster, set this flag to True. This will make sure "
                          "to set the temporary directories to TMPDIR.")
-parser.add_argument('--norby', type=bool, default=False,
+parser.add_argument('--norby', type=str2bool, default=False,
                     help="If true use norby package to send training updates via telegram. "
                          "(Needs norby to be configured on system)")
 parser.add_argument('--use_db', default=False, action="store_true",
@@ -91,7 +93,7 @@ parser.add_argument('--joint_elbo', type=bool, default=False, help="modality_moe
 parser.add_argument('--poe_unimodal_elbos', type=bool, default=False, help="unimodal_klds")
 parser.add_argument('--factorized_representation', action='store_true', default=False,
                     help="factorized_representation")
-parser.add_argument('--weighted_mixture', type=bool, default=False,
+parser.add_argument('--weighted_mixture', type=str2bool, default=False,
                     help="Flag that indicates if the experts are selected randomly or with a probability that is "
                          "weighted by the inverse of the variance of the expert during the mixture.")
 parser.add_argument('--feature_extractor_img', type=str, default='resnet', help='which feature extractor model to use',
@@ -110,5 +112,5 @@ parser.add_argument('--kl_annealing', type=int, default=0,
 
 # FLOWS
 parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")
-parser.add_argument('--amortized_flow', type=bool, default=True,
+parser.add_argument('--amortized_flow', type=str2bool, default=True,
                     help="If True, use amortized flows, as described in Berg et al. 2019")
