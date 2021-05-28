@@ -123,6 +123,8 @@ class BaseFlagsSetup:
 
         flags.dir_fid = tmpdir / 'fid'
 
+        flags.dir_experiment = tmpdir
+
         return flags
 
     @staticmethod
@@ -222,3 +224,14 @@ def get_config_path(flags=None):
             return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/local_config.json")
     else:
         return flags.config_path
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
