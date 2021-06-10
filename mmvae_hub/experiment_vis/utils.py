@@ -15,7 +15,6 @@ from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.MongoDB import MongoDatabase
 from mmvae_hub.utils.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.plotting import generate_plots
-
 from mmvae_hub.utils.utils import dict2json
 
 
@@ -299,6 +298,9 @@ def bw_compat_epoch_results(epoch_results: dict, method: str) -> dict:
     if 'lr_eval_qk' in epoch_results:
         epoch_results['lr_eval_zk'] = epoch_results['lr_eval_qk']
 
+    if 'lr_eval_zk' not in epoch_results:
+        epoch_results['lr_eval_zk'] = None
+
     if 'lr_eval_q0' not in epoch_results:
         if method in ['planar_mixture', 'pfom']:
             epoch_results['lr_eval_zk'] = epoch_results['lr_eval']
@@ -405,11 +407,11 @@ def get_experiment(flags):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_pope_2021_06_08_20_52_59_710466'
+    experiment_uid = 'polymnist_pope_2021_06_08_20_52_59_710466'
     # show_generated_figs(_id=experiment_uid)
-    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
-    # df = make_experiments_dataframe(experiments_database.connect())
-    for id in ['polymnist_pfom_2021_06_10_10_59_17_258140']:
-        upload_notebook_to_db(id)
+    df = make_experiments_dataframe(experiments_database.connect())
+    # for id in ['polymnist_pfom_2021_06_10_10_59_17_258140']:
+    #     upload_notebook_to_db(id)
