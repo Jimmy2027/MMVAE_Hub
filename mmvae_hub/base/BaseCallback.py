@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.utils.average_meters import AverageMeter
+from mmvae_hub.utils.metrics.average_meters import AverageMeter
 from mmvae_hub.utils.utils import dict2json
 
 

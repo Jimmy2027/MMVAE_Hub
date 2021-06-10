@@ -6,8 +6,8 @@ import torch
 
 from run_epochs import run_epochs
 
-from mmvae_hub.utils.filehandling import create_dir_structure
-from mmvae_hub.utils.filehandling import create_dir_structure_testing
+from mmvae_hub.utils.setup.filehandling import create_dir_structure
+from mmvae_hub.utils.setup.filehandling import create_dir_structure_testing
 from mmvae_hub.mnistsvhntext.flags import parser
 from mmvae_hub.mnistsvhntext.experiment import MNISTSVHNText
 

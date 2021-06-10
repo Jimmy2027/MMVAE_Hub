@@ -13,8 +13,8 @@ from nbconvert.preprocessors import ExecutePreprocessor
 from mmvae_hub import log
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.MongoDB import MongoDatabase
-from mmvae_hub.utils.flags_utils import BaseFlagsSetup, get_config_path
-from mmvae_hub.utils.plotting import generate_plots
+from mmvae_hub.utils.plotting.plotting import generate_plots
+from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
 
 
@@ -302,7 +302,7 @@ def bw_compat_epoch_results(epoch_results: dict, method: str) -> dict:
         epoch_results['lr_eval_zk'] = None
 
     if 'lr_eval_q0' not in epoch_results:
-        if method in ['planar_mixture', 'pfom']:
+        if method in {'planar_mixture', 'pfom'}:
             epoch_results['lr_eval_zk'] = epoch_results['lr_eval']
             epoch_results['lr_eval_q0'] = {k: {'accuracy': None} for k in epoch_results['lr_eval']}
         else:

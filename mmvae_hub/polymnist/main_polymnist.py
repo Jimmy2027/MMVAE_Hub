@@ -7,7 +7,7 @@ from mmvae_hub import log
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
-from mmvae_hub.utils.flags_utils import get_config_path
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 from mmvae_hub.utils.utils import json2dict
 
 if __name__ == '__main__':

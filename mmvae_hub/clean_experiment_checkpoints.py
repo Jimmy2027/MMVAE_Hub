@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 from mmvae_hub.utils.MongoDB import MongoDatabase
-from mmvae_hub.utils.flags_utils import get_config_path
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 
 def clean_database():

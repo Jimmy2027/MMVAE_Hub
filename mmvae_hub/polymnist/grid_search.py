@@ -4,18 +4,18 @@ from sklearn.model_selection import ParameterGrid
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import FlagsSetup, parser
-from mmvae_hub.utils.flags_utils import get_config_path
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 search_spaces = {
     # 'method': ['pfom'],
-    'method': ['planar_mixture'],
+    'method': ['poe', 'moe', 'joint_elbo', 'planar_mixture', 'pfom'],
     # 'method': ['joint_elbo'],
     'class_dim': [256],
     "beta": [1],
     "num_flows": [5],
     "num_mods": [3],
     "end_epoch": [100],
-    "weighted_mixture": [True],
+    "weighted_mixture": [False],
     "amortized_flow": [False]
 }
 

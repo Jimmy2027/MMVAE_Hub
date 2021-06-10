@@ -2,6 +2,7 @@
 import argparse
 import configparser
 import os
+import tempfile
 from abc import abstractmethod
 from pathlib import Path
 
@@ -10,7 +11,8 @@ import torch
 
 import mmvae_hub
 from mmvae_hub import log
-from mmvae_hub.utils.filehandling import create_dir_structure, get_experiment_uid
+from mmvae_hub.utils.MongoDB import MongoDatabase
+from mmvae_hub.utils.setup.filehandling import create_dir_structure, get_experiment_uid
 from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2pyobject
 
 
@@ -106,7 +108,7 @@ class BaseFlagsSetup:
     def get_version_from_setup_config() -> str:
         """Read the package version from the setup.cfg file."""
         config = configparser.ConfigParser()
-        config.read(Path(__file__).parent.parent.parent / 'setup.cfg')
+        config.read(Path(__file__).parent.parent.parent.parent / 'setup.cfg')
         return config['metadata']['version']
 
     def setup_leomed(self, flags):
@@ -144,16 +146,24 @@ class BaseFlagsSetup:
 
         return flags
 
-    def load_old_flags(self, flags_path: Path, is_dict: bool = False, add_args: dict = None):
+    def load_old_flags(self, flags_path: Path = None, _id: str = None, is_dict: bool = False, add_args: dict = None):
         """
         Load flags from old experiments, either from a directory or from the db.
         Add parameters for backwards compatibility and adapt paths for current system.
+
+        If flags_path is None, flags will be loaded from the db using the _id.
         """
         defaults = [('weighted_mixture', False), ('amortized_flow', False)]
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
-        if is_dict:
-            flags = json2dict(flags_path)
+        if is_dict or flags_path is None:
+            if flags_path is None:
+                # get flags from db
+                db = MongoDatabase(_id=_id)
+                flags = db.get_experiment_dict()['flags']
+            else:
+                # load flags from jsonfile
+                flags = json2dict(flags_path)
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, True)
 
             # get defaults from newer parameters that might not be defined in old flags
@@ -169,6 +179,7 @@ class BaseFlagsSetup:
             flags = dict2pyobject(flags, 'flags')
 
         else:
+            # load flags from .rar file
             flags = torch.load(flags_path)
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, False)
 
@@ -189,8 +200,9 @@ def get_freer_gpu() -> int:
     Returns the index of the gpu with the most free memory.
     Taken from https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/6
     """
-    os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-    memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        os.system(f'nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >{Path(tmpdirname) / "tmp"}')
+        memory_available = [int(x.split()[2]) for x in open(Path(tmpdirname) / "tmp", 'r').readlines()]
     return int(np.argmax(memory_available))
 
 

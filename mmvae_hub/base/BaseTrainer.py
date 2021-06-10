@@ -18,8 +18,8 @@ from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_su
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.utils.BaseTBLogger import BaseTBLogger
-from mmvae_hub.utils.average_meters import *
-from mmvae_hub.utils.plotting import generate_plots
+from mmvae_hub.utils.metrics.average_meters import *
+from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.utils import save_and_log_flags, at_most_n, get_items_from_dict, dict2json
 
 

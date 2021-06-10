@@ -1,1 +1,1 @@
-from mmvae_hub.utils.BaseMetrics import BaseMetrics
+from mmvae_hub.utils.metrics.BaseMetrics import BaseMetrics

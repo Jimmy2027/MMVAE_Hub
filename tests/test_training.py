@@ -4,7 +4,7 @@ import pytest
 
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
-from mmvae_hub.utils.plotting import generate_plots
+from mmvae_hub.utils.plotting.plotting import generate_plots
 from tests.utils import set_me_up
 
 
@@ -19,9 +19,9 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        calc_nll = False if method in ['planar_mixture', 'pfom'] else True
+        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope'] else True
         mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll,
-                                                        # 'amortized_flow': False
+                                                        # 'weighted_mixture': True
                                                         })
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
@@ -55,11 +55,13 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
-    # test_run_epochs_polymnist(method='poe')
-    # test_run_epochs_polymnist(method='joint_elbo')
-    # test_run_epochs_polymnist(method='moe')
+    test_run_epochs_polymnist(method='pfom')
+    test_run_epochs_polymnist(method='poe')
+    test_run_epochs_polymnist(method='joint_elbo')
+    test_run_epochs_polymnist(method='moe')
     test_run_epochs_polymnist(method='planar_mixture')
-    # test_run_epochs_polymnist(method='pfom')
+
+    # test_run_epochs_polymnist(method='pope')
     # test_run_planar_mixture_no_flow()
     # test_generate_plots()
     # test_test_generation()

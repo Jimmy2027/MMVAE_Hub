@@ -1,6 +1,6 @@
 import argparse
 
-from mmvae_hub.utils.flags_utils import str2bool
+from mmvae_hub.utils.setup.flags_utils import str2bool
 
 parser = argparse.ArgumentParser()
 

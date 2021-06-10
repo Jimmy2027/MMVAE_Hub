@@ -11,7 +11,7 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 
 from mmvae_hub import log
-from mmvae_hub.utils.flags_utils import get_config_path
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 from mmvae_hub.utils.utils import json2dict
 
 
