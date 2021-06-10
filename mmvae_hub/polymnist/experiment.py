@@ -72,7 +72,8 @@ class PolymnistExperiment(BaseExperiment):
             params.extend(list(self.mm_vae.parameters()))
         else:
             for p in ['u', 'w', 'b']:
-                params.append(getattr(self.mm_vae, p))
+                if hasattr(self.mm_vae, p):
+                    params.append(getattr(self.mm_vae, p))
 
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
