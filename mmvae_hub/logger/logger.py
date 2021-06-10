@@ -1,5 +1,5 @@
 import datetime
-import logging
+import logging.handlers
 import multiprocessing
 import os
 import pathlib
@@ -11,21 +11,21 @@ import warnings
 # https://github.com/numpy/numpy/issues/14920#issuecomment-554672523
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
-warnings.filterwarnings("ignore", message="OpenBLAS Warning : Detect OpenMP Loop and this application may hang. Please rebuild the library with USE_OPENMP=1 option.")
+warnings.filterwarnings("ignore", message="OpenBLAS Warning : Detect OpenMP Loop and this application may hang. "
+                                          "Please rebuild the library with USE_OPENMP=1 option.")
 
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
+# PIL pollutes the logs with messages like: STREAM b'IDAT' 41 1050
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 # Based in part on
 # https://dev.to/joaomcteixeira/setting-up-python-logging-for-a-library-app-6ml
 # https://github.com/numpde/transport/blob/9b53b7c/pt2pt/20181019-study1/helpers/commons.py
 
-try:
-    LOG_FILE = pathlib.Path('/usr/local/var/logs/mmvae_hub')
-    LOG_FILE.mkdir(exist_ok=True, parents=True)
-except Exception as e:
-    print(e)
-    LOG_FILE = (pathlib.Path(__file__).parent / "logs")
-    LOG_FILE.mkdir(exist_ok=True, parents=True)
+
+LOG_FILE = (pathlib.Path(__file__).parent / "logs")
+LOG_FILE.mkdir(exist_ok=True, parents=True)
 
 for f in sorted(LOG_FILE.glob("*-*-*.log"))[:-5]:
     os.remove(f)
@@ -81,4 +81,7 @@ class _:
 
 
 log = logging.getLogger(__name__)
+# Add the log message handler to the logger. Max log file size is 2G.
+handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=2000000000, backupCount=0)
+log.addHandler(handler)
 log.info(F"Log file: {LOG_FILE}")
