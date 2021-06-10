@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from mmvae_hub.evaluation.divergence_measures.mm_div import MixtureMMDiv, JointElbowMMDiv, JSDMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
+from mmvae_hub.networks.PoEMMVAE import POEMMVae
+from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.evaluation.divergence_measures.mm_div import MixtureMMDiv, JointElbowMMDiv, JSDMMDiv
-from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 
 
 class MOEMMVae(BaseMMVAE):
@@ -23,9 +24,6 @@ class MOEMMVae(BaseMMVAE):
         return len(subset) == 1
 
 
-
-
-
 class JointElboMMVae(MOEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         super(JointElboMMVae, self).__init__(exp, flags, modalities, subsets)
@@ -35,7 +33,8 @@ class JointElboMMVae(MOEMMVae):
         """
         Fuses all modalities in subset with product of experts method.
         """
-        mu_poe, logvar_poe = self.mm_div.poe(mus, logvars)
+
+        mu_poe, logvar_poe = POEMMVae.poe(mus, logvars)
         return Distr(mu_poe, logvar_poe)
 
     @staticmethod

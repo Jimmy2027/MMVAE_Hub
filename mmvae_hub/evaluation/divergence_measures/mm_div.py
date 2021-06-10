@@ -82,27 +82,6 @@ class POEMMDiv(BaseMMDiv):
     def __init__(self):
         super().__init__()
 
-    def calc_group_divergence(self, flags, mus, logvars, norm=None):
-        num_mods = mus.shape[0]
-        poe_mu, poe_logvar = self.poe(mus, logvars)
-        kld_poe = self.calc_kl_divergence(poe_mu, poe_logvar, norm_value=norm)
-        klds = torch.zeros(num_mods).to(flags.device)
-        for k in range(num_mods):
-            kld_ind = self.calc_kl_divergence(mus[k, :, :], logvars[k, :, :],
-                                              norm_value=norm)
-            klds[k] = kld_ind
-        return kld_poe, klds, [poe_mu, poe_logvar]
-
-    @staticmethod
-    def poe(mu, logvar, eps=1e-8):
-        var = torch.exp(logvar) + eps
-        # precision of i-th Gaussian expert at point x
-        T = 1. / var
-        pd_mu = torch.sum(mu * T, dim=0) / torch.sum(T, dim=0)
-        pd_var = 1. / torch.sum(T, dim=0)
-        pd_logvar = torch.log(pd_var)
-        return pd_mu, pd_logvar
-
     def calc_modality_divergence(self, m1_mu, m1_logvar, m2_mu, m2_logvar, flags):
         return self.calc_kl_divergence(m1_mu, m1_logvar, m2_mu, m2_logvar, norm_value=flags.batch_size).sum()
 

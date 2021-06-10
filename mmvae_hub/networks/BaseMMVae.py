@@ -12,7 +12,6 @@ from mmvae_hub.utils import utils
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import *
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
-from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 
@@ -292,21 +291,3 @@ class BaseMMVAE(ABC, nn.Module):
                 state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
 
 
-class POEMMVae(BaseMMVAE):
-    def __init__(self, exp, flags, modalities, subsets):
-        super(POEMMVae, self).__init__(exp, flags, modalities, subsets)
-        self.mm_div = POEMMDiv()
-
-    def modality_fusion(self, flags, mus, logvars, weights=None) -> Distr:
-        """
-        Fuses all modalities in subset with product of experts method.
-        """
-        num_samples = mus[0].shape[0]
-        mus = torch.cat((mus, torch.zeros(1, num_samples, flags.class_dim).to(flags.device)), dim=0)
-        logvars = torch.cat((logvars, torch.zeros(1, num_samples, flags.class_dim).to(flags.device)), dim=0)
-        mu_poe, logvar_poe = self.mm_div.poe(mus, logvars)
-        return Distr(mu_poe, logvar_poe)
-
-    @staticmethod
-    def fusion_condition(subset, input_batch=None):
-        return len(subset) == len(input_batch)
