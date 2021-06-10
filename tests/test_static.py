@@ -12,42 +12,49 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-@pytest.mark.parametrize("method", ['moe', 'joint_elbo'])
+@pytest.mark.parametrize("method", ['moe', 'joint_elbo', 'poe', 'planar_mixture', 'pfom'])
 def test_static_results_1mod(method: str, update_static_results=False):
     """
     Test if the results are constant. If the assertion fails, it means that the model or the evaluation has
     changed, perhaps involuntarily.
     """
     jsonfile = Path(__file__).parent / 'static_results.json'
-    static_results = json2dict(jsonfile)['static_results_1mod'][method]
+    static_results = json2dict(jsonfile)['static_results_1mod']
+
+    if method not in static_results:
+        write_to_jsonfile(jsonfile, [(f'static_results_1mod.{method}', {})])
+        static_results[method] = {}
+
+    static_results = static_results[method]
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname,
                         method=method,
                         attributes={'num_flows': 0, 'num_mods': 1, 'deterministic': True, 'device': 'cpu',
-                                    'steps_per_training_epoch': 1, 'factorized_representation': False})
+                                    'steps_per_training_epoch': 1, 'factorized_representation': False, 'calc_nll':False})
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
 
         if update_static_results:
             static_results['joint_div'] = test_results.joint_div
             static_results['klds'] = test_results.klds['m0']
-            static_results['lhoods'] = test_results.lhoods['m0']['m0']
+            # static_results['lhoods'] = test_results.lhoods['m0']['m0']
             static_results['log_probs'] = test_results.log_probs['m0']
             static_results['total_loss'] = test_results.total_loss
-            static_results['lr_eval'] = test_results.lr_eval['m0']['accuracy']
-            static_results['latents_class'] = {}
-            static_results['latents_class']['mu'] = test_results.latents['m0']['latents_class']['mu']
+            # static_results['lr_eval'] = test_results.lr_eval['m0']['accuracy']
+            static_results['latents_class'] = {
+                'mu': test_results.latents['m0']['latents_class']['mu']
+            }
 
             write_to_jsonfile(jsonfile, [(f'static_results_1mod.{method}', static_results)])
 
         are_they_equal = {
             'joint_div': np.round(test_results.joint_div, 5) == np.round(static_results['joint_div'], 5),
             'klds': np.round(test_results.klds['m0'], 5) == np.round(static_results['klds'], 5),
-            'lhoods': np.round(test_results.lhoods['m0']['m0'], 3) == np.round(static_results['lhoods'], 3),
+            # 'lhoods': np.round(test_results.lhoods['m0']['m0'], 3) == np.round(static_results['lhoods'], 3),
             'log_probs': test_results.log_probs['m0'] == static_results['log_probs'],
             'total_loss': test_results.total_loss == static_results['total_loss'],
-            'lr_eval': test_results.lr_eval['m0']['accuracy'] == static_results['lr_eval'],
+            # 'lr_eval': test_results.lr_eval['m0']['accuracy'] == static_results['lr_eval'],
             'latents_class_mu': np.round(test_results.latents['m0']['latents_class']['mu'], 8) == np.round(
                 static_results['latents_class']['mu'], 8)
         }
@@ -82,5 +89,8 @@ def test_static_results_2mods(method: str):
 
 
 if __name__ == '__main__':
-    test_static_results_1mod('moe', update_static_results=False)
-    test_static_results_1mod('joint_elbo', update_static_results=False)
+    test_static_results_1mod('moe', update_static_results=True)
+    test_static_results_1mod('joint_elbo', update_static_results=True)
+    test_static_results_1mod('poe', update_static_results=True)
+    test_static_results_1mod('pfom', update_static_results=True)
+    test_static_results_1mod('planar_mixture', update_static_results=True)
