@@ -5,6 +5,7 @@ import torch
 from torch import nn as nn
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
+from mmvae_hub.networks.Flows import PlanarFlow
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from mmvae_hub.networks.utils import flows
 from mmvae_hub.utils.Dataclasses import *
@@ -17,9 +18,6 @@ class PlanarFlowMMVAE(MOEMMVae):
         super(PlanarFlowMMVAE, self).__init__(exp, flags, modalities, subsets)
 
         self.mm_div = None
-
-        # Initialize log-det-jacobian to zero
-        self.log_det_j = 0.
 
         # Flow parameters
         flow = flows.Planar
@@ -69,12 +67,13 @@ class PlanarFlowMMVAE(MOEMMVae):
         return z[0], z[-1], log_det_j
 
 
-class PfomMMVAE(PlanarFlowMMVAE):
+class PfomMMVAE(MOEMMVae):
     """Planar Flow of Mixture multi-modal VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):
         super(PfomMMVAE, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = PfomMMDiv()
+        self.flow = PlanarFlow(flags)
 
     def encode(self, input_batch: typing.Mapping[str, Tensor]) -> typing.Mapping[str, EncModPFoM]:
         """
@@ -130,14 +129,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
                 dim=0)
             joint_h = torch.cat((joint_h, expert.h[joint_h.shape[0]:joint_h.shape[0] + chunk_size]))
 
-        if self.num_flows and self.flags.amortized_flow:
-            # get amortized parameters
-            joint_flow_params = PlanarFlowParams(**{
-                'u': self.amor_u(joint_h).view(joint_h.shape[0], self.num_flows, self.flags.class_dim, 1),
-                'w': self.amor_w(joint_h).view(joint_h.shape[0], self.num_flows, 1, self.flags.class_dim),
-                'b': self.amor_b(joint_h).view(joint_h.shape[0], self.num_flows, 1, 1)})
-        else:
-            joint_flow_params = {k: None for k in ['u', 'w', 'b']}
+        joint_flow_params = self.flow.get_flow_params(joint_h)
 
         assert joint_mus.shape == joint_logvars.shape == torch.Size([num_samples, self.flags.class_dim])
 
@@ -159,7 +151,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
         for s_key in batch_subsets:
             subset_distr, subset_flow_params = self.mixture_component_selection(enc_mods, s_key)
 
-            z0, zk, log_det_j = self.apply_flow(subset_distr, subset_flow_params)
+            z0, zk, log_det_j = self.flow.forward(subset_distr, subset_flow_params)
 
             distr_subsets[s_key] = SubsetPFoM(z0, zk, log_det_j)
 
@@ -169,7 +161,7 @@ class PfomMMVAE(PlanarFlowMMVAE):
         return JointLatentsPFoM(joint_embedding=joint_embedding, subsets=distr_subsets)
 
 
-class PlanarMixtureMMVae(PlanarFlowMMVAE):
+class PlanarMixtureMMVae(MOEMMVae):
     """
     Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
     Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
@@ -178,6 +170,7 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         super(PlanarMixtureMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = PlanarMixtureMMDiv()
+        self.flow = PlanarFlow(flags)
 
     def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, EncModPlanarMixture]:
         """
@@ -190,15 +183,7 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
                 style_mu, style_logvar, class_mu, class_logvar, h = mod.encoder(x_m)
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
 
-                # get amortized u an w for all flows
-                if self.num_flows and self.flags.amortized_flow:
-                    flow_params = {
-                        'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
-                        'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
-                        'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1)}
-
-                else:
-                    flow_params = {k: None for k in ['u', 'w', 'b']}
+                flow_params = self.flow.get_flow_params(h)
 
                 enc_mods[mod_str] = EncModPlanarMixture(latents_class=latents_class,
                                                         flow_params=PlanarFlowParams(**flow_params))
@@ -215,30 +200,9 @@ class PlanarMixtureMMVae(PlanarFlowMMVAE):
     def apply_flows(self, enc_mods: Mapping[str, EncModPlanarMixture]) -> Mapping[str, EncModPlanarMixture]:
         """Apply the flow for each modality."""
         for mod_str, enc_mod in enc_mods.items():
-            latents_class = enc_mod.latents_class
-            num_samples = latents_class.mu.shape[0]
-            log_det_j = torch.zeros(num_samples).to(self.flags.device)
-            flow_params = enc_mod.flow_params
+            enc_mods[mod_str].z0, enc_mods[mod_str].zk, enc_mods[mod_str].log_det_j = self.flow.forward(
+                enc_mod.latents_class, enc_mod.flow_params)
 
-            # Sample z_0
-            z = [latents_class.reparameterize()]
-
-            # Normalizing flows
-            for k in range(self.num_flows):
-                flow_k = getattr(self, 'flow_' + str(k))
-                # z' = z + u h( w^T z + b)
-                if self.flags.amortized_flow:
-                    z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
-                                                   flow_params.b[:, k, :, :])
-                else:
-                    z_k, log_det_jacobian = flow_k(z[k], self.u[:, k, :, :].repeat(num_samples, 1, 1),
-                                                   self.w[:, k, :, :].repeat(num_samples, 1, 1),
-                                                   self.b[:, k, :, :].repeat(num_samples, 1, 1))
-                z.append(z_k)
-                log_det_j += log_det_jacobian
-            enc_mods[mod_str].z0 = z[0]
-            enc_mods[mod_str].zk = z[-1]
-            enc_mods[mod_str].log_det_j = log_det_j
         return enc_mods
 
     def fuse_modalities(self, enc_mods: Mapping[str, EncModPlanarMixture],

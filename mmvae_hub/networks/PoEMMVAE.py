@@ -1,14 +1,37 @@
+from collections import Mapping
+
 import torch
+import typing
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.utils.Dataclasses import Distr
+from mmvae_hub.utils.Dataclasses import Distr, JointLatents, BaseEncMod
+from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
 
 
 class POEMMVae(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         super(POEMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = POEMMDiv()
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatents:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        A joint latent space is then created by fusing all subspaces.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        for s_key in batch_subsets:
+            # fuse all experts of subset
+            distr_subset = self.fuse_subset(enc_mods, s_key)
+            distr_subsets[s_key] = distr_subset
+
+            if len(self.subsets[s_key]) == len(batch_mods):
+                joint_distr = distr_subset
+                joint_distr.mod_strs = batch_mods
+
+        return JointLatents(batch_mods, joint_distr=joint_distr, subsets=distr_subsets)
 
     def modality_fusion(self, flags, mus, logvars, weights=None) -> Distr:
         """
