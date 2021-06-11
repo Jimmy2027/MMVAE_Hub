@@ -192,8 +192,7 @@ class PfomMMDiv(MixtureMMDiv):
         weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
 
         # joint_div = \sum E_q0[ ln qi(z|X) - ln p(z) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
-        joint_div = (weights * joint_div).sum(dim=0) - torch.sum(
-            forward_results.joint_latents.joint_embedding.log_det_j)
+        joint_div = (weights * joint_div).sum(dim=0) - torch.sum(forward_results.joint_latents.joint_embedding.log_det_j)
 
         assert not np.isnan(joint_div.cpu().item())
 
