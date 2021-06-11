@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import typing
+from abc import abstractmethod
 
 import torch
 
-from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv
 from mmvae_hub.networks.Flows import PlanarFlow
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
+from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
 from mmvae_hub.utils.utils import split_int_to_bins
@@ -18,13 +20,6 @@ class FlowVAE:
         pass
 
 
-class FlowOfJointVAE(FlowVAE):
-    """Class of methods where the flow is applied on a joint distribution."""
-
-    def __init__(self):
-        super().__init__()
-
-
 class JointFromFlowVAE(FlowVAE):
     """Class of methods where the flow is applied on each modality."""
 
@@ -32,11 +27,59 @@ class JointFromFlowVAE(FlowVAE):
         super().__init__()
 
 
-class PfomMMVAE(MOEMMVae, FlowOfJointVAE):
+class FlowOfJointVAE(FlowVAE):
+    """Class of methods where the flow is applied on a joint distribution."""
+
+    def __init__(self):
+        super().__init__()
+
+    def fuse_modalities(self, enc_mods: Mapping[str, EncModPFoM],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsPFoM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            subset_distr, subset_flow_params = self.expert_fusion(enc_mods, s_key)
+
+            z0, zk, log_det_j = self.flow.forward(subset_distr, subset_flow_params)
+
+            distr_subsets[s_key] = SubsetPFoM(q0=subset_distr, z0=z0, zk=zk, log_det_j=log_det_j)
+
+            if len(self.subsets[s_key]) == len(batch_mods):
+                joint_embedding = JointEmbeddingPFoM(embedding=zk, mod_strs=s_key.split('_'), log_det_j=log_det_j)
+
+        return JointLatentsPFoM(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+    @abstractmethod
+    def expert_fusion(self, enc_mods, s_key):
+        pass
+
+
+class PoPE(FlowOfJointVAE, POEMMVae):
+    """Planar flow Of Product of Experts."""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        FlowOfJointVAE.__init__(self)
+        POEMMVae.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = PoPEMMDiv()
+        self.flow = PlanarFlow(flags)
+
+    def expert_fusion(self, enc_mods, s_key):
+        # armotized flow params are not implemented for PoPE
+        subset_flow_params = None
+        return self.fuse_subset(enc_mods, s_key), subset_flow_params
+
+
+class PfomMMVAE(FlowOfJointVAE, MOEMMVae):
     """Planar Flow of Mixture multi-modal VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):
-        super(PfomMMVAE, self).__init__(exp, flags, modalities, subsets)
+        FlowOfJointVAE.__init__(self)
+        MOEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PfomMMDiv()
         self.flow = PlanarFlow(flags)
 
@@ -104,36 +147,19 @@ class PfomMMVAE(MOEMMVae, FlowOfJointVAE):
 
         return Distr(mu=joint_mus, logvar=joint_logvars), joint_flow_params
 
-    def fuse_modalities(self, enc_mods: Mapping[str, EncModPFoM],
-                        batch_mods: typing.Iterable[str]) -> JointLatentsPFoM:
-        """
-        Create a subspace for all the combinations of the encoded modalities by combining them.
-        """
-        batch_subsets = subsets_from_batchmods(batch_mods)
-        distr_subsets = {}
-
-        # concatenate mus and logvars for every modality in each subset
-        for s_key in batch_subsets:
-            subset_distr, subset_flow_params = self.mixture_component_selection(enc_mods, s_key)
-
-            z0, zk, log_det_j = self.flow.forward(subset_distr, subset_flow_params)
-
-            distr_subsets[s_key] = SubsetPFoM(q0=subset_distr, z0=z0, zk=zk, log_det_j=log_det_j)
-
-            if len(self.subsets[s_key]) == len(batch_mods):
-                joint_embedding = JointEmbeddingPFoM(embedding=zk, mod_strs=s_key.split('_'), log_det_j=log_det_j)
-
-        return JointLatentsPFoM(joint_embedding=joint_embedding, subsets=distr_subsets)
+    def expert_fusion(self, enc_mods, s_key):
+        return self.mixture_component_selection(enc_mods, s_key)
 
 
-class PlanarMixtureMMVae(MOEMMVae, JointFromFlowVAE):
+class PlanarMixtureMMVae(JointFromFlowVAE, MOEMMVae):
     """
     Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
     Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
     """
 
     def __init__(self, exp, flags, modalities, subsets):
-        super(PlanarMixtureMMVae, self).__init__(exp, flags, modalities, subsets)
+        JointFromFlowVAE.__init__(self)
+        MOEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PlanarMixtureMMDiv()
         self.flow = PlanarFlow(flags)
 
