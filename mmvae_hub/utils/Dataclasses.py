@@ -80,7 +80,7 @@ class JointLatents:
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key].reparameterize()
 
-    def get_lr_data(self, subset_key: str):
+    def get_q0(self, subset_key: str):
         """Return the mean of the subset."""
         return self.subsets[subset_key].mu
 
@@ -102,13 +102,14 @@ class JointLatentsPlanarMixture:
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key]
 
-    def get_lr_data(self, subset_key: str):
+    def get_zk(self, subset_key: str):
         """Return the embedding of the subset."""
         return self.subsets[subset_key]
 
 
 @dataclass
 class SubsetPFoM:
+    q0: Distr
     z0: Optional[Tensor] = None
     zk: Optional[Tensor] = None
     log_det_j: Optional[Tensor] = None
@@ -132,9 +133,13 @@ class JointLatentsPFoM:
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key].zk
 
-    def get_lr_data(self, subset_key: str):
-        """Return the embedding of the subset."""
+    def get_zk(self, subset_key: str):
+        """Return the embedding of the subset after apllying flows."""
         return self.subsets[subset_key].zk
+
+    def get_q0(self, subset_key: str):
+        """Return the mean of q0."""
+        return self.subsets[subset_key].q0.mu
 
 
 @dataclass
@@ -158,12 +163,14 @@ class BaseBatchResults:
 class BaseTestResults(BaseBatchResults):
     joint_div: float
     prd_scores: Optional[dict] = None
-    lr_eval: Optional[dict] = None
+    lr_eval_q0: Optional[dict] = None
+    lr_eval_zk: Optional[dict] = None
     gen_eval: Optional[dict] = None
     lhoods: Optional[dict] = None
     end_epoch: Optional[int] = None
     mean_epoch_time: Optional[float] = None
     experiment_duration: Optional[float] = None
+    hyperopt_score: Optional[int] = None
 
 
 @dataclass

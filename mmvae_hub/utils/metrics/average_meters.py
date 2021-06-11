@@ -4,6 +4,8 @@ import typing
 
 import numpy as np
 
+from mmvae_hub.networks.BaseMMVae import BaseMMVAE
+from mmvae_hub.networks.FlowVaes import FlowVAE, JointFromFlowVAE, FlowOfJointVAE
 from mmvae_hub.utils.Dataclasses import *
 
 
@@ -107,28 +109,27 @@ class AverageMeterLatents(AverageMeterDict):
 
 
 class AverageMeterJointLatents(AverageMeterDict):
-    def __init__(self, name: str, factorized_representation: bool, method: str):
+    def __init__(self, name: str, factorized_representation: bool, model: BaseMMVAE):
         super().__init__(name=name)
         self.factorized_representation = factorized_representation
-        self.method = method
+        self.model = model
         self.vals = None
 
     def update(self, val: typing.Union[JointLatents, JointLatentsPlanarMixture]):
         if not self.vals:
-            init_val = [] if self.method in ['planar_mixture', 'pfom'] else {'mu': [], 'logvar': []}
+            init_val = [] if isinstance(self.model, FlowVAE) else {'mu': [], 'logvar': []}
             self.vals = {k: init_val for k in list(val.subsets)}
             self.vals['joint'] = init_val
 
-        if self.method in ['planar_mixture']:
+        if isinstance(self.model, JointFromFlowVAE):
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key].append(subset.mean().item())
             self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
 
-        elif self.method in ['pfom']:
+        elif isinstance(self.model, FlowOfJointVAE):
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key].append(subset.zk.mean().item())
             self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
-
 
         else:
             for subset_key, subset in val.subsets.items():
@@ -138,7 +139,7 @@ class AverageMeterJointLatents(AverageMeterDict):
             self.vals['joint']['logvar'].append(val.joint_distr.logvar.mean().item())
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
-        if self.method in ['planar_mixture', 'pfom']:
+        if isinstance(self.model, FlowVAE):
             return {k: np.mean(v) for k, v in self.vals.items()}
         else:
             return {mod_str: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for mod_str, v in

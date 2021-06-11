@@ -17,6 +17,7 @@ from mmvae_hub.evaluation.eval_metrics.representation import test_clf_lr_all_sub
 from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
+from mmvae_hub.networks.FlowVaes import JointFromFlowVAE, FlowVAE
 from mmvae_hub.utils.BaseTBLogger import BaseTBLogger
 from mmvae_hub.utils.metrics.average_meters import *
 from mmvae_hub.utils.plotting.plotting import generate_plots
@@ -140,10 +141,20 @@ class BaseTrainer:
 
                 if self.flags.eval_lr:
                     log.info('evaluation of latent representation')
-                    clf_lr = train_clf_lr_all_subsets(self.exp)
-                    lr_eval = test_clf_lr_all_subsets(clf_lr, self.exp)
-                    self.tb_logger.write_lr_eval(lr_eval)
-                    test_results.lr_eval = lr_eval
+                    # train linear classifiers
+                    clf_lr_q0, clf_lr_zk = train_clf_lr_all_subsets(self.exp)
+
+                    # test linear classifiers
+                    # methods where the flow is applied on each modality don't have a q0.
+                    lr_eval_q0 = test_clf_lr_all_subsets(clf_lr_q0, self.exp, which_lr='q0') \
+                        if not isinstance(model, JointFromFlowVAE) else None
+                    lr_eval_zk = test_clf_lr_all_subsets(clf_lr_zk, self.exp, which_lr='zk') \
+                        if isinstance(model, FlowVAE) else None
+
+                    # log results
+                    self.tb_logger.write_lr_eval({'q0': lr_eval_q0, 'zk': lr_eval_zk})
+                    test_results.lr_eval_q0 = lr_eval_q0
+                    test_results.lr_eval_zk = lr_eval_zk
 
                 if self.flags.use_clf:
                     log.info('test generation')
@@ -178,7 +189,7 @@ class BaseTrainer:
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
             'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
-            'joint_latents': AverageMeterJointLatents(method=self.flags.method, name='joint_latents',
+            'joint_latents': AverageMeterJointLatents(model = self.exp.mm_vae, name='joint_latents',
                                                       factorized_representation=self.flags.factorized_representation)
         }
         return d_loader, training_steps, average_meters

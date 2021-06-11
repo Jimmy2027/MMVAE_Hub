@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from mmvae_hub import log
-from mmvae_hub.utils.utils import dict_to_device, atleast_2d
+from mmvae_hub.networks.FlowVaes import JointFromFlowVAE, FlowVAE
+from mmvae_hub.utils.utils import dict_to_device, atleast_2d, init_twolevel_nested_dict
 
 
 def train_clf_lr_all_subsets(exp):
@@ -19,16 +20,13 @@ def train_clf_lr_all_subsets(exp):
     mm_vae.eval()
     subsets = exp.subsets
 
-    n_train_samples = exp.flags.num_training_samples_lr
     train_loader = DataLoader(exp.dataset_train, batch_size=args.batch_size, shuffle=True,
                               num_workers=args.dataloader_workers)
 
     training_steps = exp.flags.steps_per_training_epoch
 
-    data_train = {
-        s_key: torch.Tensor()
-        for s_key in subsets
-    }
+    data_train = init_twolevel_nested_dict(level1_keys=['q0', 'zk'], level2_keys=subsets, init_val=torch.Tensor())
+
     all_labels = torch.Tensor()
     log.info(f"Creating {training_steps} batches of the latent representations for the classifier.")
     for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=len(train_loader),
@@ -42,17 +40,31 @@ def train_clf_lr_all_subsets(exp):
         lr_subsets = joint_latent.subsets
         all_labels = torch.cat((all_labels, batch_l), 0)
         for key in lr_subsets:
-            data_train[key] = torch.cat((data_train[key], joint_latent.get_lr_data(key).cpu()), 0)
+            if not isinstance(mm_vae, JointFromFlowVAE):
+                # get the latents before application of flows. (methods where the flow is applied on each modality
+                # don't have a q0.
+                data_train['q0'][key] = torch.cat((data_train['q0'][key], joint_latent.get_q0(key).cpu()), 0)
+
+            if isinstance(mm_vae, FlowVAE):
+                # get the latents after application of flows.
+                data_train['zk'][key] = torch.cat((data_train['zk'][key], joint_latent.get_zk(key).cpu()), 0)
 
     # get random labels such that it contains both classes
     # labels, rand_ind_train = get_random_labels(all_labels.shape[0], n_train_samples, all_labels)
     # todo might need to sample such that all classes are represented equally
+    n_train_samples = exp.flags.num_training_samples_lr
     rand_ind_train = np.random.randint(all_labels.shape[0], size=n_train_samples)
     labels = all_labels[rand_ind_train]
-    for s_key in subsets:
-        d = data_train[s_key]
-        data_train[s_key] = d[rand_ind_train]
-    return train_clf_lr(exp, data_train, labels)
+    for l_key in ['q0', 'zk']:
+        for s_key in subsets:
+            d = data_train[l_key][s_key]
+            data_train[l_key][s_key] = d[rand_ind_train] if len(d) else None
+
+    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if exp.flags.method != 'planar_mixture' else None
+    lr_results_zk = train_clf_lr(exp, data_train['zk'], labels) \
+        if exp.flags.method in ['pfom', 'planar_mixture', 'pope'] else None
+
+    return lr_results_q0, lr_results_zk
 
 
 def get_random_labels(n_samples, n_train_samples, all_labels, max_tries=1000):
@@ -74,9 +86,11 @@ def get_random_labels(n_samples, n_train_samples, all_labels, max_tries=1000):
     return labels, rand_ind_train
 
 
-def test_clf_lr_all_subsets(clf_lr, exp):
+def test_clf_lr_all_subsets(clf_lr, exp, which_lr: str):
     """
     Test the classifiers that were trained on latent representations.
+
+    which_lr: either q0.mu or zk.
     """
     args = exp.flags
     mm_vae = exp.mm_vae
@@ -103,7 +117,7 @@ def test_clf_lr_all_subsets(clf_lr, exp):
 
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
         lr_subsets = joint_latent.subsets
-        data_test = {key: joint_latent.get_lr_data(key).cpu().data.numpy() for key in lr_subsets}
+        data_test = {key: getattr(joint_latent, f'get_{which_lr}')(key).cpu().data.numpy() for key in lr_subsets}
 
         clf_predictions_batch = classify_latent_representations(exp, clf_lr, data_test)
         clf_predictions_batch: Mapping[str, Mapping[str, np.array]]

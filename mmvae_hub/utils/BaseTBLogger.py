@@ -32,9 +32,14 @@ class BaseTBLogger:
                                     {key: enc_mods[key]['latents_class']['logvar']},
                                     self.step)
 
-    def write_lr_eval(self, lr_eval):
-        for s, l_key in enumerate(sorted(lr_eval.keys())):
-            self.writer.add_scalars('Latent Representation/%s' % (l_key), lr_eval[l_key], self.step)
+    def write_lr_eval(self, lr_eval: dict):
+        """
+        write lr eval results to tensorboard logger.
+        """
+        for l_key, l_val in lr_eval.items():
+            if l_val is not None:
+                for s, s_key in enumerate(sorted(l_val.keys())):
+                    self.writer.add_scalars(f'Latent_Representation_{l_key}/{s_key}', l_val[s_key], self.step)
 
     def write_coherence_logs(self, gen_eval):
         for j, l_key in enumerate(sorted(gen_eval['cond'].keys())):
