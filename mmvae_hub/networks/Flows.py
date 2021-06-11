@@ -3,14 +3,15 @@
 from abc import abstractmethod
 
 import torch
-from torch import nn as nn
+import torch.nn as nn
 
 from mmvae_hub.networks.utils import flows
 from mmvae_hub.utils.Dataclasses import *
 
 
-class Flow:
+class Flow(nn.Module):
     def __init__(self, flags):
+        super().__init__()
         self.flags = flags
 
     @abstractmethod
@@ -76,8 +77,8 @@ class PlanarFlow(Flow):
     def get_flow_params(self, h):
         # get amortized u an w for all flows
         if self.num_flows and self.flags.amortized_flow:
-            return {'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
-                    'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
-                    'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1),}
+            return PlanarFlowParams(**{'u': self.amor_u(h).view(h.shape[0], self.num_flows, self.flags.class_dim, 1),
+                                       'w': self.amor_w(h).view(h.shape[0], self.num_flows, 1, self.flags.class_dim),
+                                       'b': self.amor_b(h).view(h.shape[0], self.num_flows, 1, 1), })
         else:
-            return {k: None for k in ['u', 'w', 'b']}
+            return PlanarFlowParams(**{k: None for k in ['u', 'w', 'b']})

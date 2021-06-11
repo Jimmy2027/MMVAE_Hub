@@ -2,72 +2,37 @@
 import typing
 
 import torch
-from torch import nn as nn
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv
 from mmvae_hub.networks.Flows import PlanarFlow
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
-from mmvae_hub.networks.utils import flows
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
 from mmvae_hub.utils.utils import split_int_to_bins
 
 
-class PlanarFlowMMVAE(MOEMMVae):
-    def __init__(self, exp, flags, modalities, subsets):
-        super(PlanarFlowMMVAE, self).__init__(exp, flags, modalities, subsets)
+class FlowVAE:
+    """Class of methods where a flow is applied on the latent distributions."""
 
-        self.mm_div = None
-
-        # Flow parameters
-        flow = flows.Planar
-        self.num_flows = flags.num_flows
-
-        if self.num_flows:
-            # Amortized flow parameters
-            if flags.amortized_flow:
-                self.amor_u = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-                self.amor_w = nn.Linear(flags.class_dim, self.num_flows * flags.class_dim)
-                self.amor_b = nn.Linear(flags.class_dim, self.num_flows)
-            else:
-                self.u = torch.empty((1, self.num_flows, flags.class_dim, 1)).to(self.flags.device).requires_grad_(True)
-                torch.nn.init.normal_(self.u, 0, 0.1)
-
-                self.w = torch.empty((1, self.num_flows, 1, flags.class_dim)).to(self.flags.device).requires_grad_(True)
-                torch.nn.init.normal_(self.w, 0, 0.1)
-
-                self.b = torch.zeros((1, self.num_flows, 1, 1)).to(self.flags.device).requires_grad_(True)
-
-        # Normalizing flow layers
-        for k in range(self.num_flows):
-            flow_k = flow()
-            self.add_module('flow_' + str(k), flow_k)
-
-    def apply_flow(self, in_distr: Distr, flow_params: PlanarFlowParams):
-        num_samples = in_distr.mu.shape[0]
-        log_det_j = torch.zeros(in_distr.mu.shape[0]).to(self.flags.device)
-
-        # Sample z_0
-        z = [in_distr.reparameterize()]
-
-        # Normalizing flows
-        for k in range(self.num_flows):
-            flow_k = getattr(self, 'flow_' + str(k))
-            # z' = z + u h( w^T z + b)
-            if self.flags.amortized_flow:
-                z_k, log_det_jacobian = flow_k(z[k], flow_params.u[:, k, :, :], flow_params.w[:, k, :, :],
-                                               flow_params.b[:, k, :, :])
-            else:
-                z_k, log_det_jacobian = flow_k(z[k], self.u[:, k, :, :].repeat(num_samples, 1, 1),
-                                               self.w[:, k, :, :].repeat(num_samples, 1, 1),
-                                               self.b[:, k, :, :].repeat(num_samples, 1, 1))
-            z.append(z_k)
-            log_det_j += log_det_jacobian
-
-        return z[0], z[-1], log_det_j
+    def __init__(self):
+        pass
 
 
-class PfomMMVAE(MOEMMVae):
+class FlowOfJointVAE(FlowVAE):
+    """Class of methods where the flow is applied on a joint distribution."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class JointFromFlowVAE(FlowVAE):
+    """Class of methods where the flow is applied on each modality."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class PfomMMVAE(MOEMMVae, FlowOfJointVAE):
     """Planar Flow of Mixture multi-modal VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):
@@ -153,7 +118,7 @@ class PfomMMVAE(MOEMMVae):
 
             z0, zk, log_det_j = self.flow.forward(subset_distr, subset_flow_params)
 
-            distr_subsets[s_key] = SubsetPFoM(z0, zk, log_det_j)
+            distr_subsets[s_key] = SubsetPFoM(q0=subset_distr, z0=z0, zk=zk, log_det_j=log_det_j)
 
             if len(self.subsets[s_key]) == len(batch_mods):
                 joint_embedding = JointEmbeddingPFoM(embedding=zk, mod_strs=s_key.split('_'), log_det_j=log_det_j)
@@ -161,7 +126,7 @@ class PfomMMVAE(MOEMMVae):
         return JointLatentsPFoM(joint_embedding=joint_embedding, subsets=distr_subsets)
 
 
-class PlanarMixtureMMVae(MOEMMVae):
+class PlanarMixtureMMVae(MOEMMVae, JointFromFlowVAE):
     """
     Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
     Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
@@ -186,7 +151,7 @@ class PlanarMixtureMMVae(MOEMMVae):
                 flow_params = self.flow.get_flow_params(h)
 
                 enc_mods[mod_str] = EncModPlanarMixture(latents_class=latents_class,
-                                                        flow_params=PlanarFlowParams(**flow_params))
+                                                        flow_params=flow_params)
                 if style_mu:
                     latents_style = Distr(mu=style_mu, logvar=style_logvar)
 

@@ -70,10 +70,9 @@ class PolymnistExperiment(BaseExperiment):
         # add flow parameters from mmvae if present
         if self.flags.amortized_flow:
             params.extend(list(self.mm_vae.parameters()))
-        else:
+        elif hasattr(self.mm_vae, 'flow'):
             for p in ['u', 'w', 'b']:
-                if hasattr(self.mm_vae, p):
-                    params.append(getattr(self.mm_vae, p))
+                params.append(getattr(self.mm_vae.flow, p))
 
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
