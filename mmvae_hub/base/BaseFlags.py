@@ -112,5 +112,5 @@ parser.add_argument('--kl_annealing', type=int, default=0,
 
 # FLOWS
 parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")
-parser.add_argument('--amortized_flow', type=str2bool, default=True,
+parser.add_argument('--amortized_flow', type=str2bool, default=False,
                     help="If True, use amortized flows, as described in Berg et al. 2019")
