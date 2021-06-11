@@ -1,11 +1,11 @@
 from abc import abstractmethod
-from typing import Iterable, Mapping
 
 import numpy as np
 import torch
 
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
+from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights
 
@@ -38,7 +38,8 @@ class BaseMMDiv:
         klds_modonly = klds_modonly.sum() / ((len(mus) - 1) * (len(mus) - 1))
         return [klds, klds_modonly]
 
-    def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
+    def calc_klds(self, forward_results: BaseForwardResults, subsets: Mapping[str, BaseModality], num_samples: int,
+                  joint_keys: Iterable[str]):
         """Calculate the Kl divergences for all subsets and the joint latent distribution."""
 
         latent_subsets = forward_results.joint_latents.subsets
@@ -78,7 +79,54 @@ class BaseMMDiv:
         pass
 
 
-class POEMMDiv(BaseMMDiv):
+class FlowVAEMMDiv(BaseMMDiv):
+    """Class of MMDivs for methods that use flows."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class FoJMMDiv(FlowVAEMMDiv):
+    """"FlowOfJointMMDiv: Class of MMDivs where for methods where the flow is applied on the joint distribution."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class JfFMMDiv(FlowVAEMMDiv):
+    """"JointFromFlowMMDiv: Class of MMDivs where for methods where the flow is applied on each modality."""
+
+    def __init__(self):
+        super().__init__()
+        self.calc_kl_divergence = calc_kl_divergence
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
+        # calculate divergences of the q0 distributions
+        klds, joint_div = super().calc_klds(forward_results, subsets, num_samples, joint_keys)
+
+        # joint_div = \sum E_q0[ ln qi(z|X) - ln p(z) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+        joint_div = joint_div - torch.sum(forward_results.joint_latents.joint_embedding.log_det_j)
+
+        for s_key, kld in klds.items():
+            klds[s_key] = kld - torch.sum(forward_results.joint_latents.subsets[s_key].log_det_j)
+
+        return klds, joint_div
+
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+        return {
+            mod_str: self.calc_kl_divergence(distr0=subset.q0)
+            for mod_str, subset in latent_subsets.items()
+        }
+
+
+class NoFlowVAEMMDiv(BaseMMDiv):
+    """Class of MMDivs for methods that do not use flows."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class POEMMDiv(NoFlowVAEMMDiv):
     def __init__(self):
         super().__init__()
 
@@ -86,7 +134,7 @@ class POEMMDiv(BaseMMDiv):
         return self.calc_kl_divergence(m1_mu, m1_logvar, m2_mu, m2_logvar, norm_value=flags.batch_size).sum()
 
 
-class MixtureMMDiv(BaseMMDiv):
+class MixtureMMDiv(NoFlowVAEMMDiv):
     def __init__(self):
         super().__init__()
 
@@ -168,60 +216,23 @@ class JSDMMDiv(MixtureMMDiv, POEMMDiv):
         return [mu_poe, logvar_poe]
 
 
-class PfomMMDiv(MixtureMMDiv):
+class PoPEMMDiv(JfFMMDiv, POEMMDiv):
     """Planar Flow of Mixture multi-modal divergence"""
 
     def __init__(self):
-        super(PfomMMDiv).__init__()
-
-        self.calc_kl_divergence = calc_kl_divergence
-
-    def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
-        """
-        Calculate the Kl divergences for all subsets and the joint latent distribution.
-        Calculate first the single mod divergences that are then used to compute the subset divergences.
-        """
-
-        klds = self.calc_singlemod_divergences(forward_results.enc_mods)
-        klds = self.calc_subset_divergence(klds, subsets)
-
-        joint_div = torch.Tensor().to(klds[list(klds)[0]].device)
-        for s_key in joint_keys:
-            joint_div = torch.cat((joint_div, klds[s_key]))
-
-        weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
-
-        # joint_div = \sum E_q0[ ln qi(z|X) - ln p(z) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
-        joint_div = (weights * joint_div).sum(dim=0) - torch.sum(forward_results.joint_latents.joint_embedding.log_det_j)
-
-        assert not np.isnan(joint_div.cpu().item())
-
-        for subset_key, subset in subsets.items():
-            weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(joint_div.device)
-            klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0) - torch.sum(
-                forward_results.joint_latents.subsets[subset_key].log_det_j)
-
-        return klds, joint_div
-
-    def calc_subset_divergence(self, klds: dict, subsets) -> dict:
-        """Concatenate all singlemod klds for all subsets."""
-        for subset_key, subset in subsets.items():
-            kld = torch.Tensor().to(klds[list(klds)[0]].device)
-            for mod in subset:
-                kld = torch.cat((kld, torch.atleast_1d(klds[mod.name])))
-            klds[subset_key] = kld
-        return klds
-
-    def calc_singlemod_divergences(self, enc_mods: Mapping[str, BaseEncMod]):
-        return {
-            mod_str: self.calc_kl_divergence(
-                distr0=enc_mod.latents_class
-            )
-            for mod_str, enc_mod in enc_mods.items()
-        }
+        JfFMMDiv.__init__(self)
+        POEMMDiv.__init__(self)
 
 
-class PlanarMixtureMMDiv(MixtureMMDiv):
+class PfomMMDiv(JfFMMDiv, MixtureMMDiv):
+    """Planar Flow of Mixture multi-modal divergence"""
+
+    def __init__(self):
+        JfFMMDiv.__init__(self)
+        MixtureMMDiv.__init__(self)
+
+
+class PlanarMixtureMMDiv(JfFMMDiv, MixtureMMDiv):
     def __init__(self):
         super().__init__()
 
@@ -234,7 +245,7 @@ class PlanarMixtureMMDiv(MixtureMMDiv):
         """
 
         klds = self.calc_singlemod_divergences(forward_results.enc_mods)
-        klds = self.calc_subset_divergence(klds, subsets)
+        klds = self.calc_subset_divergences(klds, subsets)
 
         joint_div = torch.Tensor().to(klds[list(klds)[0]].device)
         for s_key in joint_keys:
@@ -251,7 +262,7 @@ class PlanarMixtureMMDiv(MixtureMMDiv):
 
         return klds, joint_div
 
-    def calc_subset_divergence(self, klds, subsets):
+    def calc_subset_divergences(self, klds, subsets):
         for subset_key, subset in subsets.items():
             kld = torch.Tensor().to(klds[list(klds)[0]].device)
             for mod in subset:
