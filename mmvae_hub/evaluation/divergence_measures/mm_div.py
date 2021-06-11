@@ -282,3 +282,57 @@ class PlanarMixtureMMDiv(JfFMMDiv, MixtureMMDiv):
 class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
     def __init__(self):
         super().__init__()
+
+
+class FoMFoPMMDiv(FlowVAEMMDiv):
+    """"JointFromFlowMMDiv: Class of MMDivs where for methods where the flow is applied on each modality."""
+
+    def __init__(self):
+        super().__init__()
+        self.calc_kl_divergence = calc_kl_divergence
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets: Mapping[str, BaseModality], num_samples: int,
+                  joint_keys: Iterable[str]):
+        """Calculate the Kl divergences for all subsets and the joint latent distribution."""
+
+        latent_subsets = forward_results.joint_latents.subsets
+        klds = self.calc_subset_divergences(latent_subsets)
+
+        joint_div = torch.Tensor().to(klds[list(klds)[0]].device)
+        for s_key in joint_keys:
+            joint_div = torch.cat((joint_div, torch.atleast_1d(klds[s_key])))
+
+        weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
+        joint_div = (weights * joint_div).sum(dim=0) - forward_results.joint_latents.joint_distr.log_det_j
+
+        # normalize klds with number of modalities in subset and batch_size
+        for subset_key, subset in subsets.items():
+            weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(joint_div.device)
+            klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
+
+        return klds, joint_div
+
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+        return {
+            mod_str: self.calc_kl_divergence(distr0=subset.q0) - subset.log_det_j
+            for mod_str, subset in latent_subsets.items()
+        }
+
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
+        # calculate divergences of the q0 distributions
+        klds, joint_div = super().calc_klds(forward_results, subsets, num_samples, joint_keys)
+
+        # joint_div = \sum E_q0[ ln qi(z|X) - ln p(z) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+        joint_div = joint_div - torch.sum(forward_results.joint_latents.joint_embedding.log_det_j)
+
+        for s_key, kld in klds.items():
+            klds[s_key] = kld - torch.sum(forward_results.joint_latents.subsets[s_key].log_det_j)
+
+        return klds, joint_div
+
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+        return {
+            mod_str: self.calc_kl_divergence(distr0=subset.q0)
+            for mod_str, subset in latent_subsets.items()
+        }

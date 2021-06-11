@@ -6,7 +6,7 @@ import torch
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv
 from mmvae_hub.networks.Flows import PlanarFlow
-from mmvae_hub.networks.MixtureVaes import MOEMMVae
+from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
@@ -57,6 +57,56 @@ class FlowOfJointVAE(FlowVAE):
     @abstractmethod
     def expert_fusion(self, enc_mods, s_key):
         pass
+
+
+class FoMFoP(FlowVAE, JointElboMMVae):
+    def __init__(self, exp, flags, modalities, subsets):
+        FlowVAE.__init__(self)
+        JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = PoPEMMDiv()
+        self.flow1 = PlanarFlow(flags)
+        self.flow2 = PlanarFlow(flags)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatents:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        A joint latent space is then created by fusing all subspaces.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        mus = torch.Tensor().to(self.flags.device)
+        logvars = torch.Tensor().to(self.flags.device)
+        distr_subsets = {}
+
+        # subsets that will be fused into the joint distribution
+        fusion_subsets_keys = []
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            distr_subset, subset_flow_params = self.expert_fusion(enc_mods, s_key)
+
+            z0, zk, log_det_j = self.flow1.forward(distr_subset, subset_flow_params)
+
+            distr_subsets[s_key] = SubsetPFoM(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
+
+            if self.fusion_condition(self.subsets[s_key], batch_mods):
+                mus = torch.cat((mus, distr_subset.mu.unsqueeze(0)), dim=0)
+                logvars = torch.cat((logvars, distr_subset.logvar.unsqueeze(0)), dim=0)
+                fusion_subsets_keys.append(s_key)
+
+        # normalize with number of subsets
+        weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
+        joint_distr = self.moe_fusion(mus, logvars, weights)
+        z0, zk, log_det_j = self.flow2.forward(joint_distr)
+
+        joint_embedding = JointEmbeddingPFoM(embedding=zk, mod_strs=fusion_subsets_keys, log_det_j=log_det_j)
+
+        # return JointLatents(fusion_subsets_keys, joint_distr=joint_embedding, subsets=distr_subsets)
+        return JointLatentsPFoM(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+    def expert_fusion(self, enc_mods, s_key):
+        # armotized flow params are not implemented for PoPE
+        subset_flow_params = None
+        return self.fuse_subset(enc_mods, s_key), subset_flow_params
 
 
 class PoPE(FlowOfJointVAE, POEMMVae):

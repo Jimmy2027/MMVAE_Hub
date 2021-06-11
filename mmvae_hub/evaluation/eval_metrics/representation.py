@@ -60,9 +60,9 @@ def train_clf_lr_all_subsets(exp):
             d = data_train[l_key][s_key]
             data_train[l_key][s_key] = d[rand_ind_train] if len(d) else None
 
-    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if exp.flags.method != 'planar_mixture' else None
+    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if not isinstance(mm_vae, JointFromFlowVAE) else None
     lr_results_zk = train_clf_lr(exp, data_train['zk'], labels) \
-        if exp.flags.method in ['pfom', 'planar_mixture', 'pope'] else None
+        if isinstance(mm_vae, FlowVAE) else None
 
     return lr_results_q0, lr_results_zk
 

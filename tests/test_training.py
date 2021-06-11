@@ -55,7 +55,9 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
+    test_run_epochs_polymnist(method='fomfop')
     test_run_epochs_polymnist(method='pfom')
+    test_run_epochs_polymnist(method='pope')
     test_run_epochs_polymnist(method='poe')
     test_run_epochs_polymnist(method='joint_elbo')
     test_run_epochs_polymnist(method='moe')

@@ -8,7 +8,7 @@ from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 search_spaces = {
     # 'method': ['pfom'],
-    'method': ['poe', 'moe', 'joint_elbo', 'planar_mixture', 'pfom'],
+    'method': ['fomfop'],
     # 'method': ['joint_elbo'],
     'class_dim': [256],
     "beta": [1],

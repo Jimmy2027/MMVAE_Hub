@@ -89,8 +89,8 @@ def test_static_results_2mods(method: str):
 
 
 if __name__ == '__main__':
-    test_static_results_1mod('moe', update_static_results=True)
-    test_static_results_1mod('joint_elbo', update_static_results=True)
-    test_static_results_1mod('poe', update_static_results=True)
-    test_static_results_1mod('pfom', update_static_results=True)
-    test_static_results_1mod('planar_mixture', update_static_results=True)
+    test_static_results_1mod('moe', update_static_results=False)
+    test_static_results_1mod('joint_elbo', update_static_results=False)
+    test_static_results_1mod('poe', update_static_results=False)
+    test_static_results_1mod('pfom', update_static_results=False)
+    test_static_results_1mod('planar_mixture', update_static_results=False)
