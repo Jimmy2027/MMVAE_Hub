@@ -51,7 +51,7 @@ class PlanarFlow(Flow):
             flow_k = flow()
             self.add_module('flow_' + str(k), flow_k)
 
-    def forward(self, in_distr: Distr, flow_params: PlanarFlowParams):
+    def forward(self, in_distr: Distr, flow_params: PlanarFlowParams = None):
         num_samples = in_distr.mu.shape[0]
         log_det_j = torch.zeros(in_distr.mu.shape[0]).to(self.flags.device)
 
