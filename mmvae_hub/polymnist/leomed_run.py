@@ -58,8 +58,8 @@ search_spaces_pfom = {
 }
 
 
-# for search_space in [search_space_joint_elbo, search_space_moe, search_space_planar_mixture]:
-for search_space in [search_spaces_poe, search_spaces_moe, search_spaces_je, search_spaces_pm, search_spaces_pfom]:
+# for search_space in [search_spaces_poe, search_spaces_moe, search_spaces_je, search_spaces_pm, search_spaces_pfom]:
+for search_space in [search_spaces_pfom]:
 
     for params in ParameterGrid(search_space):
 

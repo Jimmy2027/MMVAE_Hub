@@ -197,9 +197,11 @@ class MongoDatabase:
 
 
 if __name__ == '__main__':
-    id = 'polymnist_planar_mixture_2021_05_17_10_59_48_027991'
-    out_dir = Path('/Users/Hendrik/Desktop/tensorboard_logs') / id
-    out_dir.mkdir(parents=True, exist_ok=True)
-
+    id = 'polymnist_pfom_2021_06_01_08_51_53_204188'
     db = MongoDatabase(_id=id)
-    db.get_tensorboardlogs(dest_dir=out_dir)
+    db.delete_one(id)
+    # out_dir = Path('/Users/Hendrik/Desktop/tensorboard_logs') / id
+    # out_dir.mkdir(parents=True, exist_ok=True)
+    #
+    # db = MongoDatabase(_id=id)
+    # db.get_tensorboardlogs(dest_dir=out_dir)

@@ -3,6 +3,7 @@ import shutil
 import time
 from abc import abstractmethod
 
+import optuna
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -17,7 +18,7 @@ from mmvae_hub.evaluation.eval_metrics.representation import test_clf_lr_all_sub
 from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_subsets
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
-from mmvae_hub.networks.FlowVaes import JointFromFlowVAE, FlowVAE
+from mmvae_hub.hyperopt.hyperopt_metrics import get_hyperopt_score
 from mmvae_hub.utils.BaseTBLogger import BaseTBLogger
 from mmvae_hub.utils.metrics.average_meters import *
 from mmvae_hub.utils.plotting.plotting import generate_plots
@@ -62,6 +63,15 @@ class BaseTrainer:
 
             self.exp.mm_vae.flags.beta = self.callback.update_epoch(train_results, test_results, epoch,
                                                                     time.time() - end)
+
+            if self.flags.optuna and ((epoch + 1) % self.flags.eval_freq == 0 or (epoch + 1) == self.flags.end_epoch):
+                hyperopt_score = get_hyperopt_score(test_results=test_results, method=self.flags.method,
+                                                    use_zk=isinstance(self.exp.mm_vae, FlowVAE))
+                self.flags.optuna.report(hyperopt_score, epoch)
+                # Handle pruning based on the intermediate value.
+                if self.flags.optuna.should_prune():
+                    raise optuna.exceptions.TrialPruned()
+                test_results.hyperopt_score = hyperopt_score
 
         self.finalize(test_results, epoch, average_epoch_time=self.callback.epoch_time.get_average())
         return test_results
@@ -189,7 +199,7 @@ class BaseTrainer:
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
             'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
-            'joint_latents': AverageMeterJointLatents(model = self.exp.mm_vae, name='joint_latents',
+            'joint_latents': AverageMeterJointLatents(model=self.exp.mm_vae, name='joint_latents',
                                                       factorized_representation=self.flags.factorized_representation)
         }
         return d_loader, training_steps, average_meters
