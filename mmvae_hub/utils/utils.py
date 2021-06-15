@@ -214,6 +214,8 @@ def json_file_to_pyobj(filename: str):
 def atleast_2d(tensor, dim: int):
     if len(tensor.shape) < 2:
         return tensor.unsqueeze(dim)
+    else:
+        return tensor
 
 
 def dict2json(out_path: Path, d: dict):

@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mimic.networks.ResidualBlocks import ResidualBlock1dConv
+from mmvae_hub.networks.utils.ResidualBlocks import ResidualBlock1dConv
 
 
 def make_res_block_enc_feat_ext(in_channels, out_channels, kernelsize, stride, padding, dilation, a_val=2.0, b_val=0.3):

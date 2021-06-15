@@ -1,7 +1,8 @@
 import torch.nn as nn
 
-from mimic.networks.FeatureExtractorImg import make_res_block_feature_extractor
 from typing import Protocol
+
+from mmvae_hub.networks.images.FeatureExtractorImg import make_res_block_feature_extractor
 
 
 class ClfImgProto(Protocol):

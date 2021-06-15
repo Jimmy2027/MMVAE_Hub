@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mimic.networks.char_encoding.FeatureExtractorText import make_res_block_enc_feat_ext
+from mmvae_hub.networks.text.mmvae_text_enc import make_res_block_enc_feat_ext
 
 
 class ClfText(nn.Module):

@@ -95,7 +95,7 @@ def generate_swapping_plot(exp, epoch):
 def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModality], subsets) -> Mapping[str, Tensor]:
     nbr_samples = 10
     test_samples = exp.test_samples
-    model = exp.mm_vae
+    model = exp.mm_vae.eval()
 
     # get style from random sampling
     random_styles = model.get_random_styles(nbr_samples)

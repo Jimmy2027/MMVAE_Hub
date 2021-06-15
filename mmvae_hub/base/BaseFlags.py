@@ -4,6 +4,7 @@ from mmvae_hub.utils.setup.flags_utils import str2bool
 
 parser = argparse.ArgumentParser()
 
+parser.add_argument('--dataset', type=str, help="Which dataset to use.")
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
 parser.add_argument('--leomed', type=str2bool, default=False,
                     help="If experiment is running on the leomed cluster, set this flag to True. This will make sure "
@@ -22,6 +23,8 @@ parser.add_argument('--deterministic', type=bool, default=False,
                     help="Bool to indicate if experiment should be run in a deterministic manner to produce "
                          "reproducible results. Does not work with cuda enabled, so experiment will run on "
                          "CPU if set to True.")
+parser.add_argument('--optuna', type=str2bool, default=False,
+                    help="Indicates if optuna's hyperoptimization is used.")
 
 # TRAINING
 parser.add_argument('--seed', type=int, default=None,

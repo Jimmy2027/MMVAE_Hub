@@ -1,21 +1,16 @@
 import torch
 import torch.nn as nn
 
-from mimic.networks.FeatureCompressor import LinearFeatureCompressor
-from mimic.networks.char_encoding import DataGeneratorText as DataGeneratorText_CharEnc
-from mimic.networks.char_encoding import FeatureExtractorText as FeatureExtractorText_CharEnc
-from mimic.networks.word_encoding import DataGeneratorText as DataGeneratorText_WordEnc
-from mimic.networks.word_encoding.mmvae_text_enc import FeatureExtractorText as FeatureExtractorText_WordEnc
+from mmvae_hub.networks.text.DataGeneratorText import DataGeneratorText
+from mmvae_hub.networks.text.mmvae_text_enc import FeatureExtractorText
+from mmvae_hub.networks.utils.FeatureCompressor import LinearFeatureCompressor
 
 
 class EncoderText(nn.Module):
     def __init__(self, flags, style_dim):
         super(EncoderText, self).__init__()
         self.args = flags
-        if flags.text_encoding == 'char':
-            self.feature_extractor = FeatureExtractorText_CharEnc(flags)
-        elif flags.text_encoding == 'word':
-            self.feature_extractor = FeatureExtractorText_WordEnc(flags)
+        self.feature_extractor = FeatureExtractorText(flags)
         self.feature_compressor = LinearFeatureCompressor(5 * flags.DIM_text,
                                                           style_dim,
                                                           flags.class_dim)
@@ -30,10 +25,10 @@ class EncoderText(nn.Module):
         h_text = self.feature_extractor(x_text)
         if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
             mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_text)
-            return mu_content, logvar_content, mu_style, logvar_style
+            return mu_style, logvar_style, mu_content, logvar_content, h_text
         else:
             mu_content, logvar_content = self.feature_compressor(h_text)
-            return mu_content, logvar_content
+            return None, None, mu_content, logvar_content, h_text
 
 
 class DecoderText(nn.Module):
@@ -42,11 +37,9 @@ class DecoderText(nn.Module):
         self.flags = flags
         self.feature_generator = nn.Linear(style_dim + flags.class_dim,
                                            5 * flags.DIM_text, bias=True)
-        if flags.text_encoding == 'char':
-            self.text_generator = DataGeneratorText_CharEnc(flags)
-        elif flags.text_encoding == 'word':
-            self.text_generator = DataGeneratorText_WordEnc(flags)
-            # self.text_generator = Dec(flags)
+
+        self.text_generator = DataGeneratorText(flags)
+        # self.text_generator = Dec(flags)
 
     def forward(self, z_style, z_content):
         if self.flags.factorized_representation:

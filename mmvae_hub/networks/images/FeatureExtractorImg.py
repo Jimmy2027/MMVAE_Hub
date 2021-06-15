@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mimic.networks.ResidualBlocks import ResidualBlock2dConv
+from mmvae_hub.networks.utils.ResidualBlocks import ResidualBlock2dConv
 
 
 def make_res_block_feature_extractor(in_channels, out_channels, kernelsize, stride, padding, dilation, a_val=2.0,
@@ -76,6 +76,6 @@ class FeatureExtractorImg(nn.Module):
         out = self.resblock_3(out)
         out = self.resblock_4(out)
         if self.args.img_size != 64:
-                out = self.resblock_5(out)
+            out = self.resblock_5(out)
         out = out.view(out.shape[0], out.shape[1], out.shape[2])
         return out

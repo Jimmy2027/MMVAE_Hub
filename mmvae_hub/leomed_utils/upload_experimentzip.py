@@ -3,7 +3,6 @@
 Upload zipped experiment folders to the mongo database.
 Use with python upload_experimentzip.py upload_all --src_dir my_src_dir
 """
-import glob
 import shutil
 import tempfile
 import zipfile
@@ -68,6 +67,9 @@ def upload_one(exp_path: Path):
         #     db.upload_logfile(Path(log_file[0]))
 
         db.upload_tensorbardlogs(exp_dir / 'logs')
+
+        norby.send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
+                       f'found here: {expvis_url}')
 
     # delete exp_path
     if is_zip:

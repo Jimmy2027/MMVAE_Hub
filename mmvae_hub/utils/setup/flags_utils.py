@@ -226,16 +226,24 @@ def update_flags_with_config(p, config_path: Path, additional_args: dict = None,
         return p.parse_args(namespace=t_args)
 
 
-def get_config_path(flags=None):
-    if not flags or not flags.config_path:
-        if os.path.exists('/cluster/home/klugh/'):
-            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/leomed_config.json")
-        elif os.path.exists('/mnt/data/hendrik'):
-            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/bartholin_config.json")
-        else:
-            return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent, "configs/local_config.json")
-    else:
+def get_config_path(dataset: str = None, flags=None):
+
+    dataset = dataset or flags.dataset
+
+    if flags and flags.config_path:
         return flags.config_path
+
+    if os.path.exists('/cluster/home/klugh/'):
+        return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent,
+                            f"configs/{dataset}/leomed_config.json")
+
+    elif os.path.exists('/mnt/data/hendrik'):
+        return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent,
+                            f"configs/{dataset}/bartholin_config.json")
+
+    else:
+        return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent,
+                            f"configs/{dataset}/local_config.json")
 
 
 def str2bool(v):

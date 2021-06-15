@@ -7,14 +7,16 @@ from pathlib import Path
 from mmvae_hub.utils.MongoDB import MongoDatabase
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
+MIN_EPOCH = 50
+
 
 def clean_database():
-    """Delete all experiment logs in database from experiments with less than 10 epochs."""
+    """Delete all experiment logs in database from experiments with less than MIN_EPOCH epochs."""
     db = MongoDatabase(training=False)
     experiments = db.connect()
 
     for experiment in experiments.find({}):
-        if experiment['flags']['end_epoch'] < 10 or len(experiment['epoch_results']) < 10:
+        if experiment['flags']['end_epoch'] < MIN_EPOCH or len(experiment['epoch_results']) < MIN_EPOCH:
             print(f'Deleting experiment {experiment["_id"]} from database.')
             experiments.delete_one({'_id': experiment['_id']})
 
@@ -23,7 +25,7 @@ def clean_database_model_checkpoints():
     db = MongoDatabase(training=False)
     experiments = db.connect()
     experiment_ids = [exp['_id'] for exp in experiments.find({})]
-    print(experiment_ids)
+
     fs = db.connect_with_gridfs()
 
     for checkpoint in fs.find({}):
@@ -59,7 +61,7 @@ def clean_exp_dirs(config: dict):
             elif experiment_dir.name not in experiment_ids:
                 remove = True
 
-            elif d['flags']['end_epoch'] < 10:
+            elif d['flags']['end_epoch'] < MIN_EPOCH:
                 remove = True
 
             if remove:
@@ -89,8 +91,10 @@ def clean_early_checkpoints(parent_folder: Path):
 if __name__ == '__main__':
     clean_database()
     clean_database_model_checkpoints()
-    config_path = get_config_path()
-    with open(config_path, 'rt') as json_file:
-        config = json.load(json_file)
+    config_path_polymnist = get_config_path(dataset='polymnist')
+    config_path_mimic = get_config_path(dataset='mimic')
+    for config_path in [config_path_polymnist, config_path_polymnist]:
+        with open(config_path, 'rt') as json_file:
+            config = json.load(json_file)
 
-    clean_exp_dirs(config)
+        clean_exp_dirs(config)

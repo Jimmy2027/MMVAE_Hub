@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mimic.networks.ResidualBlocks import ResidualBlock2dTransposeConv
+from mmvae_hub.networks.utils.ResidualBlocks import ResidualBlock2dTransposeConv
 
 
 def make_res_block_data_generator(in_channels, out_channels, kernelsize, stride, padding, o_padding, dilation,

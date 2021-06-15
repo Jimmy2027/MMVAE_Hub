@@ -1,9 +1,10 @@
 import random
 from abc import abstractmethod
 
-from mmvae_hub.networks.BaseMMVae import *
+from torch import optim
 
 from mmvae_hub.modalities import BaseModality
+from mmvae_hub.networks.BaseMMVae import *
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
@@ -44,7 +45,7 @@ class BaseExperiment(ABC):
         elif self.flags.method == 'moe':
             model = MOEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'poe':
-            model = POEMMVae(self, flags = self.flags, modalities=self.modalities,subsets=self.subsets)
+            model = POEMMVae(self, flags=self.flags, modalities=self.modalities, subsets=self.subsets)
         elif self.flags.method == 'planar_mixture':
             model = PlanarMixtureMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'jsd':
@@ -63,12 +64,44 @@ class BaseExperiment(ABC):
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
 
-    @abstractmethod
-    def set_dataset(self):
-        pass
+    def set_eval_mode(self) -> None:
+        """Set all parts of the MMVAE to eval mode."""
+        self.mm_vae.eval()
+
+        for mod_k, mod in self.modalities.items():
+            mod.encoder.eval()
+            mod.decoder.eval()
+
+    def set_train_mode(self) -> None:
+        """Set all parts of the MMVAE to eval mode."""
+        self.mm_vae.train()
+
+        for mod_k, mod in self.modalities.items():
+            mod.encoder.train()
+            mod.decoder.train()
+
+    def set_optimizer(self):
+        # optimizer definition
+        params = []
+        for _, mod in self.modalities.items():
+            for model in [mod.encoder, mod.decoder]:
+                for p in model.parameters():
+                    params.append(p)
+
+        # add flow parameters from mmvae if present
+        if self.flags.amortized_flow:
+            params.extend(list(self.mm_vae.parameters()))
+        elif hasattr(self.mm_vae, 'flow'):
+            for p in ['u', 'w', 'b']:
+                if hasattr(self.mm_vae.flow, p):
+                    params.append(getattr(self.mm_vae.flow, p))
+
+        optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
+                                                                                   self.flags.beta_2))
+        self.optimizer = optimizer
 
     @abstractmethod
-    def set_optimizer(self):
+    def set_dataset(self):
         pass
 
     @abstractmethod
@@ -91,7 +124,7 @@ class BaseExperiment(ABC):
     def set_modalities(self) -> Mapping[str, BaseModality]:
         pass
 
-    def set_subsets(self) -> Mapping[str, BaseModality]:
+    def set_subsets(self) -> Mapping[str, Iterable[BaseModality]]:
         """
         powerset([1,2,3]) --> (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)
         >>> exp.modalities = {'a':None, 'b':None, 'c':None}

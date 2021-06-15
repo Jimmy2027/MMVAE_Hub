@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from mimic.networks.ResidualBlocks import ResidualBlock1dTransposeConv
+from mmvae_hub.networks.utils.ResidualBlocks import ResidualBlock1dTransposeConv
 
 
 def make_res_block_decoder(in_channels, out_channels, kernelsize, stride, padding, o_padding, dilation, a_val=2.0,

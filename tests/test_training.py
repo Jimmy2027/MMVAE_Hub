@@ -3,6 +3,7 @@ import tempfile
 import pytest
 
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
+from mmvae_hub.mimic.MimicTrainer import MimicTrainer
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from tests.utils import set_me_up
@@ -19,11 +20,27 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope'] else True
-        mst = set_me_up(tmpdirname, method, attributes={'calc_nll': calc_nll,
-                                                        # 'weighted_mixture': True
-                                                        })
+        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop'] else True
+        mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
+                                                                                    # 'weighted_mixture': True
+                                                                                    })
         trainer = PolymnistTrainer(mst)
+        test_results = trainer.run_epochs()
+
+
+def test_run_epochs_mimic(method: str):
+    """
+    Test if the main training loop runs.
+    Assert if the total_test loss is constant. If the assertion fails, it means that the model or the evaluation has
+    changed, perhaps involuntarily.
+    """
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # todo implement calc likelihood for flow based methods
+        calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
+        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': calc_nll,
+                                                                                # 'weighted_mixture': True
+                                                                                })
+        trainer = MimicTrainer(mst)
         test_results = trainer.run_epochs()
 
 

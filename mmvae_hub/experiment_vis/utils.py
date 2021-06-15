@@ -29,7 +29,7 @@ def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
     # copy notebook to experiment run
     shutil.copyfile(notebook_path, dest_notebook_path)
 
-    log.info('Executing experiment vis notebook.')
+    log.info(f'Executing experiment vis notebook {notebook_path}.')
     with open(dest_notebook_path) as f:
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
@@ -65,7 +65,9 @@ def upload_notebook_to_db(experiment_uid: str) -> None:
     import ppb
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        dir_experiment_run = Path(tmpdirname)
+        dir_experiment_run = Path(tmpdirname) / experiment_uid
+        dir_experiment_run.mkdir()
+
         db = MongoDatabase(training=False, _id=experiment_uid)
         dict2json(dir_experiment_run / 'flags.json', db.get_experiment_dict()['flags'])
 
@@ -261,7 +263,8 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 
 def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None):
     if not flags:
-        flags_setup = BaseFlagsSetup(get_config_path())
+        dataset = _id.split('_')[0]
+        flags_setup = BaseFlagsSetup(get_config_path(dataset=dataset))
         flags_path = Path('flags.rar')
         if flags_path.exists():
             flags = flags_setup.load_old_flags(flags_path, add_args={'save_figure': False})
@@ -407,11 +410,11 @@ def get_experiment(flags):
 
 
 if __name__ == '__main__':
-    experiment_uid = 'polymnist_pope_2021_06_08_20_52_59_710466'
+    # experiment_uid = 'polymnist_pope_2021_06_08_20_52_59_710466'
     # show_generated_figs(_id=experiment_uid)
-    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
-    df = make_experiments_dataframe(experiments_database.connect())
-    # for id in ['polymnist_pfom_2021_06_10_10_59_17_258140']:
-    #     upload_notebook_to_db(id)
+    # df = make_experiments_dataframe(experiments_database.connect())
+    for id in ['polymnist_fomfop_2021_06_13_20_22_54_166444']:
+        upload_notebook_to_db(id)

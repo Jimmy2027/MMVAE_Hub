@@ -77,7 +77,8 @@ class BaseTrainer:
         return test_results
 
     def train(self):
-        model = self.exp.mm_vae.train()
+        self.exp.set_train_mode()
+        model = self.exp.mm_vae
 
         d_loader, training_steps, average_meters = self.setup_phase('train')
 
@@ -114,7 +115,8 @@ class BaseTrainer:
 
     def test(self, epoch) -> BaseTestResults:
         with torch.no_grad():
-            model = self.exp.mm_vae.eval()
+            self.exp.set_eval_mode()
+            model = self.exp.mm_vae
 
             d_loader, training_steps, average_meters = self.setup_phase('test')
 
@@ -145,6 +147,7 @@ class BaseTrainer:
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
             last_epoch: bool = (epoch + 1) == self.flags.end_epoch
             if (epoch + 1) % self.flags.eval_freq == 0 or last_epoch:
+
                 log.info('generating plots')
                 plots = generate_plots(self.exp, epoch)
                 self.tb_logger.write_plots(plots, epoch)

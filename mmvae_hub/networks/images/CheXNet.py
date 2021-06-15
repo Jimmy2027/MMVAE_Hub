@@ -8,7 +8,7 @@ import torch.nn as nn
 import torchvision
 import torch.nn.functional as F
 import torch
-from mimic.dataio.utils import get_densenet_transforms
+from mmvae_hub.mimic.utils import get_densenet_transforms
 
 
 class CheXNet(nn.Module):

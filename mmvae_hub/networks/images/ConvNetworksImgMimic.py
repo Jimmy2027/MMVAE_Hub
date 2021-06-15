@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 
-from mimic.networks.DataGeneratorImg import DataGeneratorImg
-from mimic.networks.FeatureCompressor import LinearFeatureCompressor
-from mimic.networks.FeatureExtractorImg import FeatureExtractorImg
-from mimic.networks.CheXNet import DenseNetFeatureExtractor
+from mmvae_hub.networks.images.CheXNet import DenseNetFeatureExtractor
+from mmvae_hub.networks.images.DataGeneratorImg import DataGeneratorImg
+from mmvae_hub.networks.images.FeatureExtractorImg import FeatureExtractorImg
+from mmvae_hub.networks.utils.FeatureCompressor import LinearFeatureCompressor
 
 
 def get_feature_extractor_img(flags):
@@ -30,10 +30,10 @@ class EncoderImg(nn.Module):
         h_img = self.feature_extractor(x_img)
         if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
             mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_img)
-            return mu_content, logvar_content, mu_style, logvar_style
+            return mu_style, logvar_style, mu_content, logvar_content, h_img
         else:
             mu_content, logvar_content = self.feature_compressor(h_img)
-            return mu_content, logvar_content
+            return None, None, mu_content, logvar_content, h_img
 
 
 class DecoderImg(nn.Module):

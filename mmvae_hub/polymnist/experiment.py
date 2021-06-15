@@ -4,7 +4,6 @@ from typing import Mapping, Iterable
 
 import numpy as np
 import torch
-import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from torch import Tensor
 from torchvision import transforms
@@ -45,7 +44,9 @@ class PolymnistExperiment(BaseExperiment):
 
     def set_modalities(self) -> Mapping[str, BaseModality]:
         mods = [PolymnistMod(self.flags, name="m%d" % m) for m in range(self.num_modalities)]
-        return {m.name: m for m in mods}
+        mods = {m.name: m for m in mods}
+
+        return mods
 
     def set_dataset(self):
         transform = transforms.Compose([transforms.ToTensor()])
@@ -58,26 +59,6 @@ class PolymnistExperiment(BaseExperiment):
             test = PolymnistDataset(Path(self.flags.dir_data) / 'train', transform=transform,
                                     num_modalities=self.num_modalities)
         return train, test
-
-    def set_optimizer(self):
-        # optimizer definition
-        params = []
-        for _, mod in self.modalities.items():
-            for model in [mod.encoder, mod.decoder]:
-                for p in model.parameters():
-                    params.append(p)
-
-        # add flow parameters from mmvae if present
-        if self.flags.amortized_flow:
-            params.extend(list(self.mm_vae.parameters()))
-        elif hasattr(self.mm_vae, 'flow'):
-            for p in ['u', 'w', 'b']:
-                if hasattr(self.mm_vae.flow, p):
-                    params.append(getattr(self.mm_vae.flow, p))
-
-        optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
-                                                                                   self.flags.beta_2))
-        self.optimizer = optimizer
 
     def set_rec_weights(self):
         rec_weights = {}

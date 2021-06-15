@@ -24,6 +24,7 @@ class BaseMetrics(object):
         self.groundtruth = groundtruth
         self.prediction_bin: torch.Tensor = (prediction > 0.5) * 1
         self.groundtruth_bin: torch.Tensor = (groundtruth > 0.5) * 1
+
         # classwise binarized predictions
         self.class_pred_bin: dict = {str_labels[i]: self.prediction_bin[:, i] for i in range(len(str_labels))}
         self.class_gt_bin: dict = {str_labels[i]: self.groundtruth_bin[:, i] for i in range(len(str_labels))}

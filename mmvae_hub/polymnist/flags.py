@@ -4,10 +4,9 @@ from mmvae_hub.base.BaseFlags import parser as parser
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup
 
 parser.add_argument('--name', type=str, default='polymnist', help="name of the dataset")
-parser.add_argument('--dataset', type=str, default='polymnist', help="name of the dataset")
 parser.add_argument('--exp_str_prefix', type=str, default='polymnist', help="prefix of the experiment directory.")
-# training
 
+# training
 parser.add_argument('--num_mods', type=int, default=3, help="dimension of varying factor latent space")
 parser.add_argument('--style_dim', type=int, default=0,
                     help="style dimensionality")  # TODO: use modality-specific style dimensions?
@@ -17,7 +16,6 @@ parser.add_argument('--style_dim', type=int, default=0,
 
 parser.add_argument('--num_classes', type=int, default=10, help="number of classes on which the data set trained")
 
-parser.add_argument('--len_sequence', type=int, default=8, help="length of sequence")
 parser.add_argument('--img_size_m1', type=int, default=28, help="img dimension (width/height)")
 parser.add_argument('--num_channels_m1', type=int, default=1, help="number of channels in images")
 parser.add_argument('--img_size_m2', type=int, default=32, help="img dimension (width/height)")
@@ -45,6 +43,7 @@ class FlagsSetup(BaseFlagsSetup):
     def __init__(self, config_path: Path):
         super().__init__(config_path)
         self.parser = parser
+
 
     def flags_set_alpha_modalities(self, flags):
         flags.alpha_modalities = [flags.div_weight_uniform_content]

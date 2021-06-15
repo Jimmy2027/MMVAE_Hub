@@ -28,7 +28,7 @@ def test_static_results_1mod(method: str, update_static_results=False):
     static_results = static_results[method]
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        mst = set_me_up(tmpdirname,
+        mst = set_me_up(tmpdirname,dataset='polymnist',
                         method=method,
                         attributes={'num_flows': 0, 'num_mods': 1, 'deterministic': True, 'device': 'cpu',
                                     'steps_per_training_epoch': 1, 'factorized_representation': False, 'calc_nll':False})
