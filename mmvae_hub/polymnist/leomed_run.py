@@ -4,62 +4,9 @@ import time
 
 from sklearn.model_selection import ParameterGrid
 
-search_spaces_poe = {
-    'method': ['poe'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [100],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
-}
+from mmvae_hub.hyperopt.search_spaces.base_search_spaces import base_search_spaces
 
-search_spaces_moe = {
-    'method': ['moe'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [100],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
-}
-
-search_spaces_je = {
-    'method': ['joint_elbo'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [100],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
-}
-search_spaces_pm = {
-    'method': ['planar_mixture'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [100],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
-}
-search_spaces_pfom = {
-    'method': ['pfom'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [100],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
-}
-
-
-# for search_space in [search_spaces_poe, search_spaces_moe, search_spaces_je, search_spaces_pm, search_spaces_pfom]:
-for search_space in [search_spaces_pfom]:
+for search_space in [base_search_spaces]:
 
     for params in ParameterGrid(search_space):
 
