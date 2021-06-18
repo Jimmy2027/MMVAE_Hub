@@ -2,9 +2,13 @@
 import typing
 from abc import abstractmethod
 
+import FrEIA.framework as Ff
+import FrEIA.modules as Fm
 import torch
+from torch import nn
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv
+from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
@@ -357,3 +361,44 @@ class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
             return (weights_subset * zk_subset)
         else:
             return zk_subset
+
+
+class GfMVAE(FlowVAE, BaseMMVAE):
+    def __init__(self, exp, flags, modalities, subsets):
+        FlowVAE.__init__(self)
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+
+        def subnet_fc(dims_in, dims_out):
+            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
+                                 nn.Linear(512, dims_out))
+
+        # a simple chain of operations is collected by ReversibleSequential
+        self.flow = Ff.SequenceINN(flags.class_dim)
+        for k in range(8):
+            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        # pass all experts through the flow
+        enc_mod_zks = {self.flow(distr.latents_class.reparameterize()) for _, distr in enc_mods.items()}
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            subset_zks = torch.Tensor().to(self.flags.device)
+            for mod in self.subsets[s_key]:
+                subset_zks = torch.cat((subset_zks, enc_mod_zks[mod]), dim=0)
+            z_subset_prime = torch.mean(subset_zks, dim=0)
+            z_subset = self.flow.reverse(z_subset_prime)
+
+            distr_subsets[s_key] = z_subset
+
+            if len(self.subsets[s_key]) == len(batch_mods):
+                joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
+
+        return JointLatentsFoEM(joint_embedding=joint_embedding, subsets=distr_subsets)
