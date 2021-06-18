@@ -28,7 +28,10 @@ LOG_FILE = (pathlib.Path(__file__).parent / "logs")
 LOG_FILE.mkdir(exist_ok=True, parents=True)
 
 for f in sorted(LOG_FILE.glob("*-*-*.log"))[:-5]:
-    os.remove(f)
+    try:
+        os.remove(f)
+    except:
+        pass
 
 LOG_FILE = LOG_FILE / datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Z-%Y%m%d-%H%M%S")
 
