@@ -1,5 +1,6 @@
 from norby.utils import maybe_norby
 
+from mmvae_hub import log
 from mmvae_hub.leomed_utils.boilerplate import compress_experiment_run_dir
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
@@ -20,6 +21,7 @@ if __name__ == '__main__':
         trainer = PolymnistTrainer(mst)
         trainer.run_epochs()
 
+    log.info('Done.')
     # move zipped experiment_dir_run in TMPDIR to experiment_dir
     if flags.leomed:
         compress_experiment_run_dir(flags)

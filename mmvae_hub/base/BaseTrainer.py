@@ -209,6 +209,7 @@ class BaseTrainer:
         return d_loader, training_steps, average_meters
 
     def finalize(self, test_results: BaseTestResults, epoch: int, average_epoch_time):
+        log.info('Finalizing.')
         # write results as json to experiment folder
         run_metadata = {'end_epoch': epoch, 'experiment_duration': time.time() - self.begin_time,
                         'mean_epoch_time': self.callback.epoch_time.get_average()}
