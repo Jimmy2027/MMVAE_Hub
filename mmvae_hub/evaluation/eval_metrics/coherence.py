@@ -201,7 +201,7 @@ def test_generation(exp, dataset=None):
 
     mods = exp.modalities
     mm_vae = exp.mm_vae
-    subsets = exp.subsets
+    subsets = [*exp.subsets, 'joint']
 
     d_loader = DataLoader(exp.dataset_test if not dataset else dataset,
                           batch_size=args.batch_size,
@@ -220,13 +220,14 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     """
     Generates and classifies samples.
     """
+
     labels = exp.labels
     gen_perf = init_gen_perf(labels, subsets, mods)
-    training_steps = args.steps_per_training_epoch
+
     # all labels accumulated over batches:
     batch_labels = torch.Tensor()
     cond_gen_classified = init_twolevel_nested_dict(subsets, mods, init_val=torch.Tensor())
-    cond_gen_classified: Mapping[subsets, Mapping[mods, Tensor]]
+    cond_gen_classified: Mapping[str, Mapping[mods, Tensor]]
 
     for iteration, (batch_d, batch_l) in enumerate(d_loader):
 
@@ -240,9 +241,9 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         # first generates the conditional gen_samples
         # classifies them and stores the classifier predictions
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
-        lr_subsets = joint_latent.subsets
+
         cg = mm_vae.module.cond_generation(joint_latent) if args.distributed else mm_vae.cond_generation(joint_latent)
-        cg: typing.Mapping[subsets, typing.Mapping[mods, Tensor]]
+        cg: typing.Mapping[str, typing.Mapping[mods, Tensor]]
         # classify the cond. generated samples
         for subset, cond_val in cg.items():
             clf_cg: Mapping[mods, Tensor] = classify_cond_gen_samples(exp, batch_l, cond_val)

@@ -8,12 +8,12 @@ import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
 
-from mmvae_hub.utils import utils
-from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.utils.fusion_functions import *
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
+from mmvae_hub.utils import utils
+from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.fusion_functions import *
 
 
 class BaseMMVAE(ABC, nn.Module):
@@ -163,15 +163,18 @@ class BaseMMVAE(ABC, nn.Module):
         if num_samples is None:
             num_samples = self.flags.batch_size
 
-        mu = torch.zeros(num_samples,
-                         self.flags.class_dim).to(self.flags.device)
-        logvar = torch.zeros(num_samples,
-                             self.flags.class_dim).to(self.flags.device)
-        z_class = Distr(mu, logvar).reparameterize()
+        z_class = self.get_rand_samples_from_joint(num_samples)
 
         z_styles = self.get_random_styles(num_samples)
         random_latents = ReparamLatent(content=z_class, style=z_styles)
         return self.generate_from_latents(random_latents)
+
+    def get_rand_samples_from_joint(self, num_samples: int):
+        mu = torch.zeros(num_samples,
+                         self.flags.class_dim).to(self.flags.device)
+        logvar = torch.zeros(num_samples,
+                             self.flags.class_dim).to(self.flags.device)
+        return Distr(mu, logvar).reparameterize()
 
     def cond_generation(self, joint_latent: JointLatents, num_samples=None) -> Mapping[str, Mapping[str, Tensor]]:
         if num_samples is None:
@@ -183,6 +186,11 @@ class BaseMMVAE(ABC, nn.Module):
             content_rep = joint_latent.get_subset_embedding(key)
             latents = ReparamLatent(content=content_rep, style=style_latents)
             cond_gen_samples[key] = self.generate_from_latents(latents)
+
+        joint_embedding = joint_latent.get_joint_embeddings()
+        joint_latents = ReparamLatent(content=joint_embedding, style=style_latents)
+        cond_gen_samples['joint'] = self.generate_from_latents(joint_latents)
+
         return cond_gen_samples
 
     def cond_generation_2a(self, latent_distribution_pairs, num_samples=None):
@@ -289,5 +297,3 @@ class BaseMMVAE(ABC, nn.Module):
                 state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}", map_location=self.flags.device))
             mod.decoder.load_state_dict(
                 state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
-
-

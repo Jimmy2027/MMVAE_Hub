@@ -36,7 +36,7 @@ if __name__ == '__main__':
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()
-            flags_setup = FlagsSetup(get_config_path(flags))
+            flags_setup = FlagsSetup(get_config_path(dataset = 'polymnist',flags = flags))
             flags = flags_setup.setup(flags, additional_args=sp)
             with norby(f'Starting Experiment {flags.experiment_uid}.', f'Experiment {flags.experiment_uid} finished.'):
                 mst = PolymnistExperiment(flags)

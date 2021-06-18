@@ -19,6 +19,7 @@ from mmvae_hub.evaluation.eval_metrics.representation import train_clf_lr_all_su
 from mmvae_hub.evaluation.eval_metrics.sample_quality import calc_prd_score
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.hyperopt.hyperopt_metrics import get_hyperopt_score
+from mmvae_hub.networks.FlowVaes import FlowVAE
 from mmvae_hub.utils.BaseTBLogger import BaseTBLogger
 from mmvae_hub.utils.metrics.average_meters import *
 from mmvae_hub.utils.plotting.plotting import generate_plots
@@ -160,7 +161,7 @@ class BaseTrainer:
                     # test linear classifiers
                     # methods where the flow is applied on each modality don't have a q0.
                     lr_eval_q0 = test_clf_lr_all_subsets(clf_lr_q0, self.exp, which_lr='q0') \
-                        if not isinstance(model, JointFromFlowVAE) else None
+                        if not isinstance(model, FlowOfEncModsVAE) else None
                     lr_eval_zk = test_clf_lr_all_subsets(clf_lr_zk, self.exp, which_lr='zk') \
                         if isinstance(model, FlowVAE) else None
 

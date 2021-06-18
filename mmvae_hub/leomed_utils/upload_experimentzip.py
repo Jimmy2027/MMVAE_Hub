@@ -11,7 +11,7 @@ from pathlib import Path
 import ppb
 import torch
 import typer
-
+from norby import send_msg
 from mmvae_hub import log
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -27,12 +27,15 @@ def upload_one(exp_path: Path):
     """
     is_zip = exp_path.suffix == '.zip'
     with tempfile.TemporaryDirectory() as tmpdirname:
+        tmpdir = Path(tmpdirname) / exp_path.stem
+        tmpdir.mkdir()
+
         if is_zip:
             # unpack zip into tmpdir
-            log.info(f'Unpacking {exp_path} to {tmpdirname}.')
+            log.info(f'Unpacking {exp_path} to {tmpdir}.')
             with zipfile.ZipFile(exp_path) as z:
-                z.extractall(tmpdirname)
-            exp_dir = Path(tmpdirname)
+                z.extractall(tmpdir)
+            exp_dir = Path(tmpdir)
         else:
             exp_dir = exp_path
 
@@ -68,7 +71,7 @@ def upload_one(exp_path: Path):
 
         db.upload_tensorbardlogs(exp_dir / 'logs')
 
-        norby.send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
+        send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
                        f'found here: {expvis_url}')
 
     # delete exp_path

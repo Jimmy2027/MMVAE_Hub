@@ -34,6 +34,7 @@ def get_latent_samples(flags, latents, n_imp_samples, mod_names=None):
     l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
     l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
     c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
+
     styles = {}
     c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
 

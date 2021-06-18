@@ -37,6 +37,8 @@ class MimicText(BaseModality):
 
         self.wordidx2word = wordidx2word
 
+        self.clf = self.get_clf()
+
     def save_data(self, exp, d, fn, args):
         write_samples_text_to_file(self.tensor_to_text(exp, d.unsqueeze(0)), fn)
 
@@ -47,13 +49,14 @@ class MimicText(BaseModality):
         target = torch.nn.functional.one_hot(target.to(torch.int64), num_classes=self.flags.vocab_size)
         return BaseModality.calc_log_prob(out_dist, target, norm_value)
 
-    def set_clf(self):
-        model_clf = ClfText(self.flags, self.labels)
-        clf_path = get_clf_path(self.flags.dir_clf,
-                                self.flags.clf_save_m3 + f'vocabsize_{self.flags.vocab_size}{"_bin_label" if self.flags.binary_labels else ""}')
+    def get_clf(self):
+        if self.flags.use_clf:
+            model_clf = ClfText(self.flags, self.labels)
+            clf_path = get_clf_path(self.flags.dir_clf,
+                                    self.flags.clf_save_m3 + f'vocabsize_{self.flags.vocab_size}{"_bin_label" if self.flags.binary_labels else ""}')
 
-        model_clf.load_state_dict(torch.load(clf_path, map_location=self.flags.device))
-        return model_clf.to(self.flags.device)
+            model_clf.load_state_dict(torch.load(clf_path, map_location=self.flags.device))
+            return model_clf.to(self.flags.device)
 
     def seq2text(self, seq: Iterable[int]) -> List[str]:
         """

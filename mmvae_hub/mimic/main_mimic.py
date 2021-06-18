@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     flags = parser.parse_args()
     flags.dataset = 'mimic'
-    flags_setup = MimicFlagsSetup(get_config_path(flags= flags))
+    flags_setup = MimicFlagsSetup(get_config_path(flags=flags))
     flags = flags_setup.setup(flags)
 
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',

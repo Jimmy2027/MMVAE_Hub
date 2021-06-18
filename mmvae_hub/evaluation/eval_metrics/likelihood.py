@@ -19,7 +19,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     mod_weights = exp.style_weights
     mods = exp.modalities
 
-    s_dist = latents.subsets[subset_key]
+    s_dist = latents.get_q0(subset_key)
     n_total_samples = batch[list(batch)[0]].shape[0] * num_imp_samples
 
     if flags.factorized_representation:

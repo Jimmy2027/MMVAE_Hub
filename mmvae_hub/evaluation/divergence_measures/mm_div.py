@@ -93,8 +93,15 @@ class FoJMMDiv(FlowVAEMMDiv):
         super().__init__()
 
 
-class JfFMMDiv(FlowVAEMMDiv):
-    """"JointFromFlowMMDiv: Class of MMDivs where for methods where the flow is applied on each modality."""
+class FoSMMDiv(FlowVAEMMDiv):
+    """"FlowOfJointMMDiv: Class of MMDivs where for methods where the flow is applied on each subset."""
+
+    def __init__(self):
+        super().__init__()
+
+
+class FoEncModsMMDiv(FlowVAEMMDiv):
+    """"JointFromFlowMMDiv: Class of MMDivs where for methods where the flow is applied on each encoded modality."""
 
     def __init__(self):
         super().__init__()
@@ -112,7 +119,7 @@ class JfFMMDiv(FlowVAEMMDiv):
 
         return klds, joint_div
 
-    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetFoS]):
         return {
             mod_str: self.calc_kl_divergence(distr0=subset.q0)
             for mod_str, subset in latent_subsets.items()
@@ -216,23 +223,36 @@ class JSDMMDiv(MixtureMMDiv, POEMMDiv):
         return [mu_poe, logvar_poe]
 
 
-class PoPEMMDiv(JfFMMDiv, POEMMDiv):
+class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
+    def __init__(self):
+        super().__init__()
+
+
+class FoMoPMMDiv(FoSMMDiv, JointElbowMMDiv):
+    """Planar Flow of Mixture of product of experts multi-modal divergence"""
+
+    def __init__(self):
+        FoSMMDiv.__init__(self)
+        JointElbowMMDiv.__init__(self)
+
+
+class PoPEMMDiv(FoEncModsMMDiv, POEMMDiv):
     """Planar Flow of Mixture multi-modal divergence"""
 
     def __init__(self):
-        JfFMMDiv.__init__(self)
+        FoEncModsMMDiv.__init__(self)
         POEMMDiv.__init__(self)
 
 
-class PfomMMDiv(JfFMMDiv, MixtureMMDiv):
+class PfomMMDiv(FoEncModsMMDiv, MixtureMMDiv):
     """Planar Flow of Mixture multi-modal divergence"""
 
     def __init__(self):
-        JfFMMDiv.__init__(self)
+        FoEncModsMMDiv.__init__(self)
         MixtureMMDiv.__init__(self)
 
 
-class PlanarMixtureMMDiv(JfFMMDiv, MixtureMMDiv):
+class PlanarMixtureMMDiv(FoEncModsMMDiv, MixtureMMDiv):
     def __init__(self):
         super().__init__()
 
@@ -281,7 +301,8 @@ class PlanarMixtureMMDiv(JfFMMDiv, MixtureMMDiv):
 
 class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
     def __init__(self):
-        super().__init__()
+        MixtureMMDiv.__init__(self)
+        POEMMDiv.__init__(self)
 
 
 class FoMFoPMMDiv(FlowVAEMMDiv):
@@ -312,12 +333,11 @@ class FoMFoPMMDiv(FlowVAEMMDiv):
 
         return klds, joint_div
 
-    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetFoS]):
         return {
             mod_str: self.calc_kl_divergence(distr0=subset.q0) - subset.log_det_j
             for mod_str, subset in latent_subsets.items()
         }
-
 
     def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
         # calculate divergences of the q0 distributions
@@ -331,7 +351,7 @@ class FoMFoPMMDiv(FlowVAEMMDiv):
 
         return klds, joint_div
 
-    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetPFoM]):
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, SubsetFoS]):
         return {
             mod_str: self.calc_kl_divergence(distr0=subset.q0)
             for mod_str, subset in latent_subsets.items()

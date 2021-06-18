@@ -5,7 +5,7 @@ import typing
 import numpy as np
 
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.networks.FlowVaes import FlowVAE, JointFromFlowVAE, FlowOfJointVAE, FoMFoP
+from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP, FoMoP
 from mmvae_hub.utils.Dataclasses import *
 
 
@@ -115,21 +115,35 @@ class AverageMeterJointLatents(AverageMeterDict):
         self.model = model
         self.vals = None
 
-    def update(self, val: typing.Union[JointLatents, JointLatentsPlanarMixture]):
-        if not self.vals:
-            init_val = [] if isinstance(self.model, FlowVAE) else {'mu': [], 'logvar': []}
-            self.vals = {k: init_val for k in list(val.subsets)}
-            self.vals['joint'] = init_val
+    def update(self, val: typing.Union[JointLatents, JointLatentsFoEM]):
+        """Need to differentiate between 4 types of methods.
+        - no flows
+        - methods where the flow is applied on the encoding of each modality
+        - methods where the flow is applied on each subset
+        - methods where the flow is applied on the joint distribution
 
-        if isinstance(self.model, JointFromFlowVAE):
+        """
+        if not self.vals:
+            init_val = [] if isinstance(self.model, (FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP)) else {'mu': [],
+                                                                                                      'logvar': []}
+            self.vals = {k: init_val for k in list(val.subsets)}
+            self.vals['joint'] = [] if isinstance(self.model, FoMoP) else init_val
+
+        if isinstance(self.model, FlowOfEncModsVAE):
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key].append(subset.mean().item())
             self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
 
-        elif isinstance(self.model, (FlowOfJointVAE, FoMFoP)):
+        elif isinstance(self.model, (FlowOfSubsetsVAE, FoMFoP)):
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key].append(subset.zk.mean().item())
             self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
+
+        elif isinstance(self.model, FoMoP):
+            for subset_key, subset in val.subsets.items():
+                self.vals[subset_key]['mu'].append(subset.mu.mean().item())
+                self.vals[subset_key]['logvar'].append(subset.logvar.mean().item())
+            self.vals['joint'].append(val.joint_embedding.zk.mean().item())
 
         else:
             for subset_key, subset in val.subsets.items():
@@ -139,8 +153,17 @@ class AverageMeterJointLatents(AverageMeterDict):
             self.vals['joint']['logvar'].append(val.joint_distr.logvar.mean().item())
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
-        if isinstance(self.model, FlowVAE):
+        if isinstance(self.model, (FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP)):
             return {k: np.mean(v) for k, v in self.vals.items()}
+
+        elif isinstance(self.model, FoMoP):
+            results = {}
+            for k, v in self.vals.items():
+                if k == 'joint':
+                    results[k] = np.mean(v)
+                else:
+                    results[k] = {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])}
+
         else:
             return {mod_str: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for mod_str, v in
                     self.vals.items()}
