@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     flags = parser.parse_args()
     flags.dataset = 'polymnist'
-    flags_setup = FlagsSetup(get_config_path(flags))
+    flags_setup = FlagsSetup(get_config_path(flags=flags))
     flags = flags_setup.setup(flags)
 
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
