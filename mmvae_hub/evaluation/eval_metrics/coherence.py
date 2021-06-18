@@ -153,8 +153,8 @@ def init_gen_perf(labels, subsets, mods) -> typing.Mapping[str, dict]:
             'random': {k: [].copy() for k in labels}}
 
 
-def calc_coherence_random_gen(exp, mm_vae, iteration: int, gen_perf: typing.Mapping[str, dict], batch_d: dict) -> \
-        typing.Mapping[str, dict]:
+def calc_coherence_random_gen(exp, mm_vae, iteration: int, rand_coherences: Mapping[str, typing.List], batch_d: dict) -> \
+        Mapping[str, typing.List]:
     args = exp.flags
     # generating random samples
     rand_gen = mm_vae.module.generate() if args.distributed else mm_vae.generate()
@@ -162,19 +162,20 @@ def calc_coherence_random_gen(exp, mm_vae, iteration: int, gen_perf: typing.Mapp
     # classifying generated examples
     coherence_random = calculate_coherence(exp, rand_gen)
     for j, l_key in enumerate(exp.labels):
-        gen_perf['random'][l_key].append(coherence_random[l_key])
+        rand_coherences[l_key].append(coherence_random[l_key])
 
     if (exp.flags.batch_size * iteration) < exp.flags.num_samples_fid and args.save_figure:
         # saving generated samples to dir_fid
         save_generated_samples(exp, rand_gen, iteration, batch_d)
 
-    return gen_perf
+    return rand_coherences
 
 
-def eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, gen_perf, batch_labels):
+def eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, rand_coherences, batch_labels):
     """
     Computes the eval metric of the predicted classes.
     """
+    gen_perf = {'random': {}}
     gen_perf_cond = {}
     # compare the classification on the generated samples with the ground truth
     for l_idx, l_key in enumerate(exp.labels):
@@ -185,7 +186,7 @@ def eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, gen_per
                 perf = exp.eval_label(cond_gen_classified[s_key][m_key].cpu().data.numpy(), batch_labels, l_idx)
                 gen_perf_cond[l_key][s_key][m_key] = perf
 
-        eval_score = exp.mean_eval_metric(gen_perf['random'][l_key])
+        eval_score = exp.mean_eval_metric(rand_coherences[l_key])
         gen_perf['random'][l_key] = eval_score
 
     gen_perf['cond'] = gen_perf_cond
@@ -208,12 +209,11 @@ def test_generation(exp, dataset=None):
                           shuffle=True,
                           num_workers=exp.flags.dataloader_workers, drop_last=False)
 
-    batch_labels, gen_perf, cond_gen_classified = classify_generated_samples(args, d_loader, exp,
-                                                                             mm_vae,
-                                                                             mods, subsets)
+    batch_labels, rand_coherences, cond_gen_classified = classify_generated_samples(args, d_loader, exp,
+                                                                                    mm_vae,
+                                                                                    mods, subsets)
 
-    gen_perf['cond']: Mapping[str, Mapping[str, Mapping[str, float]]]
-    return eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, gen_perf, batch_labels)
+    return eval_classified_gen_samples(exp, subsets, mods, cond_gen_classified, rand_coherences, batch_labels)
 
 
 def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
@@ -222,7 +222,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     """
 
     labels = exp.labels
-    gen_perf = init_gen_perf(labels, subsets, mods)
+    rand_coherences = {k: [].copy() for k in labels}
 
     # all labels accumulated over batches:
     batch_labels = torch.Tensor()
@@ -235,7 +235,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         batch_d = dict_to_device(batch_d, exp.flags.device)
 
         # evaluating random generation
-        gen_perf = calc_coherence_random_gen(exp, mm_vae, iteration, gen_perf, batch_d)
+        rand_coherences = calc_coherence_random_gen(exp, mm_vae, iteration, rand_coherences, batch_d)
 
         # evaluating conditional generation
         # first generates the conditional gen_samples
@@ -252,7 +252,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
             if (exp.flags.batch_size * iteration) < exp.flags.num_samples_fid and exp.flags.save_figure:
                 save_generated_samples_singlegroup(exp, iteration, subset, cond_val)
 
-    return batch_labels, gen_perf, cond_gen_classified
+    return batch_labels, rand_coherences, cond_gen_classified
 
 
 def flatten_cond_gen_values(gen_eval: dict):
