@@ -44,4 +44,4 @@ for search_space in [base_search_spaces]:
 
         print(command)
         os.system(command)
-        time.sleep(10)
+        time.sleep(1)
