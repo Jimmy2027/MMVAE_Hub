@@ -10,6 +10,8 @@ for search_space in [base_search_spaces]:
 
     for params in ParameterGrid(search_space):
 
+        n_cores = 8
+
         flags = ''.join(
             f'--{k} {v} ' for k, v in params.items() if
             k not in ['n_gpus', 'gpu_mem', 'factorized_representation', 'use_clf']
@@ -23,14 +25,14 @@ for search_space in [base_search_spaces]:
         num_hours = int((params['end_epoch'] // 100) * 2) or 1
 
         # 100 epochs take about 5G of space
-        scratch_space = int((params['end_epoch'] // 100) * 5) // 8
+        scratch_space = int((params['end_epoch'] // 100) * 5) // n_cores or 1
 
         if 'optuna' in params and params['optuna']:
             python_file = 'hyperopt/HyperoptTrainer.py'
         else:
             python_file = 'polymnist/main_polymnist.py'
 
-        command = f'bsub -n 8 -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
+        command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
                   f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \
                   f'python {python_file} {flags}'
 
