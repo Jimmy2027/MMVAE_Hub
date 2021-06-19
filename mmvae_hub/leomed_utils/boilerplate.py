@@ -10,7 +10,7 @@ def compress_experiment_run_dir(flags) -> None:
     """
     Move zipped experiment_dir_run in TMPDIR to experiment_dir.
     """
-    dir_experiment = Path(json2dict(get_config_path())['dir_experiment']).expanduser()
+    dir_experiment = Path(json2dict(get_config_path(flags=flags))['dir_experiment']).expanduser()
     dir_experiment.mkdir(exist_ok=True)
 
     # zip dir_experiment_run
