@@ -32,7 +32,7 @@ for search_space in [base_search_spaces]:
         else:
             python_file = 'polymnist/main_polymnist.py'
 
-        command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem=1000,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
+        command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem=1500,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
                   f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \
                   f'python {python_file} {flags}'
 
