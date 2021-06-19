@@ -227,11 +227,12 @@ def update_flags_with_config(p, config_path: Path, additional_args: dict = None,
 
 
 def get_config_path(dataset: str = None, flags=None):
-
     dataset = dataset or flags.dataset
 
     if flags and flags.config_path:
         return flags.config_path
+
+    assert dataset, f'Dataset parameter must be given either through function input or through flags.'
 
     if os.path.exists('/cluster/home/klugh/'):
         return os.path.join(Path(os.path.dirname(mmvae_hub.__file__)).parent,
