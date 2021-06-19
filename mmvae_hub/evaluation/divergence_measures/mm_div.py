@@ -79,6 +79,24 @@ class BaseMMDiv:
         pass
 
 
+class PGfMMMDiv(BaseMMDiv):
+    def __init__(self):
+        super().__init__()
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets: Mapping[str, BaseModality], num_samples: int,
+                  joint_keys: Iterable[str]):
+        """Calculate the Kl divergences for all subsets and the joint latent distribution."""
+
+        latent_subsets = forward_results.joint_latents.subsets
+        klds = self.calc_subset_divergences(latent_subsets)
+
+        joint_div = klds['_'.join(joint_keys)]
+        return klds, joint_div
+
+    def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
+        pass
+
+
 class FlowVAEMMDiv(BaseMMDiv):
     """Class of MMDivs for methods that use flows."""
 

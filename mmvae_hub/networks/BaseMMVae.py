@@ -82,10 +82,13 @@ class BaseMMVAE(ABC, nn.Module):
 
         klds, joint_divergence = self.mm_div.calc_klds(forward_results, self.subsets,
                                                        num_samples=self.flags.batch_size,
+                                                       # joint_keys=forward_results.joint_latents.fusion_subsets_keys
+                                                       # joint_keys=forward_results.joint_latents.joint_distr.mod_strs
                                                        joint_keys=getattr(forward_results.joint_latents,
                                                                           [attr for attr in
                                                                            forward_results.joint_latents.__dict__ if
-                                                                           attr.startswith('joint_')][0]).mod_strs)
+                                                                           attr.startswith('joint_')][0]).mod_strs
+                                                       )
 
         log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
         beta_style = self.flags.beta_style

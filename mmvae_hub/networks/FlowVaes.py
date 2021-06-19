@@ -7,7 +7,8 @@ import FrEIA.modules as Fm
 import torch
 from torch import nn
 
-from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv, \
+    PGfMMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
@@ -402,3 +403,70 @@ class GfMVAE(FlowVAE, BaseMMVAE):
                 joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
 
         return JointLatentsFoEM(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+
+class PGfMVAE(BaseMMVAE):
+    """
+    Params Generalized f-Means VAE: class of methods where the means and logvars of all experts are fused with a
+    generalized f-mean.
+    """
+
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = PGfMMMDiv()
+
+        def subnet_fc(dims_in, dims_out):
+            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
+                                 nn.Linear(512, dims_out))
+
+        # a simple chain of operations is collected by ReversibleSequential
+        self.flow = Ff.SequenceINN(flags.class_dim)
+        for k in range(flags.num_flows):
+            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        # pass all experts through the flow
+        enc_mod_transformed = {mod_key: self.encode_expert(enc_mod.latents_class) for mod_key, enc_mod in
+                               enc_mods.items()}
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            if len(self.subsets[s_key]) == 1:
+                q_subset = enc_mods[s_key].latents_class
+            else:
+                q_subset = self.gfm(distrs=[enc_mod_transformed[mod.name] for mod in self.subsets[s_key]])
+            distr_subsets[s_key] = q_subset
+
+            if len(self.subsets[s_key]) == len(batch_mods):
+                joint_distr = q_subset
+                fusion_subsets_keys = s_key.split('_')
+                joint_distr.mod_strs = fusion_subsets_keys
+
+        return JointLatents(fusion_subsets_keys, joint_distr=joint_distr, subsets=distr_subsets)
+
+    def gfm(self, distrs: typing.List[Distr]) -> Distr:
+        mus = torch.Tensor().to(self.flags.device)
+        logvars = torch.Tensor().to(self.flags.device)
+
+        for distr in distrs:
+            mus = torch.cat((mus, distr.mu.unsqueeze(dim=0)), dim=0)
+            logvars = torch.cat((logvars, distr.logvar.unsqueeze(dim=0)), dim=0)
+
+        mu_average = torch.mean(mus, dim=0)
+        logvar_average = torch.mean(logvars, dim=0)
+
+        mu_gfm, _ = self.flow(mu_average, rev=True)
+        logvar_gfm, _ = self.flow(logvar_average, rev=True)
+        return Distr(mu=mu_gfm, logvar=logvar_gfm)
+
+    def encode_expert(self, expert_distr: Distr) -> Distr:
+        mu_k, _ = self.flow(expert_distr.mu)
+        logvar_k, _ = self.flow(expert_distr.logvar)
+        return Distr(mu=mu_k, logvar=logvar_k)
