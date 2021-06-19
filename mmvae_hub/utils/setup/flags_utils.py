@@ -21,7 +21,7 @@ class BaseFlagsSetup:
         self.config_path = config_path
         self.parser = None
 
-    def setup(self, flags, testing=False, additional_args=None):
+    def setup(self, flags, testing=False, additional_args:dict=None):
         """
         leomed bool: if True, use TMPDIR as experiment_dir and dir_data
         Setup the flags:
