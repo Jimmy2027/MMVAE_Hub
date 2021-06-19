@@ -73,13 +73,14 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
-    # test_run_epochs_polymnist(method='fomop')
+    # test_run_epochs_polymnist(method='gfm')
     # test_run_epochs_polymnist(method='pfom')
     # test_run_epochs_polymnist(method='pope')
-    test_run_epochs_polymnist(method='poe')
+    # test_run_epochs_polymnist(method='pgfm')
+    # test_run_epochs_polymnist(method='poe')
     test_run_epochs_polymnist(method='joint_elbo')
-    test_run_epochs_polymnist(method='moe')
-    test_run_epochs_polymnist(method='planar_mixture')
+    # test_run_epochs_polymnist(method='moe')
+    # test_run_epochs_polymnist(method='planar_mixture')
 
     # test_run_epochs_polymnist(method='pope')
     # test_run_planar_mixture_no_flow()

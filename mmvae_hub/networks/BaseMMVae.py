@@ -10,7 +10,7 @@ from torch.distributions.distribution import Distribution
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
-from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
+from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection as moe
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import *
@@ -82,8 +82,6 @@ class BaseMMVAE(ABC, nn.Module):
 
         klds, joint_divergence = self.mm_div.calc_klds(forward_results, self.subsets,
                                                        num_samples=self.flags.batch_size,
-                                                       # joint_keys=forward_results.joint_latents.fusion_subsets_keys
-                                                       # joint_keys=forward_results.joint_latents.joint_distr.mod_strs
                                                        joint_keys=getattr(forward_results.joint_latents,
                                                                           [attr for attr in
                                                                            forward_results.joint_latents.__dict__ if
@@ -280,7 +278,7 @@ class BaseMMVAE(ABC, nn.Module):
             weights = self.weights
 
         weights = utils.reweight_weights(weights)
-        return mixture_component_selection(self.flags, mus, logvars, weights)
+        return moe(self.flags, mus, logvars, weights)
 
     def batch_to_device(self, batch):
         """Send the batch to device as Variable."""

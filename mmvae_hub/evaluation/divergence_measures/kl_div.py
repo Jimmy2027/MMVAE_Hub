@@ -32,8 +32,8 @@ def log_normal_standard(x, average=False, reduce=True, dim=None):
         return log_norm
 
 
-def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,
-                            norm_value=None) -> Tensor:
+def calc_kl_divergence_embedding(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,
+                                 norm_value=None) -> Tensor:
     """
     Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
     """
@@ -43,12 +43,9 @@ def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod:
 
     # ln p(z_k)  (not averaged)
     log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
-    # print('z0: ', (enc_mod.z0.mean().item(), enc_mod.z0.std().item()), 'z_k: ', (enc_mod.zk.mean().item(), enc_mod.zk.std().item()))
+
     # ln q(z_0)  (not averaged)
-    # fixme logvar (et du coup z0) gets huge and log_q_z0 contains nans.
     log_q_z0 = log_normal_diag(x=enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
-    # print('log_q_z0', log_q_z0.mean().item(), 'log_p_zk: ', log_p_zk.mean().item())
-    # log_q_z0 = torch.nan_to_num(log_q_z0)
 
     # N E_q0[ ln q(z_0) - ln p(z_k) ]
     diff = log_q_z0 - log_p_zk
@@ -60,13 +57,41 @@ def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod:
 
     # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
     KLD = (summed_logs - summed_ldj)
-    # print('summed_ldj: ', summed_ldj)
-    # print('KLD: ', KLD, '\n')
 
     if norm_value is not None:
         KLD = KLD / float(norm_value)
 
-    # assert KLD.cpu().item() >= 0
+    return KLD
+
+
+def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,
+                            norm_value=None) -> Tensor:
+    """
+    Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+    """
+
+    # get the mean and variance of z0
+    mu0, logvar0 = enc_mod.latents_class.mu, enc_mod.latents_class.logvar
+
+    # ln p(z_k)  (not averaged)
+    log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
+
+    # ln q(z_0)  (not averaged)
+    log_q_z0 = log_normal_diag(x=enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
+
+    # N E_q0[ ln q(z_0) - ln p(z_k) ]
+    diff = log_q_z0 - log_p_zk
+    # to minimize the divergence,
+    summed_logs = torch.sum(diff.abs())
+
+    # sum over batches
+    summed_ldj = torch.sum(enc_mod.log_det_j)
+
+    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+    KLD = (summed_logs - summed_ldj)
+
+    if norm_value is not None:
+        KLD = KLD / float(norm_value)
 
     return KLD
 

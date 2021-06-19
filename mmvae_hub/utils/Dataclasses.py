@@ -62,6 +62,11 @@ class EncModPFoM:
 
 
 @dataclass
+class EncModGfM:
+    zk: Tensor
+
+
+@dataclass
 class BaseEncMod:
     # latents have shape [batch_size, class_dim]
     latents_class: Distr

@@ -14,7 +14,7 @@ from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
 from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
+from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 from mmvae_hub.utils.utils import split_int_to_bins
 
 
@@ -306,7 +306,7 @@ class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
 
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
-            z_subset = self.mixture_component_selection(enc_mods, s_key)
+            z_subset = mixture_component_selection_embedding(enc_mods=enc_mods, s_key=s_key, flags=self.flags)
             distr_subsets[s_key] = z_subset
 
             if len(self.subsets[s_key]) == len(batch_mods):
@@ -330,44 +330,11 @@ class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
         # fuse enc_mods
         return (weights_subset * zk_subset).sum(dim=0)
 
-    def mixture_component_selection(self, enc_mods: Mapping[str, EncModPlanarMixture], s_key: str,
-                                    weight_joint: bool = True) -> Distr:
-        """For each element in batch select an expert from subset with equal probability."""
-        num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
-        mods = self.subsets[s_key]
-        # fuse the subset
-        zk_subset = torch.Tensor().to(self.flags.device)
 
-        if self.flags.weighted_mixture:
-            # define confidence of expert by the mean of zk. Sample experts with probability proportional to confidence.
-            confidences = [enc_mods[mod.name].zk.mean().abs() for mod in mods]
-            bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
-            if sum(bins) != num_samples:
-                bins[confidences.index(max(confidences))] += num_samples - sum(bins)
-        else:
-            # fill zk_subset with an equal amount of each expert
-            bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
-
-        # get enc_mods for subset
-        for chunk_size, mod in zip(bins, mods):
-            zk_subset = torch.cat(
-                (zk_subset, enc_mods[mod.name].zk[zk_subset.shape[0]:zk_subset.shape[0] + chunk_size]), dim=0)
-
-        assert zk_subset.shape == torch.Size([num_samples, self.flags.class_dim])
-
-        if weight_joint:
-            # normalize latents by number of modalities in subset
-            weights_subset = ((1 / float(len(mods))) * torch.ones_like(zk_subset).to(self.flags.device))
-
-            return (weights_subset * zk_subset)
-        else:
-            return zk_subset
-
-
-class GfMVAE(FlowVAE, BaseMMVAE):
+class GfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
-        FlowVAE.__init__(self)
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = PGfMMMDiv()
 
         def subnet_fc(dims_in, dims_out):
             return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
@@ -375,7 +342,7 @@ class GfMVAE(FlowVAE, BaseMMVAE):
 
         # a simple chain of operations is collected by ReversibleSequential
         self.flow = Ff.SequenceINN(flags.class_dim)
-        for k in range(8):
+        for k in range(flags.num_flows):
             self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
@@ -387,22 +354,22 @@ class GfMVAE(FlowVAE, BaseMMVAE):
         distr_subsets = {}
 
         # pass all experts through the flow
-        enc_mod_zks = {self.flow(distr.latents_class.reparameterize()) for _, distr in enc_mods.items()}
+        enc_mod_zks = {mod_key: self.encode_expert(enc_mod.latents_class) for mod_key, enc_mod in enc_mods.items()}
 
-        # concatenate mus and logvars for every modality in each subset
+        # concatenate zks for every modality in each subset
         for s_key in batch_subsets:
-            subset_zks = torch.Tensor().to(self.flags.device)
-            for mod in self.subsets[s_key]:
-                subset_zks = torch.cat((subset_zks, enc_mod_zks[mod]), dim=0)
-            z_subset_prime = torch.mean(subset_zks, dim=0)
-            z_subset = self.flow.reverse(z_subset_prime)
-
+            z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
+            z_subset, _ = self.flow(z_mixture, rev=True)
             distr_subsets[s_key] = z_subset
 
             if len(self.subsets[s_key]) == len(batch_mods):
                 joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
 
         return JointLatentsFoEM(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+    def encode_expert(self, expert_distr: Distr) -> EncModGfM:
+        zk, _ = self.flow(expert_distr.reparameterize())
+        return EncModGfM(zk=zk)
 
 
 class PGfMVAE(BaseMMVAE):
@@ -438,6 +405,7 @@ class PGfMVAE(BaseMMVAE):
 
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
+
             if len(self.subsets[s_key]) == 1:
                 q_subset = enc_mods[s_key].latents_class
             else:
