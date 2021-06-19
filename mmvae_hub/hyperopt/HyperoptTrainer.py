@@ -66,7 +66,7 @@ if __name__ == '__main__':
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
     #                             study_name=f"distributed-hyperopt-{flags.method}")
 
-    postgresql_storage_address = "postgresql://klugh@localhost/distributed_hyperopt"
+    postgresql_storage_address = "postgresql://klugh@ethsec-login-02:5433/distributed_hyperopt"
 
     study_name = f'distributed-{flags.method}'
     try:
