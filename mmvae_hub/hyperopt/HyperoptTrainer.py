@@ -11,8 +11,10 @@ from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 
 class HyperoptTrainer:
-    def __init__(self, flags):
+    def __init__(self, flags, flags_setup: FlagsSetup, dataset: str):
         self.flags = flags
+        self.flags_setup = flags_setup
+        self.dataset = dataset
 
     def hyperopt(self, trial):
         """
@@ -26,6 +28,7 @@ class HyperoptTrainer:
         with open('hyperopt_best_results.json', 'w') as jsonfile:
             json.dump(study.best_params, jsonfile)
             """
+        self.flags = self.flags_setup.setup(self.flags, additional_args={'dataset': self.dataset})
 
         self.flags.optuna = trial
         self.flags.norby = False
@@ -36,12 +39,13 @@ class HyperoptTrainer:
         self.flags.calc_prd = False
 
         # do this to store values such that they can be retrieved in the database
-        self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
+        # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
 
         self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-1, log=True)
         self.flags.class_dim = trial.suggest_categorical("class_dim", [64, 128, 256, 512])
         # self.flags.num_flows = trial.suggest_int("num_flows", low=0, high=20, step=1)
         self.flags.beta = trial.suggest_float("beta", 0.01, 2.0)
+
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
 
@@ -82,8 +86,7 @@ if __name__ == '__main__':
 
     flags.dir_experiment = Path(flags.dir_experiment) / 'optuna'
     flags_setup = FlagsSetup(get_config_path(dataset=dataset, flags=flags))
-    flags = flags_setup.setup(flags, additional_args={'dataset': dataset})
-    trainer = HyperoptTrainer(flags)
+    trainer = HyperoptTrainer(flags, flags_setup, dataset=dataset)
     study.optimize(trainer.hyperopt, n_trials=100, gc_after_trial=True)
     print("Best trial:")
     print(study.best_params)
