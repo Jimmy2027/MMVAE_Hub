@@ -1,9 +1,9 @@
 import json
+import shutil
 from pathlib import Path
 
 import optuna
 
-from mmvae_hub.leomed_utils.boilerplate import compress_experiment_run_dir
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import parser, FlagsSetup
@@ -59,8 +59,8 @@ class HyperoptTrainer:
 def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
     test_results = trainer.run_epochs()
 
-    if trainer.flags.leomed:
-        compress_experiment_run_dir(flags)
+    # clean experiment run dir
+    shutil.rmtree(flags.dir_experiment_run)
 
     return test_results.hyperopt_score
 
