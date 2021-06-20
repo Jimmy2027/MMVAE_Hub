@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     postgresql_storage_address = "postgresql://klugh@ethsec-login-02:5433/distributed_hyperopt"
 
-    study_name = f'distributed-{flags.method}'
+    study_name = f'hyperopt-{method}'
     try:
         study = optuna.load_study(study_name=study_name,
                                   storage=postgresql_storage_address)
