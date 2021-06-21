@@ -46,26 +46,26 @@ class HyperoptTrainer:
         # do this to store values such that they can be retrieved in the database
         # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
 
-        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-1, log=True)
-        self.flags.class_dim = trial.suggest_categorical("class_dim", [64, 128, 256, 512])
+        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-2, log=True)
+        self.flags.class_dim = trial.suggest_categorical("class_dim", [32, 64, 128, 256, 512, 640])
         # self.flags.num_flows = trial.suggest_int("num_flows", low=0, high=20, step=1)
         self.flags.beta = trial.suggest_float("beta", 0.01, 2.0)
 
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
 
-        # try:
-        return run_hyperopt_epochs(PolymnistTrainer(mst))
-        # except Exception as e:
-        #     print(e)
-        #     return 0
+        try:
+            return run_hyperopt_epochs(PolymnistTrainer(mst))
+        except Exception as e:
+            log.info(f'Experiment failed with: {e}')
+            return 0
 
 
 def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
     test_results = trainer.run_epochs()
 
     # clean experiment run dir
-    shutil.rmtree(flags.dir_experiment_run)
+    shutil.rmtree(trainer.flags.dir_experiment_run)
     log.info(f'Finished hyperopt run with score: {test_results.hyperopt_score}.')
     return test_results.hyperopt_score
 
