@@ -96,9 +96,9 @@ class BaseExperiment(ABC):
                     params.append(p)
 
         # add flow parameters from mmvae if present
-        if self.flags.amortized_flow:
-            params.extend(list(self.mm_vae.parameters()))
-        elif hasattr(self.mm_vae, 'flow'):
+        params.extend(list(self.mm_vae.parameters()))
+
+        if hasattr(self.mm_vae, 'flow'):
             for p in ['u', 'w', 'b']:
                 if hasattr(self.mm_vae.flow, p):
                     params.append(getattr(self.mm_vae.flow, p))
