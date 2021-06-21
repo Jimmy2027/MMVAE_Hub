@@ -4,6 +4,7 @@ from pathlib import Path
 
 import optuna
 
+from mmvae_hub import log
 from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import parser, FlagsSetup
@@ -34,9 +35,13 @@ class HyperoptTrainer:
         self.flags.norby = False
         self.flags.use_db = False
 
-        self.flags.end_epoch = 100
+        self.flags.end_epoch = 150
         # self.flags.end_epoch = 1
-        self.flags.calc_prd = False
+        self.flags.calc_prd = True
+
+        eval_freq = 50
+        self.flags.eval_freq_fid = eval_freq
+        self.flags.eval_freq = eval_freq
 
         # do this to store values such that they can be retrieved in the database
         # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
@@ -49,11 +54,11 @@ class HyperoptTrainer:
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
 
-        try:
-            return run_hyperopt_epochs(PolymnistTrainer(mst))
-        except Exception as e:
-            print(e)
-            return 0
+        # try:
+        return run_hyperopt_epochs(PolymnistTrainer(mst))
+        # except Exception as e:
+        #     print(e)
+        #     return 0
 
 
 def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
@@ -61,7 +66,7 @@ def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
 
     # clean experiment run dir
     shutil.rmtree(flags.dir_experiment_run)
-
+    log.info(f'Finished hyperopt run with score: {test_results.hyperopt_score}.')
     return test_results.hyperopt_score
 
 
