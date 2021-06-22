@@ -15,7 +15,7 @@ def get_hyperopt_score(test_results: BaseTestResults, method: str, use_zk: bool)
     else:
         score_lr_eval = np.mean([score['accuracy'] for _, score in test_results.lr_eval_q0.items()])
 
-    score = score_lr_eval + score_gen_eval + score_fid
+    score = score_lr_eval / 0.75 + score_gen_eval / 0.55 + score_fid / 0.1
     log.info(f'Current hyperopt score is {score}. score_lr_eval: {score_lr_eval}, score_gen_eval: {score_gen_eval}, '
              f'score_fid: {score_fid}')
     return score

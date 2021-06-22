@@ -1,21 +1,30 @@
 # -*- coding: utf-8 -*-
+import functools
 import json
+import operator
 import shutil
 import tempfile
 from pathlib import Path
 
 import nbformat
+import numpy as np
 import pandas as pd
+from IPython.display import display, HTML
 from matplotlib import pyplot as plt
 from nbconvert import HTMLExporter, PDFExporter
 from nbconvert.preprocessors import ExecutePreprocessor
+from pandas import DataFrame
 
 from mmvae_hub import log
+from mmvae_hub.networks.BaseMMVae import BaseMMVAE
+from mmvae_hub.networks.FlowVaes import FlowVAE, FoMoP
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.MongoDB import MongoDatabase
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
+
+FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop']
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
@@ -334,7 +343,7 @@ def make_experiments_dataframe(experiments):
                 last_epoch = str(max_epoch)
             last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
 
-            if method in ['planar_mixture', 'pfom']:
+            if method not in ['joint_elbo', 'poe', 'moe']:
                 exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
 
             # for backwards compatibility:
@@ -344,53 +353,49 @@ def make_experiments_dataframe(experiments):
             if (last_epoch_results['lr_eval_q0'] or last_epoch_results['lr_eval_zk']) \
                     and last_epoch_results['gen_eval']:
                 results_dict = {**exp['flags'], 'end_epoch': last_epoch, '_id': exp['_id']}
-                try:
-                    if 'expvis_url' in exp:
-                        results_dict['expvis_url'] = exp['expvis_url']
+                # try:
+                if 'expvis_url' in exp:
+                    results_dict['expvis_url'] = exp['expvis_url']
 
-                    scores = []
-                    scores_lr_q0 = []
-                    scores_lr_zk = []
+                if method == 'fomop':
+                    scores, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
+                elif method in FLOW_METHODS:
+                    scores, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
+                else:
+                    scores, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results)
 
-                    # get lr_eval results
-                    for key, val in last_epoch_results['lr_eval_q0'].items():
-                        results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
-                        scores_lr_q0.append(val['accuracy'])
-                        if method not in ['planar_mixture', 'pfom']:
-                            scores.append(val['accuracy'])
+                scores_gen = []
+                # get gen_eval results
+                for key, val in last_epoch_results['gen_eval'].items():
+                    key = key.replace('digit_', '')
+                    results_dict[f'gen_eval_{key}'] = val
+                    scores.append(val)
+                    scores_gen.append(val)
 
-                    if method in ['planar_mixture', 'pfom', 'pope']:
-                        for key, val in last_epoch_results['lr_eval_zk'].items():
-                            results_dict[f'lr_eval_zk_{key}'] = val['accuracy']
-                            scores.append(val['accuracy'])
-                            scores_lr_zk.append(val['accuracy'])
-
-                    scores_gen = []
-                    # get gen_eval results
-                    for key, val in last_epoch_results['gen_eval'].items():
-                        key = key.replace('digit_', '')
-                        results_dict[f'gen_eval_{key}'] = val
+                scores_prd = []
+                # get prd scores
+                if 'prd_scores' in last_epoch_results and last_epoch_results['prd_scores']:
+                    for key, val in last_epoch_results['prd_scores'].items():
+                        results_dict[f'prd_score_{key}'] = val
+                        scores_prd.append(val)
                         scores.append(val)
-                        scores_gen.append(val)
 
-                    scores_prd = []
-                    # get prd scores
-                    if 'prd_scores' in last_epoch_results and last_epoch_results['prd_scores']:
-                        for key, val in last_epoch_results['prd_scores'].items():
-                            results_dict[f'prd_score_{key}'] = val
-                            scores_prd.append(val)
+                # results_dict['score'] = np.mean(scores)
 
-                    results_dict['score'] = sum(scores) / results_dict['num_mods']
-                    results_dict['score_lr_q0'] = sum(scores_lr_q0) if scores_lr_q0[0] is not None else None
-                    results_dict['score_lr_zk'] = sum(scores_lr_zk) if scores_lr_zk else None
-                    results_dict['score_lr'] = results_dict['score_lr_zk'] if method in ['planar_mixture', 'pfom'] \
-                        else results_dict['score_lr_q0']
-                    results_dict['score_gen'] = sum(scores_gen)
-                    results_dict['score_prd'] = sum(scores_prd)
-                    df = df.append(results_dict, ignore_index=True)
+                results_dict['score_lr_q0'] = score_lr_q0
+                results_dict['score_lr_zk'] = score_lr_zk
+                results_dict['score_lr'] = results_dict['score_lr_zk'] if method in ['planar_mixture', 'pfom'] \
+                    else results_dict['score_lr_q0']
+                results_dict['score_gen'] = np.mean(scores_gen)
+                results_dict['score_prd'] = np.mean(scores_prd)
 
-                except Exception as e:
-                    print(e)
+                results_dict['score'] = (score_lr_q0 / 0.75) + (results_dict['score_gen'] / 0.55) + (
+                        results_dict['score_prd'] / 0.1)
+
+                df = df.append(results_dict, ignore_index=True)
+
+                # except Exception as e:
+                #     print(e)
 
         else:
             print(f'skipping experiment {exp["_id"]}')
@@ -409,12 +414,26 @@ def get_experiment(flags):
         raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')
 
 
+def display_df(df: DataFrame) -> None:
+    display(HTML(df.to_html()))
+
+
+def display_base_params(df, methods: list, show_cols: list):
+    methods_selection = functools.reduce(operator.or_, (df['method'].str.startswith(method) for method in methods))
+
+    display_df(df.loc[(methods_selection) & (df['num_flows'] == 5) & (
+            df['end_epoch'].astype(int) == 99) & (df['beta'] == 1) & (df['amortized_flow'] == 0) & (
+                              df['class_dim'] == 256) & (df['weighted_mixture'] == 0) & (
+                              df['initial_learning_rate'].astype(float) == 0.0005)][[*show_cols]].sort_values(
+        by=['score'], ascending=False))
+
+
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_pope_2021_06_08_20_52_59_710466'
+    # experiment_uid = 'polymnist_fomop_2021_06_20_15_52_29_513900'
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
-    for id in ['polymnist_fomfop_2021_06_13_20_22_54_166444']:
+    for id in ['polymnist_fomop_2021_06_20_15_52_29_513900']:
         upload_notebook_to_db(id)

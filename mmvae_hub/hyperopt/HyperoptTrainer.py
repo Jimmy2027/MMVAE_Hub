@@ -46,10 +46,10 @@ class HyperoptTrainer:
         # do this to store values such that they can be retrieved in the database
         # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
 
-        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-2, log=True)
+        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-3, log=True)
         self.flags.class_dim = trial.suggest_categorical("class_dim", [32, 64, 128, 256, 512, 640])
         # self.flags.num_flows = trial.suggest_int("num_flows", low=0, high=20, step=1)
-        self.flags.beta = trial.suggest_float("beta", 0.01, 2.0)
+        self.flags.beta = trial.suggest_float("beta", 0.1, 2.5)
 
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     postgresql_storage_address = "postgresql://klugh@ethsec-login-02:5433/distributed_hyperopt"
 
-    study_name = f'hyperopt-{method}'
+    study_name = f'hyperopt-{method}-new_score'
     try:
         study = optuna.load_study(study_name=study_name,
                                   storage=postgresql_storage_address)
