@@ -39,7 +39,7 @@ class HyperoptTrainer:
         # self.flags.end_epoch = 1
         self.flags.calc_prd = True
 
-        eval_freq = 50
+        eval_freq = 150
         self.flags.eval_freq_fid = eval_freq
         self.flags.eval_freq = eval_freq
 
@@ -49,7 +49,7 @@ class HyperoptTrainer:
         self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-3, log=True)
         self.flags.class_dim = trial.suggest_categorical("class_dim", [32, 64, 128, 256, 512, 640])
         # self.flags.num_flows = trial.suggest_int("num_flows", low=0, high=20, step=1)
-        self.flags.beta = trial.suggest_float("beta", 0.1, 2.5)
+        self.flags.beta = trial.suggest_float("beta", 0.3, 2.5)
 
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
@@ -75,13 +75,15 @@ if __name__ == '__main__':
     method = 'joint_elbo'
     flags = parser.parse_args()
 
+    study_name = f'hyperopt-{method}-lower-lr_score_weight'
+
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
     #                             study_name=f"distributed-hyperopt-{flags.method}")
 
     postgresql_storage_address = "postgresql://klugh@ethsec-login-02:5433/distributed_hyperopt"
 
-    study_name = f'hyperopt-{method}-new_score'
+
     try:
         study = optuna.load_study(study_name=study_name,
                                   storage=postgresql_storage_address)

@@ -66,8 +66,8 @@ class BaseTrainer:
                                                                     time.time() - end)
 
             if self.flags.optuna and ((epoch + 1) % self.flags.eval_freq == 0 or (epoch + 1) == self.flags.end_epoch):
-                hyperopt_score = get_hyperopt_score(test_results=test_results, method=self.flags.method,
-                                                    use_zk=isinstance(self.exp.mm_vae, FlowVAE))
+                self.flags.optuna, hyperopt_score = get_hyperopt_score(test_results=test_results, method=self.flags.method,
+                                                    use_zk=isinstance(self.exp.mm_vae, FlowVAE), optuna_trial=self.flags.optuna)
                 self.flags.optuna.report(hyperopt_score, epoch)
                 # Handle pruning based on the intermediate value.
                 if self.flags.optuna.should_prune():
