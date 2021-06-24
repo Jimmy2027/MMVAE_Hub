@@ -9,8 +9,8 @@ def get_hyperopt_score(test_results: BaseTestResults, method: str, use_zk: bool,
     Sum over all metrics to get a score for the optimization of hyperparameters.
     """
     score_gen_eval = np.mean([score for _, score in test_results.gen_eval.items()])
-    # score_prd = np.mean([score for _, score in test_results.prd_scores.items()])
-    score_prd = 0.5
+    score_prd = np.mean([score for _, score in test_results.prd_scores.items()])
+
     if use_zk:
         score_lr_eval = np.mean([score['accuracy'] for _, score in test_results.lr_eval_zk.items()])
     else:
