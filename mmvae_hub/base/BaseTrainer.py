@@ -104,7 +104,7 @@ class BaseTrainer:
                 'log_probs': get_items_from_dict(log_probs),
                 'joint_divergence': results['joint_divergence'].item(),
                 'latents': forward_results.enc_mods,
-                'joint_latents': forward_results.joint_latents
+                # 'joint_latents': forward_results.joint_latents
             }
 
             for key, value in batch_results.items():
@@ -135,7 +135,7 @@ class BaseTrainer:
                     'log_probs': get_items_from_dict(log_probs),
                     'joint_divergence': results['joint_divergence'].item(),
                     'latents': forward_results.enc_mods,
-                    'joint_latents': forward_results.joint_latents
+                    # 'joint_latents': forward_results.joint_latents
                 }
 
                 for key in batch_results:
@@ -203,8 +203,8 @@ class BaseTrainer:
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
             'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
-            'joint_latents': AverageMeterJointLatents(model=self.exp.mm_vae, name='joint_latents',
-                                                      factorized_representation=self.flags.factorized_representation)
+            # 'joint_latents': AverageMeterJointLatents(model=self.exp.mm_vae, name='joint_latents',
+            #                                           factorized_representation=self.flags.factorized_representation)
         }
         return d_loader, training_steps, average_meters
 
