@@ -146,13 +146,10 @@ class MimicText(Dataset):
         self.labels = filter_labels(self.labels, which_labels=self.str_labels,
                                     undersample_dataset=args.undersample_dataset, split=split)
 
-        if self.args.text_encoding == 'char':
-            self.args.alphabet = get_alphabet()
-            args.num_features = len(self.args.alphabet)
-        else:
-            # if word_encoding == word, need dataset for report_findings that contains the encodings.
-            self.report_findings_dataset = self.get_report_findings_dataset(dir_dataset)
-            self.args.vocab_size = self.report_findings_dataset.vocab_size
+
+        # need dataset for report_findings that contains the encodings.
+        self.report_findings_dataset = self.get_report_findings_dataset(dir_dataset)
+        self.args.vocab_size = self.report_findings_dataset.vocab_size
 
         if self.args.text_encoding == 'char':
             self.get_vec = self.get_char_text_vec

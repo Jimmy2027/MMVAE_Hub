@@ -159,7 +159,6 @@ def get_undersample_indices(labels_df: pd.DataFrame):
 def filter_labels(labels: pd.DataFrame, which_labels: List[str], undersample_dataset: bool, split: str):
     """
     which_labels: for which labels the class (-1) will be removed.
-    Need to remove all cases where the labels have 3 classes.
     The 3rd class (-1) represents "uncertain" and can be removed from the dataset.
     """
     indices = []
