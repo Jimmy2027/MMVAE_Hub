@@ -10,6 +10,9 @@ base_params = {
     "amortized_flow": [False]
 }
 
+base_search_spaces = [{'method': [method], **base_params} for method in
+                      ['poe', 'moe', 'joint_elbo', 'planar_mixture', 'pfom']]
+
 search_space_poe = {
     'method': ['poe'],
     **base_params
@@ -22,7 +25,11 @@ search_space_moe = {
 
 search_space_je = {
     'method': ['joint_elbo'],
-    **base_params
+    "num_mods": [3],
+    "end_epoch": [100],
+    'initial_learning_rate': 0.0009439,
+    'class_dim': 128,
+    'beta': 0.34
 }
 search_space_pm = {
     'method': ['planar_mixture'],
