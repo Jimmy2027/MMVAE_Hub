@@ -4,7 +4,8 @@ from abc import abstractmethod
 from torch import optim
 
 from mmvae_hub.networks.BaseMMVae import *
-from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, PGfMVAE, GfMVAE
+from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, PGfMVAE, GfMVAE, AfomMMVAE, \
+    EGfMVAE, GfMoPVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -67,6 +68,12 @@ class BaseExperiment(ABC):
             model = PGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'gfm':
             model = GfMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'afom':
+            model = AfomMMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'egfm':
+            model = EGfMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'gfmop':
+            model = GfMoPVAE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

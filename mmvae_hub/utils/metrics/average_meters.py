@@ -5,7 +5,7 @@ import typing
 import numpy as np
 
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP, FoMoP
+from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP, FoMoP, GfMVAE
 from mmvae_hub.utils.Dataclasses import *
 
 
@@ -125,7 +125,7 @@ class AverageMeterJointLatents(AverageMeterDict):
         """
         if not self.vals:
             init_val = [] if isinstance(self.model, (FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP)) else {'mu': [],
-                                                                                                      'logvar': []}
+                                                                                                        'logvar': []}
             self.vals = {k: init_val for k in list(val.subsets)}
             self.vals['joint'] = [] if isinstance(self.model, FoMoP) else init_val
 
@@ -145,6 +145,11 @@ class AverageMeterJointLatents(AverageMeterDict):
                 self.vals[subset_key]['logvar'].append(subset.logvar.mean().item())
             self.vals['joint'].append(val.joint_embedding.zk.mean().item())
 
+        elif isinstance(self.model, GfMVAE):
+            for subset_key, subset in val.subsets.items():
+                self.vals[subset_key]['mu'].append(subset.mu.mean().item())
+                self.vals[subset_key]['logvar'].append(subset.logvar.mean().item())
+            self.vals['joint'].append(val.joint_embedding.embedding.mean().item())
         else:
             for subset_key, subset in val.subsets.items():
                 self.vals[subset_key]['mu'].append(subset.mu.mean().item())

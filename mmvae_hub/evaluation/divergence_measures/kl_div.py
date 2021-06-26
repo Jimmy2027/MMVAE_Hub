@@ -1,7 +1,5 @@
 import math
 
-import torch
-
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights
 
@@ -32,36 +30,10 @@ def log_normal_standard(x, average=False, reduce=True, dim=None):
         return log_norm
 
 
-def calc_kl_divergence_embedding(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,
-                                 norm_value=None) -> Tensor:
-    """
-    Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
-    """
+def calc_divergence_embedding(z: Tensor):
+    log_p_zk = 0.5 * torch.sum(z ** 2, 1)
 
-    # get the mean and variance of z0
-    mu0, logvar0 = enc_mod.latents_class.mu, enc_mod.latents_class.logvar
-
-    # ln p(z_k)  (not averaged)
-    log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
-
-    # ln q(z_0)  (not averaged)
-    log_q_z0 = log_normal_diag(x=enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
-
-    # N E_q0[ ln q(z_0) - ln p(z_k) ]
-    diff = log_q_z0 - log_p_zk
-    # to minimize the divergence,
-    summed_logs = torch.sum(diff.abs())
-
-    # sum over batches
-    summed_ldj = torch.sum(enc_mod.log_det_j)
-
-    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
-    KLD = (summed_logs - summed_ldj)
-
-    if norm_value is not None:
-        KLD = KLD / float(norm_value)
-
-    return KLD
+    return log_p_zk.sum()
 
 
 def calc_kl_divergence_flow(distr0: Distr = None, distr1: Distr = None, enc_mod: EncModPlanarMixture = None,

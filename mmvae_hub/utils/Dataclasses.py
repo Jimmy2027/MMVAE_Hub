@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass
-from typing import Mapping, Optional, Iterable
+from typing import Mapping, Optional, Iterable, Union
 
+import torch
 from torch import Tensor
 from torch.autograd import Variable
 
@@ -94,6 +95,15 @@ class JointLatents:
     def get_joint_q0(self):
         return self.joint_distr.mu
 
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
+        joint_q0 = self.get_joint_q0().cpu()
+        data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+
+        return data_train
+
 
 @dataclass
 class JointEmbeddingFoEM:
@@ -105,6 +115,7 @@ class JointEmbeddingFoEM:
 class JointLatentsFoEM:
     """Joint Latens for flow of enc mods methods."""
     joint_embedding: JointEmbeddingFoEM
+
     subsets: Mapping[str, Tensor]
 
     def get_joint_embeddings(self):
@@ -122,6 +133,100 @@ class JointLatentsFoEM:
     def get_joint_zk(self):
         """Return the embedding of the subset after applying flows."""
         return self.joint_embedding.embedding
+
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            # get the latents after application of flows.
+            data_train['zk'][key] = torch.cat((data_train['zk'][key], self.get_zk(key).cpu()), 0)
+
+        joint_zk = self.get_joint_zk().cpu()
+        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+
+        return data_train
+
+
+@dataclass
+class JointLatentsGfM:
+    """Joint Latens for generalized f-means methods."""
+    joint_embedding: JointEmbeddingFoEM
+    subsets: Mapping[str, Union[Tensor, BaseEncMod]]
+
+    def get_joint_embeddings(self):
+        return self.joint_embedding.embedding
+
+    def get_subset_embedding(self, s_key: str):
+        if len(s_key.split('_')) == 1:
+            return self.subsets[s_key].latents_class.reparameterize()
+        else:
+            return self.subsets[s_key]
+
+    def get_q0(self, subset_key: str):
+        """Get the mean of the unimodal latents and the embeddings of the multimodal latents."""
+        if subset_key == 'joint':
+            return self.joint_embedding.embedding
+        elif len(subset_key.split('_')) == 1:
+            return self.subsets[subset_key].latents_class.mu
+        return self.subsets[subset_key]
+
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            if len(key.split('_')) == 1:
+                data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].latents_class.mu.cpu()), 0)
+            else:
+                data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].cpu()), 0)
+
+        data_train['q0']['joint'] = torch.cat(
+            (data_train['q0']['joint'], self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()), 0)
+
+        return data_train
+
+
+@dataclass
+class JointLatentsGfMoP(JointLatentsGfM):
+    subsets: Mapping[str, Distr]
+
+    def get_subset_embedding(self, s_key: str):
+        return self.subsets[s_key].reparameterize()
+
+    def get_q0(self, subset_key: str):
+        """Get the mean of the unimodal latents and the embeddings of the multimodal latents."""
+        if subset_key == 'joint':
+            return self.joint_embedding.embedding
+        return self.subsets[subset_key].mu
+
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].mu.cpu()), 0)
+
+        data_train['q0']['joint'] = torch.cat(
+            (data_train['q0']['joint'], self.get_joint_embeddings().cpu()), 0)
+
+        return data_train
+
+
+@dataclass
+class JointLatentsEGfM(JointLatentsGfM):
+    def get_subset_embedding(self, s_key: str):
+        return self.subsets[s_key]
+
+    def get_q0(self, subset_key: str):
+        """Get the mean of the unimodal latents and the embeddings of the multimodal latents."""
+        if subset_key == 'joint':
+            return self.joint_embedding.embedding
+        return self.subsets[subset_key]
+
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].cpu()), 0)
+
+        data_train['q0']['joint'] = torch.cat(
+            (data_train['q0']['joint'], self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()), 0)
+
+        return data_train
 
 
 @dataclass
@@ -161,6 +266,18 @@ class JointLatentsFoJ:
     def get_joint_zk(self):
         """Return the embedding of the joint after applying flows."""
         return self.joint_embedding.zk
+
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
+        joint_q0 = self.get_joint_q0().cpu()
+        data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+
+        joint_zk = self.get_joint_zk().cpu()
+        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+
+        return data_train
 
 
 @dataclass
@@ -213,6 +330,21 @@ class JointLatentsFoS:
         joint_mod_str = '_'.join(self.joint_embedding.mod_strs)
         return self.subsets[joint_mod_str].zk
 
+    def get_lreval_data(self, data_train: dict):
+        """Add lr values to data_train."""
+        for key in self.subsets:
+            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
+        joint_q0 = self.get_joint_q0().cpu()
+        data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+
+        for key in self.subsets:
+            # get the latents after application of flows.
+            data_train['zk'][key] = torch.cat((data_train['zk'][key], self.get_zk(key).cpu()), 0)
+        joint_zk = self.get_joint_zk().cpu()
+        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+
+        return data_train
+
 
 @dataclass
 class BaseForwardResults:
@@ -228,7 +360,7 @@ class BaseBatchResults:
     log_probs: dict
     joint_divergence: dict
     latents: Mapping[str, BaseEncMod]
-    joint_latents: Mapping[str, Tensor]
+    # joint_latents: Mapping[str, Tensor]
 
 
 @dataclass
