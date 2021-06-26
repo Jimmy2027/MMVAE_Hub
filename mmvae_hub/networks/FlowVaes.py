@@ -4,14 +4,15 @@ from abc import abstractmethod
 
 import FrEIA.framework as Ff
 import FrEIA.modules as Fm
-import torch
+import numpy as np
 from torch import nn
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv, \
-    PGfMMMDiv
+    PGfMMMDiv, GfMMMDiv, EGfMMMDiv, GfMoPDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
+from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
@@ -23,6 +24,33 @@ class FlowVAE:
 
     def __init__(self):
         pass
+
+    @staticmethod
+    def calculate_lr_eval_scores(epoch_results: dict):
+        results_dict = {}
+        scores = []
+        scores_lr_q0 = []
+        scores_lr_zk = []
+
+        # get lr_eval results
+        # methods where the lr should be evaluated in zk: 'planar_mixture', 'pfom', 'pope', 'fomfop'
+        # methods where the lr should be evaluated in q0: 'joint_elbo', 'moe', 'poe', 'gfm','pgfm'
+        # for fomop, all subset should be evaluated in q0 but the joint should be evaluated in zk.
+        if epoch_results['lr_eval_q0'] is not None:
+            for key, val in epoch_results['lr_eval_q0'].items():
+                val = val['accuracy']
+                if val:
+                    results_dict[f'lr_eval_q0_{key}'] = val
+                    scores_lr_q0.append(val)
+
+        if epoch_results['lr_eval_zk'] is not None:
+            for key, val in epoch_results['lr_eval_zk'].items():
+                results_dict[f'lr_eval_zk_{key}'] = val['accuracy']
+                scores.append(val['accuracy'])
+                scores_lr_zk.append(val['accuracy'])
+
+        return scores, scores_lr_q0 if scores_lr_q0 is None else np.mean(
+            scores_lr_q0), scores_lr_zk if scores_lr_zk is None else np.mean(scores_lr_zk)
 
 
 class FlowOfJointVAE(FlowVAE):
@@ -108,6 +136,31 @@ class FoMoP(FlowOfJointVAE, JointElboMMVae):
     def expert_fusion(self, enc_mods, s_key):
         pass
 
+    @staticmethod
+    def calculate_lr_eval_scores(epoch_results: dict):
+        results_dict = {}
+        scores = []
+        scores_lr_q0 = []
+        scores_lr_zk = []
+
+        # get lr_eval results
+        # methods where the lr should be evaluated in zk: 'planar_mixture', 'pfom', 'pope', 'fomfop'
+        # methods where the lr should be evaluated in q0: 'joint_elbo', 'moe', 'poe', 'gfm','pgfm'
+        # for fomop, all subset should be evaluated in q0 but the joint should be evaluated in zk.
+        for key, val in epoch_results['lr_eval_q0'].items():
+            results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
+            scores_lr_q0.append(val['accuracy'])
+            if not key == 'joint':
+                scores.append(val['accuracy'])
+
+        for key, val in epoch_results['lr_eval_zk'].items():
+            results_dict[f'lr_eval_zk_{key}'] = val['accuracy']
+            if key == 'joint':
+                scores.append(val['accuracy'])
+            scores_lr_zk.append(val['accuracy'])
+
+        return scores, np.mean(scores_lr_q0), np.mean(scores_lr_zk)
+
 
 class FoMFoP(FlowOfJointVAE, JointElboMMVae):
     def __init__(self, exp, flags, modalities, subsets):
@@ -123,40 +176,38 @@ class FoMFoP(FlowOfJointVAE, JointElboMMVae):
         A joint latent space is then created by fusing all subspaces.
         """
         batch_subsets = subsets_from_batchmods(batch_mods)
-        mus = torch.Tensor().to(self.flags.device)
-        logvars = torch.Tensor().to(self.flags.device)
-        distr_subsets = {}
-
-        # subsets that will be fused into the joint distribution
-        fusion_subsets_keys = []
+        subsets = {}
 
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
+            # get subsets with PoE
             distr_subset, subset_flow_params = self.expert_fusion(enc_mods, s_key)
 
             z0, zk, log_det_j = self.flow1.forward(distr_subset, subset_flow_params)
 
-            distr_subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
+            subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
 
-            if self.fusion_condition(self.subsets[s_key], batch_mods):
-                mus = torch.cat((mus, distr_subset.mu.unsqueeze(0)), dim=0)
-                logvars = torch.cat((logvars, distr_subset.logvar.unsqueeze(0)), dim=0)
-                fusion_subsets_keys.append(s_key)
+        joint_embedding = mixture_component_selection_embedding(enc_mods=subsets, s_key='all',
+                                                                flags=self.flags)
+        z0, zk, log_det_j = self.flow2.forward(joint_embedding)
 
-        # normalize with number of subsets
-        weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
-        joint_distr = self.moe_fusion(mus, logvars, weights)
-        z0, zk, log_det_j = self.flow2.forward(joint_distr)
-
-        joint_embedding = JointEmbeddingFoS(embedding=zk, mod_strs=fusion_subsets_keys, log_det_j=log_det_j)
-
-        # return JointLatents(fusion_subsets_keys, joint_distr=joint_embedding, subsets=distr_subsets)
-        return JointLatentsFoS(joint_embedding=joint_embedding, subsets=distr_subsets)
+        return JointLatentsFoS(joint_embedding=zk, subsets=subsets)
 
     def expert_fusion(self, enc_mods, s_key):
         # armotized flow params are not implemented for PoPE
         subset_flow_params = None
         return self.fuse_subset(enc_mods, s_key), subset_flow_params
+
+    def get_rand_samples_from_joint(self, num_samples: int):
+        mu = torch.zeros(num_samples,
+                         self.flags.class_dim).to(self.flags.device)
+        logvar = torch.zeros(num_samples,
+                             self.flags.class_dim).to(self.flags.device)
+        z_class = Distr(mu, logvar)
+
+        _, zk1, _ = self.flow1.forward(z_class)
+        _, zk, _ = self.flow2.forward(zk1)
+        return zk
 
 
 class PoPE(FlowOfSubsetsVAE, POEMMVae):
@@ -174,14 +225,13 @@ class PoPE(FlowOfSubsetsVAE, POEMMVae):
         return self.fuse_subset(enc_mods, s_key), subset_flow_params
 
 
-class PfomMMVAE(FlowOfSubsetsVAE, MOEMMVae):
+class FoMVAE(FlowOfSubsetsVAE, MOEMMVae):
     """Planar Flow of Mixture multi-modal VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):
         FlowOfSubsetsVAE.__init__(self)
         MOEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PfomMMDiv()
-        self.flow = PlanarFlow(flags)
 
     def encode(self, input_batch: typing.Mapping[str, Tensor]) -> typing.Mapping[str, EncModPFoM]:
         """
@@ -249,6 +299,22 @@ class PfomMMVAE(FlowOfSubsetsVAE, MOEMMVae):
 
     def expert_fusion(self, enc_mods, s_key):
         return self.mixture_component_selection(enc_mods, s_key)
+
+
+class PfomMMVAE(FoMVAE):
+    """Planar Flow of Mixture multi-modal VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+        self.flow = PlanarFlow(flags)
+
+
+class AfomMMVAE(FoMVAE):
+    """Affine Flow of Mixture multi-modal VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows)
 
 
 class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
@@ -334,19 +400,12 @@ class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
 class GfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        self.mm_div = PGfMMMDiv()
+        self.mm_div = GfMMMDiv()
 
-        def subnet_fc(dims_in, dims_out):
-            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
-                                 nn.Linear(512, dims_out))
-
-        # a simple chain of operations is collected by ReversibleSequential
-        self.flow = Ff.SequenceINN(flags.class_dim)
-        for k in range(flags.num_flows):
-            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
-                        batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
+                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
         """
         Create a subspace for all the combinations of the encoded modalities by combining them.
         """
@@ -358,14 +417,109 @@ class GfMVAE(BaseMMVAE):
 
         # concatenate zks for every modality in each subset
         for s_key in batch_subsets:
-            z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
-            z_subset, _ = self.flow(z_mixture, rev=True)
-            distr_subsets[s_key] = z_subset
+            if len(s_key.split('_')) == 1:
+                distr_subsets[s_key] = enc_mods[s_key]
+                z_subset = enc_mods[s_key].latents_class.reparameterize()
+            else:
+                z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
+                z_subset, _ = self.flow.rev(z_mixture)
+                distr_subsets[s_key] = z_subset
 
             if len(self.subsets[s_key]) == len(batch_mods):
                 joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
 
-        return JointLatentsFoEM(joint_embedding=joint_embedding, subsets=distr_subsets)
+        return JointLatentsGfM(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+    def encode_expert(self, expert_distr: Distr) -> EncModGfM:
+        _, zk, _ = self.flow(expert_distr.reparameterize())
+        return EncModGfM(zk=zk)
+
+
+class GfMoPVAE(JointElboMMVae):
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = GfMoPDiv()
+
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        for s_key in batch_subsets:
+            distr_subset = self.fuse_subset(enc_mods, s_key)
+            distr_subsets[s_key] = distr_subset
+
+        z_joint = self.gfm(distr_subsets)
+
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs='joint')
+
+        return JointLatentsGfMoP(joint_embedding=joint_embedding, subsets=distr_subsets)
+
+    def gfm(self, distr_subsets: Mapping[str, Distr]) -> Tensor:
+        """Merge subsets with a generalized f mean."""
+        # pass all subset experts through the flow
+        enc_subset_zks = {s_key: self.encode_expert(distr_subset) for s_key, distr_subset in distr_subsets.items()}
+
+        # get the mixture of each encoded subset
+        z_mixture = mixture_component_selection_embedding(enc_mods=enc_subset_zks, s_key='all', flags=self.flags)
+        # question: should I normalize by the number of modalities here?
+
+        # pass the mixture backwards through the flow.
+        z_joint, _ = self.flow.rev(z_mixture)
+        return z_joint
+
+    def encode_expert(self, expert_distr: Distr) -> EncModGfM:
+        _, zk, _ = self.flow(expert_distr.reparameterize())
+        return EncModGfM(zk=zk)
+
+
+class EGfMVAE(BaseMMVAE):
+    """Embedding Generalized f-Mean method."""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = EGfMMMDiv()
+
+        def subnet_fc(dims_in, dims_out):
+            inter_dim = flags.flow_dim
+            return nn.Sequential(nn.Linear(dims_in, inter_dim), nn.ReLU(),
+                                 nn.Linear(inter_dim, dims_out))
+
+        # a simple chain of operations is collected by ReversibleSequential
+        self.flow = Ff.SequenceINN(flags.class_dim)
+        for _ in range(flags.num_flows):
+            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        # pass all experts through the flow
+        enc_mod_zks = {mod_key: self.encode_expert(enc_mod.latents_class) for mod_key, enc_mod in enc_mods.items()}
+
+        # concatenate zks for every modality in each subset
+        for s_key in batch_subsets:
+            if len(s_key.split('_')) == 1:
+                distr_subsets[s_key] = enc_mods[s_key].latents_class.reparameterize()
+                z_subset = distr_subsets[s_key]
+            else:
+                z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
+                z_subset, _ = self.flow(z_mixture, rev=True)
+                distr_subsets[s_key] = z_subset
+
+            if len(self.subsets[s_key]) == len(batch_mods):
+                joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
+
+        return JointLatentsEGfM(joint_embedding=joint_embedding, subsets=distr_subsets)
 
     def encode_expert(self, expert_distr: Distr) -> EncModGfM:
         zk, _ = self.flow(expert_distr.reparameterize())
@@ -381,15 +535,8 @@ class PGfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PGfMMMDiv()
-
-        def subnet_fc(dims_in, dims_out):
-            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
-                                 nn.Linear(512, dims_out))
-
-        # a simple chain of operations is collected by ReversibleSequential
-        self.flow = Ff.SequenceINN(flags.class_dim)
-        for k in range(flags.num_flows):
-            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+        self.flow_mus = self.construct_flow()
+        self.flow_logvars = self.construct_flow()
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
@@ -430,11 +577,22 @@ class PGfMVAE(BaseMMVAE):
         mu_average = torch.mean(mus, dim=0)
         logvar_average = torch.mean(logvars, dim=0)
 
-        mu_gfm, _ = self.flow(mu_average, rev=True)
-        logvar_gfm, _ = self.flow(logvar_average, rev=True)
+        mu_gfm, _ = self.flow_mus(mu_average, rev=True)
+        logvar_gfm, _ = self.flow_logvars(logvar_average, rev=True)
         return Distr(mu=mu_gfm, logvar=logvar_gfm)
 
     def encode_expert(self, expert_distr: Distr) -> Distr:
-        mu_k, _ = self.flow(expert_distr.mu)
-        logvar_k, _ = self.flow(expert_distr.logvar)
+        mu_k, _ = self.flow_mus(expert_distr.mu)
+        logvar_k, _ = self.flow_logvars(expert_distr.logvar)
         return Distr(mu=mu_k, logvar=logvar_k)
+
+    def construct_flow(self):
+        def subnet_fc(dims_in, dims_out):
+            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
+                                 nn.Linear(512, dims_out))
+
+        # a simple chain of operations is collected by ReversibleSequential
+        flow = Ff.SequenceINN(self.flags.class_dim)
+        for k in range(self.flags.num_flows):
+            flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
+        return flow
