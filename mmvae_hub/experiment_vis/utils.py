@@ -418,10 +418,16 @@ def display_df(df: DataFrame) -> None:
     display(HTML(df.to_html()))
 
 
-def display_base_params(df, methods: list, show_cols: list):
+def compare_methods(df, methods: list, df_selectors: dict):
+    methods_selection = functools.reduce(operator.or_, (df['method'].str.startswith(method) for method in methods))
+    df_selection = functools.reduce(operator.and_, (df[k] == v for k, v in df_selectors.items()))
+    display_df(df.loc[(methods_selection) & (df_selection)])
+
+
+def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
     methods_selection = functools.reduce(operator.or_, (df['method'].str.startswith(method) for method in methods))
 
-    display_df(df.loc[(methods_selection) & (df['num_flows'] == 5) & (
+    display_df(df.loc[(methods_selection) & (df['num_flows'] == num_flows) & (
             df['end_epoch'].astype(int) == 99) & (df['beta'] == 1) & (df['amortized_flow'] == 0) & (
                               df['class_dim'] == 256) & (df['weighted_mixture'] == 0) & (
                               df['initial_learning_rate'].astype(float) == 0.0005)][[*show_cols]].sort_values(
@@ -435,5 +441,6 @@ if __name__ == '__main__':
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
-    for id in ['polymnist_fomop_2021_06_20_15_52_29_513900']:
+    # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
+    for id in ['polymnist_gfm_2021_06_25_22_04_11_541372']:
         upload_notebook_to_db(id)
