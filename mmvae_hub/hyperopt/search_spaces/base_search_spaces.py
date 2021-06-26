@@ -34,3 +34,25 @@ search_space_pfom = {
 }
 
 base_search_spaces = [search_space_pfom, search_space_pm, search_space_je, search_space_poe, search_space_moe]
+
+search_space_gfm = {
+    'method': ['gfmop'],
+    'class_dim': [256],
+    "beta": [1],
+    "num_flows": [5],
+    "num_mods": [3],
+    "end_epoch": [100],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
+
+search_space_gfmop = {
+    'method': ['gfmop'],
+    'class_dim': [256],
+    "beta": [1],
+    "num_flows": [1, 5],
+    "num_mods": [3],
+    "end_epoch": [100],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
