@@ -21,7 +21,7 @@ class BaseFlagsSetup:
         self.config_path = config_path
         self.parser = None
 
-    def setup(self, flags, testing=False, additional_args:dict=None):
+    def setup(self, flags, testing=False, additional_args: dict = None):
         """
         leomed bool: if True, use TMPDIR as experiment_dir and dir_data
         Setup the flags:
@@ -153,7 +153,7 @@ class BaseFlagsSetup:
 
         If flags_path is None, flags will be loaded from the db using the _id.
         """
-        defaults = [('weighted_mixture', False), ('amortized_flow', False)]
+        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512)]
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict or flags_path is None:
