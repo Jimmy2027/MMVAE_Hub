@@ -23,10 +23,12 @@ def subsets_from_batchmods(batchmods: typing.Iterable[str]) -> set:
 
 def mixture_component_selection_embedding(enc_mods: typing.Mapping[str, EncModPlanarMixture], s_key: str, flags,
                                           weight_joint: bool = True) -> Distr:
-    """For each element in batch select an expert from subset."""
+    """
+    For each element in batch select an expert from subset.
+    s_key: keys of the experts that can be selected. If all experts can be selected (e.g. for MoPoE) s_key should be set to "all".
+    """
     num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
-    s_keys = s_key.split('_')
-
+    s_keys = [s_key for s_key in enc_mods] if s_key == 'all' else s_key.split('_')
     zk_subset = torch.Tensor().to(flags.device)
 
     if flags.weighted_mixture:

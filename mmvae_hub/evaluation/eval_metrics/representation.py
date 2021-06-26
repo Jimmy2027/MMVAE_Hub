@@ -1,13 +1,13 @@
-from typing import Mapping, List
+from typing import List, Union
 
 import numpy as np
-import torch
 from sklearn.linear_model import LogisticRegression
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from mmvae_hub import log
 from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowVAE, FlowOfJointVAE
+from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import dict_to_device, atleast_2d, init_twolevel_nested_dict
 
 
@@ -60,27 +60,12 @@ def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, tr
         """
         batch_d = {k: v.to(exp.flags.device) for k, v in batch_d.items()}
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
+        joint_latent: Union[JointLatents, JointLatentsFoEM, JointLatentsFoJ, JointLatentsFoS]
 
-        lr_subsets = joint_latent.subsets
         all_labels = torch.cat((all_labels, batch_l), 0)
 
-        if not isinstance(mm_vae, FlowOfEncModsVAE):
-            # get the latents before application of flows. (methods where the flow is applied on each modality
-            # don't have a q0)
-            for key in lr_subsets:
-                data_train['q0'][key] = torch.cat((data_train['q0'][key], joint_latent.get_q0(key).cpu()), 0)
-            joint_q0 = joint_latent.get_joint_q0().cpu()
-            data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+        data_train = joint_latent.get_lreval_data(data_train)
 
-        if isinstance(mm_vae, FlowVAE):
-            joint_zk = joint_latent.get_joint_zk().cpu()
-            data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
-
-            if not isinstance(mm_vae, FlowOfJointVAE):
-                # the flow of joint methods don't pass the subsets through the flows
-                for key in lr_subsets:
-                    # get the latents after application of flows.
-                    data_train['zk'][key] = torch.cat((data_train['zk'][key], joint_latent.get_zk(key).cpu()), 0)
     return all_labels, data_train
 
 
@@ -103,7 +88,7 @@ def get_random_labels(n_samples, n_train_samples, all_labels, max_tries=1000):
     return labels, rand_ind_train
 
 
-def test_clf_lr_all_subsets(clf_lr, exp, which_lr: str):
+def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression]], exp, which_lr: str):
     """
     Test the classifiers that were trained on latent representations.
 

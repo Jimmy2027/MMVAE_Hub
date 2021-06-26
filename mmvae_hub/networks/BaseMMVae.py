@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
-import torch
 import torch.nn as nn
 from torch.distributions.distribution import Distribution
 
@@ -245,7 +244,6 @@ class BaseMMVAE(ABC, nn.Module):
                 logvars = torch.cat((logvars, distr_subset.logvar.unsqueeze(0)), dim=0)
                 fusion_subsets_keys.append(s_key)
 
-        # normalize with number of subsets
         weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
         joint_distr = self.moe_fusion(mus, logvars, weights)
         joint_distr.mod_strs = fusion_subsets_keys
@@ -298,3 +296,16 @@ class BaseMMVAE(ABC, nn.Module):
                 state_dict=torch.load(dir_checkpoint / f"encoderM{mod_str}", map_location=self.flags.device))
             mod.decoder.load_state_dict(
                 state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
+
+    @staticmethod
+    def calculate_lr_eval_scores(epoch_results: dict):
+        results_dict = {}
+        scores = []
+        scores_lr_q0 = []
+        scores_lr_zk = []
+
+        for key, val in epoch_results['lr_eval_q0'].items():
+            results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
+            scores_lr_q0.append(val['accuracy'])
+            scores.append(val['accuracy'])
+        return scores, np.mean(scores_lr_q0), np.mean(scores_lr_zk)

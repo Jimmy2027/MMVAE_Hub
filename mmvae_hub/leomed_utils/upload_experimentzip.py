@@ -12,6 +12,7 @@ import ppb
 import torch
 import typer
 from norby import send_msg
+
 from mmvae_hub import log
 from mmvae_hub.experiment_vis.utils import run_notebook_convert
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -72,7 +73,7 @@ def upload_one(exp_path: Path):
         db.upload_tensorbardlogs(exp_dir / 'logs')
 
         send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
-                       f'found here: {expvis_url}')
+                 f'found here: {expvis_url}')
 
     # delete exp_path
     if is_zip:
@@ -90,7 +91,10 @@ def upload_all(src_dir: str):
 
     src_dir = Path(src_dir).expanduser()
     for experiment_zip in src_dir.iterdir():
-        upload_one(experiment_zip)
+        try:
+            upload_one(experiment_zip)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':

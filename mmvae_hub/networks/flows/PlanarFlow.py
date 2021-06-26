@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import torch
 import torch.nn as nn
 
 from mmvae_hub.networks.utils import flows
