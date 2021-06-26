@@ -27,9 +27,9 @@ search_space_je = {
     'method': ['joint_elbo'],
     "num_mods": [3],
     "end_epoch": [100],
-    'initial_learning_rate': 0.0009439,
-    'class_dim': 128,
-    'beta': 0.34
+    'initial_learning_rate': [0.0009439],
+    'class_dim': [128],
+    'beta': [0.34]
 }
 search_space_pm = {
     'method': ['planar_mixture'],
