@@ -5,6 +5,7 @@ from itertools import chain, combinations
 from typing import Mapping, List
 
 import torch
+from torch import Tensor
 
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils.Dataclasses import EncModPlanarMixture, Distr, BaseEncMod
@@ -22,7 +23,7 @@ def subsets_from_batchmods(batchmods: typing.Iterable[str]) -> set:
 
 
 def mixture_component_selection_embedding(enc_mods: typing.Mapping[str, EncModPlanarMixture], s_key: str, flags,
-                                          weight_joint: bool = True) -> Distr:
+                                          weight_joint: bool = True) -> Tensor:
     """
     For each element in batch select an expert from subset.
     s_key: keys of the experts that can be selected. If all experts can be selected (e.g. for MoPoE) s_key should be set to "all".
