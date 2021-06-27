@@ -26,7 +26,7 @@ search_space_moe = {
 search_space_je = {
     'method': ['joint_elbo'],
     "num_mods": [3],
-    "end_epoch": [100],
+    "end_epoch": [2000],
     'initial_learning_rate': [0.0009439],
     'class_dim': [128],
     'beta': [0.34]
@@ -40,15 +40,24 @@ search_space_pfom = {
     **base_params
 }
 
-base_search_spaces = [search_space_pfom, search_space_pm, search_space_je, search_space_poe, search_space_moe]
-
 search_space_gfm = {
     'method': ['gfmop'],
     'class_dim': [256],
     "beta": [1],
-    "num_flows": [5],
+    "num_flows": [1],
     "num_mods": [3],
-    "end_epoch": [100],
+    "end_epoch": [2000],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
+
+search_space_mofop = {
+    'method': ['mofop'],
+    'class_dim': [256],
+    "beta": [1],
+    "num_flows": [1],
+    "num_mods": [3],
+    "end_epoch": [2000],
     "weighted_mixture": [False],
     "amortized_flow": [False]
 }

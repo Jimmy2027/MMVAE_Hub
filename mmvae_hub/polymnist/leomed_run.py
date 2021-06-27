@@ -7,7 +7,7 @@ from sklearn.model_selection import ParameterGrid
 from mmvae_hub.hyperopt.search_spaces.base_search_spaces import *
 
 # for search_space in [search_space_gfm, search_space_gfmop]:
-for search_space in [search_space_je]:
+for search_space in [search_space_je, search_space_gfm, search_space_mofop]:
 
     for params in ParameterGrid(search_space):
 
@@ -22,8 +22,8 @@ for search_space in [search_space_je]:
         if 'n_gpus' not in params:
             params['n_gpus'] = 1
 
-        # 100 epochs need a bit less than 2 hours
-        num_hours = int((params['end_epoch'] // 100) * 2) or 1
+        # 100 epochs need a bit more than 2 hours
+        num_hours = int((params['end_epoch'] // 100) * 2.5) or 1
 
         # 100 epochs take about 5G of space
         scratch_space = int((params['end_epoch'] // 100) * 5) // n_cores or 1
