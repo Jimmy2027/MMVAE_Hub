@@ -39,12 +39,11 @@ class PlanarFlow(nn.Module):
             flow_k = flow()
             self.add_module('flow_' + str(k), flow_k)
 
-    def forward(self, in_distr: Distr, flow_params: PlanarFlowParams = None):
-        num_samples = in_distr.mu.shape[0]
-        log_det_j = torch.zeros(in_distr.mu.shape[0]).to(self.flags.device)
+    def forward(self, z0, num_samples: int = None, flow_params: PlanarFlowParams = None):
 
-        # Sample z_0
-        z = [in_distr.reparameterize()]
+        log_det_j = torch.zeros(num_samples).to(self.flags.device)
+
+        z = [z0]
 
         # Normalizing flows
         for k in range(self.num_flows):
@@ -60,7 +59,7 @@ class PlanarFlow(nn.Module):
             z.append(z_k)
             log_det_j += log_det_jacobian
 
-        return z[0], z[-1], log_det_j
+        return z[-1], log_det_j
 
     def get_flow_params(self, h):
         # get amortized u an w for all flows

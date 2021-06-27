@@ -23,7 +23,7 @@ class AffineFlow(nn.Module):
     def forward(self, z0, flow_params=None):
         zk, log_det_jacobian = self.flow(z0)
 
-        return z0, zk, log_det_jacobian
+        return zk, log_det_jacobian
 
     def rev(self, zk):
         return self.flow(zk, rev=True)
