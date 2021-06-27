@@ -24,7 +24,7 @@ from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
 
-FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop']
+FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop']
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
@@ -127,7 +127,7 @@ def plot_lr_accuracy(logs_dict: dict) -> None:
 
     epochs = get_epochs(logs_dict, metric='lr_eval_q0' if method != 'planar_mixture' else 'lr_eval_zk')
 
-    if method == 'pfom':
+    if method in ['pfom', 'mofop']:
         lr_keys = ['q0', 'zk']
     elif method == 'planar_mixture':
         lr_keys = ['zk']
@@ -146,7 +146,7 @@ def plot_lr_accuracy(logs_dict: dict) -> None:
                     else:
                         lr_accuracy_values[lr_key][k].append(v['accuracy'])
 
-    if method == 'pfom':
+    if method in ['pfom', 'mofop']:
         fig, axs = plt.subplots(2, 1, figsize=(15, 10))
         fig.suptitle('Latent Representation Accuracy')
         for ax_idx, (lr_key, lr_values) in enumerate(lr_accuracy_values.items()):
@@ -333,6 +333,10 @@ def make_experiments_dataframe(experiments):
     for exp in experiments.find({}):
         if exp['epoch_results'] is not None and exp['epoch_results']:
             method = exp['flags']['method']
+            # temp
+            if method == 'mofop':
+                sdfasdf = 0
+
             max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
 
             # get the last epoch where evaluation was run.
@@ -358,18 +362,17 @@ def make_experiments_dataframe(experiments):
                     results_dict['expvis_url'] = exp['expvis_url']
 
                 if method == 'fomop':
-                    scores, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
+                    score_lr, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
                 elif method in FLOW_METHODS:
-                    scores, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
+                    score_lr, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
                 else:
-                    scores, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results)
+                    score_lr, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results)
 
                 scores_gen = []
                 # get gen_eval results
                 for key, val in last_epoch_results['gen_eval'].items():
                     key = key.replace('digit_', '')
                     results_dict[f'gen_eval_{key}'] = val
-                    scores.append(val)
                     scores_gen.append(val)
 
                 scores_prd = []
@@ -378,7 +381,6 @@ def make_experiments_dataframe(experiments):
                     for key, val in last_epoch_results['prd_scores'].items():
                         results_dict[f'prd_score_{key}'] = val
                         scores_prd.append(val)
-                        scores.append(val)
 
                 # results_dict['score'] = np.mean(scores)
 
@@ -389,7 +391,7 @@ def make_experiments_dataframe(experiments):
                 results_dict['score_gen'] = np.mean(scores_gen)
                 results_dict['score_prd'] = np.mean(scores_prd)
 
-                results_dict['score'] = (score_lr_q0 / 0.75) + (results_dict['score_gen'] / 0.55) + (
+                results_dict['score'] = (score_lr / 0.75) + (results_dict['score_gen'] / 0.55) + (
                         results_dict['score_prd'] / 0.1)
 
                 df = df.append(results_dict, ignore_index=True)
@@ -435,12 +437,12 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_fomop_2021_06_20_15_52_29_513900'
+    # experiment_uid = 'polymnist_mofop_2021_06_27_11_44_04_964266'
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_gfm_2021_06_25_22_04_11_541372']:
+    for id in ['polymnist_mofop_2021_06_27_11_44_04_964266']:
         upload_notebook_to_db(id)
