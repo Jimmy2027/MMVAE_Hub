@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -8,7 +8,7 @@ from tqdm import tqdm
 from mmvae_hub import log
 from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowVAE, FlowOfJointVAE
 from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.utils.utils import dict_to_device, atleast_2d, init_twolevel_nested_dict
+from mmvae_hub.utils.utils import dict_to_device, atleast_2d
 
 
 def train_clf_lr_all_subsets(exp):
@@ -33,14 +33,14 @@ def train_clf_lr_all_subsets(exp):
     rand_ind_train = np.random.randint(all_labels.shape[0], size=n_train_samples)
     labels = all_labels[rand_ind_train]
 
-    for l_key in ['q0', 'zk']:
-        for s_key in [*subsets, 'joint']:
-            d = data_train[l_key][s_key]
-            data_train[l_key][s_key] = d[rand_ind_train] if len(d) else None
+    for which_lr in data_train:
+        for s_key in data_train[which_lr]:
+            d = data_train[which_lr][s_key]
+            #take random samples from data_train
+            data_train[which_lr][s_key] = d[rand_ind_train] if len(d) else None
 
-    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if not isinstance(mm_vae, FlowOfEncModsVAE) else None
-    lr_results_zk = train_clf_lr(exp, data_train['zk'], labels) \
-        if isinstance(mm_vae, FlowVAE) else None
+    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if 'q0' in data_train else None
+    lr_results_zk = train_clf_lr(exp, data_train['zk'], labels) if 'zk' in data_train else None
 
     return lr_results_q0, lr_results_zk
 
@@ -49,8 +49,7 @@ def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, tr
     """
     Get the latent embedding as the training data for the linear classifiers.
     """
-    data_train = init_twolevel_nested_dict(level1_keys=['q0', 'zk'], level2_keys=[*subsets, 'joint'],
-                                           init_val=torch.Tensor())
+    data_train = None
     all_labels = torch.Tensor()
     log.info(f"Creating {training_steps} batches of the latent representations for the classifier.")
     for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=len(train_loader),
@@ -64,7 +63,14 @@ def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, tr
 
         all_labels = torch.cat((all_labels, batch_l), 0)
 
-        data_train = joint_latent.get_lreval_data(data_train)
+        lr_data = joint_latent.get_lreval_data()
+
+        if data_train is None:
+            data_train = lr_data
+
+        for which_lr in lr_data:
+            for s_key in lr_data[which_lr]:
+                data_train[which_lr][s_key] = torch.cat((data_train[which_lr][s_key], lr_data[which_lr][s_key]), 0)
 
     return all_labels, data_train
 
@@ -97,7 +103,6 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
     args = exp.flags
     mm_vae = exp.mm_vae
     mm_vae.eval()
-    subsets = [*exp.subsets, 'joint']
 
     d_loader = DataLoader(exp.dataset_test, batch_size=exp.flags.batch_size, shuffle=False,
                           num_workers=exp.flags.dataloader_workers, drop_last=False)
@@ -106,8 +111,8 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
     log.info(f'Creating {training_steps} batches of latent representations for classifier testing '
              f'with a batch_size of {exp.flags.batch_size}.')
 
-    clf_predictions = init_clf_predictions(subsets, which_lr, mm_vae)
-
+    # clf_predictions = init_clf_predictions(subsets, which_lr, mm_vae)
+    clf_predictions = {}
     batch_labels = torch.Tensor()
 
     for iteration, (batch_d, batch_l) in enumerate(d_loader):
@@ -120,7 +125,8 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
         lr_subsets = joint_latent.subsets
 
-        data_test = {key: getattr(joint_latent, f'get_{which_lr}')(key).cpu().data.numpy() for key in clf_predictions}
+        lr_data = joint_latent.get_lreval_data()
+        data_test = lr_data[which_lr]
 
         clf_predictions_batch = classify_latent_representations(exp, clf_lr, data_test)
         clf_predictions_batch: Mapping[str, Mapping[str, np.array]]
@@ -130,7 +136,10 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
                 torch.tensor(clf_predictions_batch[label][subset]).unsqueeze(1) for label in
                 exp.labels), 1)
 
-            clf_predictions[subset] = torch.cat([clf_predictions[subset], clf_predictions_batch_subset], 0)
+            if subset in clf_predictions:
+                clf_predictions[subset] = torch.cat([clf_predictions[subset], clf_predictions_batch_subset], 0)
+            else:
+                clf_predictions[subset] = clf_predictions_batch_subset
 
     batch_labels = atleast_2d(batch_labels, -1)
     results = {}
