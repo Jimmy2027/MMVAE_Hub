@@ -308,4 +308,4 @@ class BaseMMVAE(ABC, nn.Module):
             results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
             scores_lr_q0.append(val['accuracy'])
             scores.append(val['accuracy'])
-        return scores, np.mean(scores_lr_q0), np.mean(scores_lr_zk)
+        return np.mean(scores), np.mean(scores_lr_q0), np.mean(scores_lr_zk)
