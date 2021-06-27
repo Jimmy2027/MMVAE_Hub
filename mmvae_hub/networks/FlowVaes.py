@@ -8,7 +8,7 @@ import numpy as np
 from torch import nn
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv, \
-    PGfMMMDiv, GfMMMDiv, EGfMMMDiv, GfMoPDiv
+    PGfMMMDiv, GfMMMDiv, EGfMMMDiv, GfMoPDiv, MoFoPDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
@@ -49,7 +49,7 @@ class FlowVAE:
                 scores.append(val['accuracy'])
                 scores_lr_zk.append(val['accuracy'])
 
-        return scores, scores_lr_q0 if scores_lr_q0 is None else np.mean(
+        return np.mean(scores), scores_lr_q0 if scores_lr_q0 is None else np.mean(
             scores_lr_q0), scores_lr_zk if scores_lr_zk is None else np.mean(scores_lr_zk)
 
 
@@ -77,7 +77,7 @@ class FlowOfEncModsVAE(FlowVAE):
 
 
 class FlowOfSubsetsVAE(FlowVAE):
-    """Class of methods where the flow is applied on a joint distribution."""
+    """Class of methods where the flow is applied on each subset."""
 
     def __init__(self):
         super().__init__()
@@ -114,8 +114,43 @@ class FlowOfSubsetsVAE(FlowVAE):
                              self.flags.class_dim).to(self.flags.device)
         z_class = Distr(mu, logvar)
 
-        _, zk, _ = self.flow.forward(z_class)
+        zk, _ = self.flow.forward(z_class.reparameterize())
         return zk
+
+
+class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
+    """Mixture of Flow of Product of Experts"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        FlowOfSubsetsVAE.__init__(self)
+        JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = MoFoPDiv()
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatents:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        A joint latent space is then created by fusing all subspaces.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        distr_subsets = {}
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            distr_subset = self.fuse_subset(enc_mods, s_key)
+            z0 = distr_subset.reparameterize()
+            zk, log_det_j = self.flow.forward(z0)
+            distr_subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
+
+        z_joint = mixture_component_selection_embedding(enc_mods=distr_subsets, s_key='all',
+                                                        flags=self.flags)
+        joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=log_det_j)
+
+        # weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
+        # joint_distr = self.moe_fusion(mus, logvars, weights)
+        # joint_distr.mod_strs = fusion_subsets_keys
+
+        return JointLatentsMoFoP(joint_embedding=joint_embedding, subsets=distr_subsets)
 
 
 class FoMoP(FlowOfJointVAE, JointElboMMVae):
@@ -159,7 +194,7 @@ class FoMoP(FlowOfJointVAE, JointElboMMVae):
                 scores.append(val['accuracy'])
             scores_lr_zk.append(val['accuracy'])
 
-        return scores, np.mean(scores_lr_q0), np.mean(scores_lr_zk)
+        return np.mean(scores), np.mean(scores_lr_q0), np.mean(scores_lr_zk)
 
 
 class FoMFoP(FlowOfJointVAE, JointElboMMVae):
@@ -431,7 +466,7 @@ class GfMVAE(BaseMMVAE):
         return JointLatentsGfM(joint_embedding=joint_embedding, subsets=distr_subsets)
 
     def encode_expert(self, expert_distr: Distr) -> EncModGfM:
-        _, zk, _ = self.flow(expert_distr.reparameterize())
+        zk, _ = self.flow(expert_distr.reparameterize())
         return EncModGfM(zk=zk)
 
 
@@ -474,7 +509,7 @@ class GfMoPVAE(JointElboMMVae):
         return z_joint
 
     def encode_expert(self, expert_distr: Distr) -> EncModGfM:
-        _, zk, _ = self.flow(expert_distr.reparameterize())
+        zk, _ = self.flow(expert_distr.reparameterize())
         return EncModGfM(zk=zk)
 
 

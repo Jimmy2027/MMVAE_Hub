@@ -95,7 +95,17 @@ class JointLatents:
     def get_joint_q0(self):
         return self.joint_distr.mu
 
-    def get_lreval_data(self, data_train: dict):
+    def get_lreval_data(self) -> dict:
+        """Get lr_data for the lr evaluation."""
+        lr_data = {'q0': {}}
+        for key in self.subsets:
+            lr_data['q0'][key] = self.get_q0(key).cpu()
+
+        lr_data['q0']['joint'] = self.get_joint_q0().cpu()
+
+        return lr_data
+
+    def get_lreval_data_(self, data_train: dict):
         """Add lr values to data_train."""
         for key in self.subsets:
             data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
@@ -134,16 +144,16 @@ class JointLatentsFoEM:
         """Return the embedding of the subset after applying flows."""
         return self.joint_embedding.embedding
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    def get_lreval_data(self):
+        lr_data = {'zk': {}}
+
         for key in self.subsets:
             # get the latents after application of flows.
-            data_train['zk'][key] = torch.cat((data_train['zk'][key], self.get_zk(key).cpu()), 0)
+            lr_data['zk'][key] = self.get_zk(key).cpu()
 
-        joint_zk = self.get_joint_zk().cpu()
-        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+        lr_data['zk']['joint'] = self.get_joint_zk().cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
@@ -169,18 +179,18 @@ class JointLatentsGfM:
             return self.subsets[subset_key].latents_class.mu
         return self.subsets[subset_key]
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    def get_lreval_data(self):
+        lr_data = {'q0': {}}
+
         for key in self.subsets:
             if len(key.split('_')) == 1:
-                data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].latents_class.mu.cpu()), 0)
+                lr_data['q0'][key] = self.subsets[key].latents_class.mu.cpu()
             else:
-                data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].cpu()), 0)
+                lr_data['q0'][key] = self.subsets[key].cpu()
 
-        data_train['q0']['joint'] = torch.cat(
-            (data_train['q0']['joint'], self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()), 0)
+        lr_data['q0']['joint'] = self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
@@ -196,15 +206,15 @@ class JointLatentsGfMoP(JointLatentsGfM):
             return self.joint_embedding.embedding
         return self.subsets[subset_key].mu
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    def get_lreval_data(self):
+        lr_data = {'q0': {}}
+
         for key in self.subsets:
-            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].mu.cpu()), 0)
+            lr_data['q0'][key] = self.subsets[key].mu.cpu()
 
-        data_train['q0']['joint'] = torch.cat(
-            (data_train['q0']['joint'], self.get_joint_embeddings().cpu()), 0)
+        lr_data['q0']['joint'] = self.get_joint_embeddings().cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
@@ -218,15 +228,15 @@ class JointLatentsEGfM(JointLatentsGfM):
             return self.joint_embedding.embedding
         return self.subsets[subset_key]
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    def get_lreval_data(self):
+        lr_data = {'q0': {}}
+
         for key in self.subsets:
-            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.subsets[key].cpu()), 0)
+            lr_data['q0'][key] = self.subsets[key].cpu()
 
-        data_train['q0']['joint'] = torch.cat(
-            (data_train['q0']['joint'], self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()), 0)
+        lr_data['q0']['joint'] = self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
@@ -267,17 +277,16 @@ class JointLatentsFoJ:
         """Return the embedding of the joint after applying flows."""
         return self.joint_embedding.zk
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    def get_lreval_data(self):
+        lr_data = {'q0': {}, 'zk': {}}
+
         for key in self.subsets:
-            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
-        joint_q0 = self.get_joint_q0().cpu()
-        data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+            lr_data['q0'][key] = self.get_q0(key).cpu()
+        lr_data['q0']['joint'] = self.get_joint_q0().cpu()
 
-        joint_zk = self.get_joint_zk().cpu()
-        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+        lr_data['zk']['joint'] = self.get_joint_zk().cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
@@ -330,6 +339,23 @@ class JointLatentsFoS:
         joint_mod_str = '_'.join(self.joint_embedding.mod_strs)
         return self.subsets[joint_mod_str].zk
 
+    def get_lreval_data(self):
+        lr_data = {'q0': {}, 'zk': {}}
+        for key in self.subsets:
+            lr_data['q0'][key] =self.get_q0(key).cpu()
+
+
+        lr_data['q0']['joint'] =  self.get_joint_q0().cpu()
+
+        for key in self.subsets:
+            # get the latents after application of flows.
+            lr_data['zk'][key] =  self.get_zk(key).cpu()
+
+
+        lr_data['zk']['joint'] = self.get_joint_zk().cpu()
+
+        return lr_data
+
     def get_lreval_data(self, data_train: dict):
         """Add lr values to data_train."""
         for key in self.subsets:
@@ -344,6 +370,28 @@ class JointLatentsFoS:
         data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
 
         return data_train
+
+
+@dataclass
+class JointLatentsMoFoP(JointLatentsFoS):
+
+    def get_joint_zk(self):
+        """Return joint zk."""
+        return self.joint_embedding.embedding
+
+    def get_lreval_data(self):
+        lr_data = {'q0': {}, 'zk': {}}
+
+        for key in self.subsets:
+            lr_data['q0'][key] = self.get_q0(key).cpu()
+
+        for key in self.subsets:
+            # get the latents after application of flows.
+            lr_data['zk'][key] = self.get_zk(key).cpu()
+        lr_data['zk']['joint'] = self.get_joint_zk().cpu()
+
+        return lr_data
+
 
 
 @dataclass
