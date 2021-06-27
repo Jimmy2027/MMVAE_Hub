@@ -1,7 +1,5 @@
 from abc import abstractmethod
 
-import numpy as np
-
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss, calc_divergence_embedding
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.modalities import BaseModality
@@ -39,12 +37,10 @@ class BaseMMDiv:
         latent_subsets = forward_results.joint_latents.subsets
         klds = self.calc_subset_divergences(latent_subsets)
 
-        joint_div = torch.Tensor().to(klds[list(klds)[0]].device)
-        for s_key in joint_keys:
-            joint_div = torch.cat((joint_div, torch.atleast_1d(klds[s_key])))
-
-        weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
-        joint_div = (weights * joint_div).sum(dim=0)
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean() * (1 / float(num_samples))
 
         # normalize klds with number of modalities in subset and batch_size
         for subset_key, subset in subsets.items():
@@ -103,6 +99,24 @@ class GfMoPDiv(BaseMMDiv):
         return {
             s_key: self.calc_kl_divergence_subsets(distr0=distr_subset)
             for s_key, distr_subset in subsets.items()
+        }
+
+    def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
+        pass
+
+
+class MoFoPDiv(BaseMMDiv):
+    """MM Div for mixture of flow of products of experts methods."""
+
+    def __init__(self):
+        super().__init__()
+        self.calc_kl_divergence_subsets = calc_kl_divergence_flow
+        self.calc_kl_divergence_joint = calc_divergence_embedding
+
+    def calc_subset_divergences(self, subsets: Mapping[str, SubsetFoS]):
+        return {
+            s_key: self.calc_kl_divergence_subsets(q0=subset.q0, z0=subset.z0, zk=subset.zk, log_det_j=subset.log_det_j)
+            for s_key, subset in subsets.items()
         }
 
     def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
@@ -229,14 +243,28 @@ class FoEncModsMMDiv(FlowVAEMMDiv):
         self.calc_kl_divergence = calc_kl_divergence
 
     def calc_klds(self, forward_results: BaseForwardResults, subsets, num_samples: int, joint_keys: Iterable[str]):
-        # calculate divergences of the q0 distributions
-        klds, joint_div = super().calc_klds(forward_results, subsets, num_samples, joint_keys)
+        latents: JointLatentsFoS = forward_results.joint_latents
+        klds = self.calc_subset_divergences(latents.subsets)
 
-        # joint_div = \sum E_q0[ ln qi(z|X) - ln p(z) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
-        joint_div = joint_div - torch.sum(forward_results.joint_latents.joint_embedding.log_det_j)
+        for k, kl_q0 in klds.items():
+            # ln p(z_k)  (not averaged)
+            log_p_zk = calc_divergence_embedding(latents.subsets[k].zk)
+            # N E_q0[ ln q(z_0) - ln p(z_k) ]
+            diff = kl_q0 - log_p_zk
+            # to minimize the divergence,
+            summed_logs = diff
 
-        for s_key, kld in klds.items():
-            klds[s_key] = kld - torch.sum(forward_results.joint_latents.subsets[s_key].log_det_j)
+            summed_ldj = torch.sum(latents.subsets[k].log_det_j)
+
+            # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+            klds[k] = (summed_logs - summed_ldj)
+
+        # normalize klds with number of modalities in subset and batch_size
+        for subset_key, subset in subsets.items():
+            weights = 1 / float(num_samples)
+            klds[subset_key] = weights * klds[subset_key].squeeze()
+
+        joint_div = klds['_'.join(joint_keys)]
 
         return klds, joint_div
 
@@ -388,19 +416,11 @@ class PlanarMixtureMMDiv(FoEncModsMMDiv, MixtureMMDiv):
         klds = self.calc_singlemod_divergences(forward_results.enc_mods)
         klds = self.calc_subset_divergences(klds, subsets)
 
-        joint_div = torch.Tensor().to(klds[list(klds)[0]].device)
-        for s_key in joint_keys:
-            joint_div = torch.cat((joint_div, klds[s_key]))
-
-        weights = (1 / float(len(joint_keys) * num_samples)) * torch.ones(len(joint_div)).to(joint_div.device)
-        joint_div = (weights * joint_div).sum(dim=0)
-
-        assert not np.isnan(joint_div.cpu().item())
-
         for subset_key, subset in subsets.items():
-            weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(joint_div.device)
+            weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
             klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
 
+        joint_div = klds['_'.join(joint_keys)]
         return klds, joint_div
 
     def calc_subset_divergences(self, klds, subsets):
