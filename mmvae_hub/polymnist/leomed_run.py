@@ -6,8 +6,8 @@ from sklearn.model_selection import ParameterGrid
 
 from mmvae_hub.hyperopt.search_spaces.base_search_spaces import *
 
-# for search_space in [search_space_gfm, search_space_gfmop]:
-for search_space in [search_space_je, search_space_gfm, search_space_mofop]:
+for search_space in [base_search_spaces]:
+# for search_space in [search_space_je, search_space_gfm, search_space_mofop]:
 
     for params in ParameterGrid(search_space):
 

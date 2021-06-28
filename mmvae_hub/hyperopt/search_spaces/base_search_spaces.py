@@ -11,7 +11,9 @@ base_params = {
 }
 
 base_search_spaces = [{'method': [method], **base_params} for method in
-                      ['poe', 'moe', 'joint_elbo', 'planar_mixture', 'pfom']]
+                      # ['poe', 'moe', 'joint_elbo', 'planar_mixture', 'pfom']
+                      ['joint_elbo']
+                      ]
 
 search_space_poe = {
     'method': ['poe'],
