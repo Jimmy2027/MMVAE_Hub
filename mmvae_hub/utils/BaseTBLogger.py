@@ -39,7 +39,8 @@ class BaseTBLogger:
         for l_key, l_val in lr_eval.items():
             if l_val is not None:
                 for s, s_key in enumerate(sorted(l_val.keys())):
-                    self.writer.add_scalars(f'Latent_Representation_{l_key}/{s_key}', l_val[s_key], self.step)
+                    self.writer.add_scalars(f'Latent_Representation_{l_key}/{s_key}',
+                                            {'accuracy': l_val[s_key]['accuracy']}, self.step)
 
     def write_coherence_logs(self, gen_eval):
         for j, l_key in enumerate(sorted(gen_eval['cond'].keys())):
