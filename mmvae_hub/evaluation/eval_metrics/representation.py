@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from mmvae_hub import log
-from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowVAE, FlowOfJointVAE
+from mmvae_hub.networks.FlowVaes import FlowOfJointVAE
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import dict_to_device, atleast_2d
 
@@ -36,7 +36,7 @@ def train_clf_lr_all_subsets(exp):
     for which_lr in data_train:
         for s_key in data_train[which_lr]:
             d = data_train[which_lr][s_key]
-            #take random samples from data_train
+            # take random samples from data_train
             data_train[which_lr][s_key] = d[rand_ind_train] if len(d) else None
 
     lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if 'q0' in data_train else None
@@ -67,10 +67,10 @@ def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, tr
 
         if data_train is None:
             data_train = lr_data
-
-        for which_lr in lr_data:
-            for s_key in lr_data[which_lr]:
-                data_train[which_lr][s_key] = torch.cat((data_train[which_lr][s_key], lr_data[which_lr][s_key]), 0)
+        else:
+            for which_lr in lr_data:
+                for s_key in lr_data[which_lr]:
+                    data_train[which_lr][s_key] = torch.cat((data_train[which_lr][s_key], lr_data[which_lr][s_key]), 0)
 
     return all_labels, data_train
 
