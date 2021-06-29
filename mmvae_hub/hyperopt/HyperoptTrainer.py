@@ -9,7 +9,8 @@ from mmvae_hub.polymnist.PolymnistTrainer import PolymnistTrainer
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.polymnist.flags import parser, FlagsSetup
 from mmvae_hub.utils.setup.flags_utils import get_config_path
-
+from optuna.storages import RDBStorage
+from optuna.storages import RetryFailedTrialCallback
 
 class HyperoptTrainer:
     def __init__(self, flags, flags_setup: FlagsSetup, dataset: str):
@@ -54,11 +55,11 @@ class HyperoptTrainer:
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
 
-        try:
-            return run_hyperopt_epochs(PolymnistTrainer(mst))
-        except Exception as e:
-            log.info(f'Experiment failed with: {e}')
-            return 0
+        # try:
+        return run_hyperopt_epochs(PolymnistTrainer(mst))
+        # except Exception as e:
+        #     log.info(f'Experiment failed with: {e}')
+        #     return 0
 
 
 def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
@@ -77,18 +78,22 @@ if __name__ == '__main__':
 
     study_name = f'hyperopt-{method}-lower-lr_score_weight'
 
+
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
     #                             study_name=f"distributed-hyperopt-{flags.method}")
 
     postgresql_storage_address = "postgresql://klugh@ethsec-login-02:5433/distributed_hyperopt"
-
+    storage = optuna.storages.RDBStorage(
+        url=postgresql_storage_address,
+        failed_trial_callback=RetryFailedTrialCallback(max_retry=3),
+    )
 
     try:
         study = optuna.load_study(study_name=study_name,
-                                  storage=postgresql_storage_address)
+                                  storage=storage)
     except:
-        study = optuna.create_study(direction="maximize", storage=postgresql_storage_address,
+        study = optuna.create_study(direction="maximize", storage=storage,
                                     study_name=study_name)
 
     flags.dir_experiment = Path(flags.dir_experiment) / 'optuna'
