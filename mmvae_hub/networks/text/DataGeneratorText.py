@@ -71,13 +71,8 @@ class DataGeneratorText(nn.Module):
                 f'The output shapes of this network will not work for len_sequence: {args.len_sequence}.'
                 f' Please adapt them.')
 
-        if args.text_gen_lastlayer == "sigmoid":
-            modules.append(nn.Sigmoid())
-        elif args.text_gen_lastlayer == "softmax":
-            modules.append(nn.LogSoftmax(dim=1))
-        elif args.text_gen_lastlayer != "none":
-            raise NotImplementedError(
-                f"{args.text_gen_lastlayer} not implemented, chose between softmax and sigmoid for last data gen layer.")
+        modules.append(nn.LogSoftmax(dim=1))
+
         self.generator = nn.Sequential(*modules)
 
     def forward(self, feats):
