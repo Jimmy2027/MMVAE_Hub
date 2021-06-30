@@ -1,6 +1,8 @@
 import os
 import time
 
+import numpy as np
+
 
 def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
     n_cores = 8
@@ -14,16 +16,17 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
     if 'n_gpus' not in params:
         params['n_gpus'] = 1
 
-    # 100 epochs need a bit more than 2 hours
-    num_hours = int((params['end_epoch'] // 100) * 2.5) or 1
-
     # 100 epochs take about 5G of space
     scratch_space = int((params['end_epoch'] // 100) * 5) // n_cores or 1
 
     if which_dataset == 'polymnist':
         python_file = 'polymnist/main_polymnist.py'
+        # 1 epochs needs approx. 1 minute
+        num_hours = np.round((params['end_epoch'] * 1) / 60) or 1
     elif which_dataset == 'mimic':
         python_file = 'mimic/main_mimic.py'
+        # 1 epochs needs approx. 6 minutes
+        num_hours = np.round((params['end_epoch'] * 6) / 60) or 1
 
     command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem=1500,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
               f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \
