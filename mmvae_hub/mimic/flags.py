@@ -4,6 +4,7 @@ from mmvae_hub.base.BaseFlags import parser as parser
 from mmvae_hub.utils.setup.flags_utils import str2bool, BaseFlagsSetup
 
 parser.add_argument('--exp_str_prefix', type=str, default='Mimic', help="prefix of the experiment directory.")
+parser.add_argument('--mods', type=str, default='F_L_T', help="First letter of modalities.")
 
 # Image dependent
 parser.add_argument('--fixed_image_extractor', type=str2bool, default=True,

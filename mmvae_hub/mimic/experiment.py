@@ -50,23 +50,22 @@ class MimicExperiment(BaseExperiment):
 
     def set_modalities(self) -> typing.Mapping[str, BaseModality]:
         log.info('setting modalities')
-        mod1 = MimicPA(self.flags, self.labels, self.flags.rec_weight_m1, self.plot_img_size)
-        mod2 = MimicLateral(self.flags, self.labels, self.flags.rec_weight_m2, self.plot_img_size)
-        mod3 = MimicText(self.flags, self.labels, self.flags.rec_weight_m3, self.plot_img_size,
-                         self.dataset_train.report_findings_dataset.i2w)
-        if self.flags.only_text_modality:
-            mods = {mod3.name: mod3}
-        else:
-            mods = {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3}
-
-        if self.flags.use_clf:
-            for k, mod in mods.items():
-                mod.set_clf()
+        mods = {}
+        for mod_str in self.flags.mods.split('_'):
+            if mod_str == 'F':
+                mod = MimicPA(self.flags, self.labels, self.flags.rec_weight_m1, self.plot_img_size)
+            elif mod_str == 'L':
+                mod = MimicLateral(self.flags, self.labels, self.flags.rec_weight_m2, self.plot_img_size)
+            elif mod_str == 'T':
+                mod = MimicText(self.flags, self.labels, self.flags.rec_weight_m3, self.plot_img_size,
+                                self.dataset_train.report_findings_dataset.i2w)
+            else:
+                raise ValueError(f'Invalid mod_str {mod_str}.' + 'Choose between {T,L,T}')
+            mods[mod.name] = mod
 
         return mods
 
     def set_dataset(self):
-
         log.info('setting dataset')
         # used for faster unittests i.e. a dummy dataset
         if self.flags.dataset == 'toy':

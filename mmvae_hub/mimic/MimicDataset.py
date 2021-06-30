@@ -29,6 +29,7 @@ class Mimic(Dataset):
         transformations can be applied directly in the dataset transformations.
         transform_images: if False, the images are not transformed, can be used to test the dataset statistics.
         """
+        self.mod_strs = args.mods.split('_')
         self.args = args
         self.split = split
         self.str_labels = str_labels
@@ -52,16 +53,11 @@ class Mimic(Dataset):
         else:
             self.transform_img = lambda x: x
 
-        if self.args.text_encoding == 'char':
-            self.get_vec = self.get_char_text_vec
-        elif self.args.text_encoding == 'word':
-            self.get_vec = self.get_word_text_vec
-        else:
-            raise NotImplementedError(f'{self.args.text_encoding} has to be either char or word')
+        self.get_vec = self.get_word_text_vec
 
     def _get_labels(self, fn_labels):
         labels = pd.read_csv(fn_labels)[self.str_labels].fillna(0)
-        # need to filter out labels that contain the label "-1"
+        # filter out labels that contain the label "-1"
         labels = filter_labels(labels, which_labels=self.str_labels,
                                undersample_dataset=self.args.undersample_dataset, split=self.split)
         return labels
@@ -70,15 +66,21 @@ class Mimic(Dataset):
         try:
             label = torch.from_numpy((self.labels.iloc[label_index][self.str_labels].values).astype(int)).float()
             index = self.labels.iloc[label_index].name
-            # get modalities
-            img_pa = self.imgs_pa[index, :, :]
-            img_lat = self.imgs_lat[index, :, :]
-            text_vec = self.get_vec(index)
-            # transform images
-            img_pa = self.transform_img(img_pa)
-            img_lat = self.transform_img(img_lat)
 
-            sample = {'PA': img_pa, 'Lateral': img_lat, 'text': text_vec}
+            sample = {}
+            # get modalities
+            if 'F' in self.mod_strs:
+                img_pa = self.imgs_pa[index, :, :]
+                img_pa = self.transform_img(img_pa)
+                sample['PA'] = img_pa
+            if 'L' in self.mod_strs:
+                img_lat = self.imgs_lat[index, :, :]
+                img_lat = self.transform_img(img_lat)
+                sample['Lateral'] = img_lat
+            if 'T' in self.mod_strs:
+                text_vec = self.get_vec(index)
+                sample['text'] = text_vec
+
         except (IndexError, OSError):
             return None
         return sample, label
@@ -145,7 +147,6 @@ class MimicText(Dataset):
         # need to filter out labels that contain the label "-1"
         self.labels = filter_labels(self.labels, which_labels=self.str_labels,
                                     undersample_dataset=args.undersample_dataset, split=split)
-
 
         # need dataset for report_findings that contains the encodings.
         self.report_findings_dataset = self.get_report_findings_dataset(dir_dataset)
@@ -401,10 +402,8 @@ class Mimic_testing(Dataset):
 
     def __getitem__(self, index):
         sample = self.get_images() if not self.flags.only_text_modality else {}
-        if self.flags.text_encoding == 'word':
-            sample['text'] = torch.randint(0, 3517, (1, self.flags.len_sequence)).view(self.flags.len_sequence).float()
-        elif self.flags.text_encoding == 'char':
-            sample['text'] = torch.rand(self.flags.len_sequence, self.flags.num_features).float()
+        sample['text'] = torch.randint(0, 3517, (1, self.flags.len_sequence)).view(self.flags.len_sequence).float()
+
         nbr_labels = 1 if self.flags.binary_labels else 3
         label = torch.tensor([random.randint(0, 1) for _ in range(nbr_labels)]).float()
         return sample, label
