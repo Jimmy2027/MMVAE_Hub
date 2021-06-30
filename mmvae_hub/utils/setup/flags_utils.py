@@ -112,16 +112,19 @@ class BaseFlagsSetup:
         return config['metadata']['version']
 
     def setup_leomed(self, flags):
-        polymnist_zip_path = Path('/cluster/work/vogtlab/Projects/Polymnist/PolyMNIST.zip')
         tmpdir = Path(os.getenv("TMPDIR"))
-        out_dir = tmpdir
 
-        log.info(f'Extracting data from {polymnist_zip_path} to {out_dir}.')
-        unpack_zipfile(polymnist_zip_path, out_dir)
+        # unzip polymnist dataset to tmpdir
+        if flags.dataset == 'polymnist':
+            polymnist_zip_path = Path('/cluster/work/vogtlab/Projects/Polymnist/PolyMNIST.zip')
+            out_dir = tmpdir
 
-        flags.dir_data = out_dir / 'PolyMNIST'
+            log.info(f'Extracting data from {polymnist_zip_path} to {out_dir}.')
+            unpack_zipfile(polymnist_zip_path, out_dir)
 
-        assert out_dir.exists(), f'Data dir {out_dir} does not exist.'
+            flags.dir_data = out_dir / 'PolyMNIST'
+
+            assert out_dir.exists(), f'Data dir {out_dir} does not exist.'
 
         flags.dir_fid = tmpdir / 'fid'
 
