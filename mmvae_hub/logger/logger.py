@@ -27,7 +27,7 @@ logging.getLogger('PIL').setLevel(logging.WARNING)
 LOG_FILE = (pathlib.Path(__file__).parent / "logs")
 LOG_FILE.mkdir(exist_ok=True, parents=True)
 
-for f in sorted(LOG_FILE.glob("*-*-*.log"))[:-5]:
+for f in sorted(LOG_FILE.glob("*-*-*.log"))[:-10]:
     try:
         os.remove(f)
     except:
