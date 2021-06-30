@@ -4,7 +4,7 @@ base_params = {
     'class_dim': [256],
     "beta": [1],
     "num_flows": [5],
-    "num_mods": [3],
+    # "num_mods": [3],
     "end_epoch": [100],
     "weighted_mixture": [False],
     "amortized_flow": [False]
