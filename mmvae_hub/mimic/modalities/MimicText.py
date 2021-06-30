@@ -58,6 +58,9 @@ class MimicText(BaseModality):
             model_clf.load_state_dict(torch.load(clf_path, map_location=self.flags.device))
             return model_clf.to(self.flags.device)
 
+    def calc_likelihood(self, style_embeddings, class_embeddings):
+        return self.likelihood(logits=self.decoder(style_embeddings, class_embeddings)[0], validate_args=False)
+
     def seq2text(self, seq: Iterable[int]) -> List[str]:
         """
         seg: list of indices

@@ -1,7 +1,7 @@
 import os
 from abc import ABC
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Tuple
 
 import numpy as np
 import torch.nn as nn
@@ -52,6 +52,8 @@ class BaseMMVAE(ABC, nn.Module):
                 enc_mods[mod_str] = {}
 
                 style_mu, style_logvar, class_mu, class_logvar, _ = mod.encoder(input_batch[mod_str])
+                assert class_mu.mean() is not None
+                assert class_logvar.mean() is not None
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
 
@@ -73,7 +75,7 @@ class BaseMMVAE(ABC, nn.Module):
             else:
                 style_embeddings = None
             mod = self.modalities[mod_str]
-            rec_mods[mod_str] = mod.likelihood(*mod.decoder(style_embeddings, class_embeddings))
+            rec_mods[mod_str] = mod.calc_likelihood(style_embeddings, class_embeddings)
         return rec_mods
 
     def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
