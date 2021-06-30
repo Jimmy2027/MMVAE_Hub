@@ -24,4 +24,4 @@ class ModalityIMG(BaseModality):
         return d.repeat(1, 1, 1, 1)
 
     def calc_likelihood(self, style_embeddings, class_embeddings):
-        return self.likelihood(**self.decoder(style_embeddings, class_embeddings))
+        return self.likelihood(*self.decoder(style_embeddings, class_embeddings))
