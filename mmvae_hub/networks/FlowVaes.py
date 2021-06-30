@@ -471,6 +471,7 @@ class GfMVAE(BaseMMVAE):
 
 
 class GfMoPVAE(JointElboMMVae):
+    """GfM of Product of experts VAE"""
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = GfMoPDiv()
@@ -570,8 +571,8 @@ class PGfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PGfMMMDiv()
-        self.flow_mus = self.construct_flow()
-        self.flow_logvars = self.construct_flow()
+        self.flow_mus = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
@@ -587,7 +588,6 @@ class PGfMVAE(BaseMMVAE):
 
         # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
-
             if len(self.subsets[s_key]) == 1:
                 q_subset = enc_mods[s_key].latents_class
             else:
@@ -612,8 +612,8 @@ class PGfMVAE(BaseMMVAE):
         mu_average = torch.mean(mus, dim=0)
         logvar_average = torch.mean(logvars, dim=0)
 
-        mu_gfm, _ = self.flow_mus(mu_average, rev=True)
-        logvar_gfm, _ = self.flow_logvars(logvar_average, rev=True)
+        mu_gfm, _ = self.flow_mus.rev(mu_average)
+        logvar_gfm, _ = self.flow_logvars.rev(logvar_average)
         return Distr(mu=mu_gfm, logvar=logvar_gfm)
 
     def encode_expert(self, expert_distr: Distr) -> Distr:
@@ -621,13 +621,3 @@ class PGfMVAE(BaseMMVAE):
         logvar_k, _ = self.flow_logvars(expert_distr.logvar)
         return Distr(mu=mu_k, logvar=logvar_k)
 
-    def construct_flow(self):
-        def subnet_fc(dims_in, dims_out):
-            return nn.Sequential(nn.Linear(dims_in, 512), nn.ReLU(),
-                                 nn.Linear(512, dims_out))
-
-        # a simple chain of operations is collected by ReversibleSequential
-        flow = Ff.SequenceINN(self.flags.class_dim)
-        for k in range(self.flags.num_flows):
-            flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
-        return flow
