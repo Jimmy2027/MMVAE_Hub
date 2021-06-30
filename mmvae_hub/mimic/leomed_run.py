@@ -9,4 +9,4 @@ for search_space in [base_search_spaces]:
     # for search_space in [search_space_je, search_space_gfm, search_space_mofop]:
 
     for params in ParameterGrid(search_space):
-        launch_leomed_jobs(which_dataset='polymnist', params=params)
+        launch_leomed_jobs(which_dataset='mimic', params=params)
