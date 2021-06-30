@@ -55,11 +55,11 @@ class HyperoptTrainer:
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
 
-        try:
-            return run_hyperopt_epochs(PolymnistTrainer(mst))
-        except Exception as e:
-            log.info(f'Experiment failed with: {e}')
-            return None
+        # try:
+        return run_hyperopt_epochs(PolymnistTrainer(mst))
+        # except Exception as e:
+        #     log.info(f'Experiment failed with: {e}')
+        #     return None
 
 
 def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
