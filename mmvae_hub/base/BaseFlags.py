@@ -84,7 +84,7 @@ parser.add_argument('--eval_freq_fid', type=int, default=10,
                     help="frequency of evaluation of latent representation of generative performance (in number of epochs)")
 parser.add_argument('--num_samples_fid', type=int, default=10000,
                     help="number of samples the calculation of fid is based on")
-parser.add_argument('--num_training_samples_lr', type=int, default=500,
+parser.add_argument('--num_training_samples_lr', type=int, default=1000,
                     help="number of training samples to train the lr clf")
 
 # multimodal
