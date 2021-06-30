@@ -207,6 +207,11 @@ class PGfMMMDiv(BaseMMDiv):
         latent_subsets = forward_results.joint_latents.subsets
         klds = self.calc_subset_divergences(latent_subsets)
 
+        # normalize klds with number of modalities in subset and batch_size
+        for subset_key, subset in subsets.items():
+            weights = (1 / float(len(subset) * num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
+            klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
+
         joint_div = klds['_'.join(joint_keys)]
         return klds, joint_div
 
