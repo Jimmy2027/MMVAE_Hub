@@ -73,7 +73,7 @@ def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
 
 if __name__ == '__main__':
     dataset = 'polymnist'
-    method = 'gfm'
+    method = 'pgfm'
     flags = parser.parse_args()
 
     study_name = f'hyperopt-{method}-missing_mod_score'
