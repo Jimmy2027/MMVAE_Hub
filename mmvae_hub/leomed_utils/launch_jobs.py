@@ -21,14 +21,16 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
 
     if which_dataset == 'polymnist':
         python_file = 'polymnist/main_polymnist.py'
+        mem = 1500
         # 1 epochs needs approx. 1 minute
         num_hours = int(np.round((params['end_epoch'] * 1) / 60)) or 1
     elif which_dataset == 'mimic':
         python_file = 'mimic/main_mimic.py'
         # 1 epochs needs approx. 6 minutes
         num_hours = int(np.round((params['end_epoch'] * 6) / 60)) or 1
+        mem = 2000
 
-    command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem=1500,ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
+    command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem={mem},ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
               f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \
               f'python {python_file} {flags}'
 
