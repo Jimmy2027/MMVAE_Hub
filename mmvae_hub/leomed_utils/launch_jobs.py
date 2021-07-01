@@ -26,8 +26,8 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         num_hours = int(np.round((params['end_epoch'] * 1) / 60)) or 1
     elif which_dataset == 'mimic':
         python_file = 'mimic/main_mimic.py'
-        # 1 epochs needs approx. 6 minutes
-        num_hours = int(np.round((params['end_epoch'] * 6) / 60)) or 1
+        # 1 epochs needs approx. 8 minutes
+        num_hours = int(np.round((params['end_epoch'] * 8) / 60)) or 1
         mem = 2000
 
     command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem={mem},ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
