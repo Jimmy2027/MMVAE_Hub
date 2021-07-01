@@ -12,10 +12,11 @@ from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 
 class HyperoptTrainer:
-    def __init__(self, flags, flags_setup: FlagsSetup, dataset: str):
+    def __init__(self, flags, flags_setup: FlagsSetup, dataset: str, method: str):
         self.flags = flags
         self.flags_setup = flags_setup
         self.dataset = dataset
+        self.method = method
 
     def hyperopt(self, trial):
         """
@@ -29,7 +30,8 @@ class HyperoptTrainer:
         with open('hyperopt_best_results.json', 'w') as jsonfile:
             json.dump(study.best_params, jsonfile)
             """
-        self.flags = self.flags_setup.setup(self.flags, additional_args={'dataset': self.dataset})
+        self.flags = self.flags_setup.setup(self.flags,
+                                            additional_args={'dataset': self.dataset, 'method': self.method})
 
         self.flags.optuna = trial
         self.flags.norby = False
@@ -93,7 +95,7 @@ if __name__ == '__main__':
 
     flags.dir_experiment = Path(flags.dir_experiment) / 'optuna'
     flags_setup = FlagsSetup(get_config_path(dataset=dataset, flags=flags))
-    trainer = HyperoptTrainer(flags, flags_setup, dataset=dataset)
+    trainer = HyperoptTrainer(flags, flags_setup, dataset=dataset, method=method)
     study.optimize(trainer.hyperopt, n_trials=100, gc_after_trial=True)
     print("Best trial:")
     print(study.best_params)
