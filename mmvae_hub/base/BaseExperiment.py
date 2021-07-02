@@ -4,8 +4,9 @@ from abc import abstractmethod
 from torch import optim
 
 from mmvae_hub.networks.BaseMMVae import *
-from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, PGfMVAE, GfMVAE, AfomMMVAE, \
-    EGfMVAE, GfMoPVAE, MoFoPoE
+from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
+    MoFoPoE
+from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, EGfMVAE, PGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -75,6 +76,8 @@ class BaseExperiment(ABC):
         elif self.flags.method == 'gfmop':
             model = GfMoPVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'mofop':
+            model = MoFoPoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'pgfmop':
             model = MoFoPoE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
