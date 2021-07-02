@@ -4,6 +4,8 @@
   "dir_experiment": "/mnt/data/hendrik/mmvae_hub/experiments",
   "inception_state_dict": "/mnt/data/hendrik/mimic_scratch/mimic/pt_inception-2015-12-05-6726825d.pth",
   "dir_fid": "/mnt/data/hendrik/mimic_scratch/mimic",
+  "norby": true,
+  "use_db": true,
   "max_early_stopping_index": 20,
   "DIM_img": 64,
   "img_size": 128,

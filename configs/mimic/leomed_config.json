@@ -33,6 +33,6 @@
   "end_epoch": 150,
   "calc_nll": false,
   "eval_lr": true,
-  "calc_prd": true,
+  "calc_prd": false,
   "use_clf": false
 }
