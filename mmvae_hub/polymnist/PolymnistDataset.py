@@ -171,12 +171,6 @@ class ToyPolymnistDataset(Dataset):
         torch.manual_seed(self.seed)
         images_dict = {"m%d" % m: torch.rand(3, 28, 28).float() for m in range(self.num_modalities)}
 
-        assert torch.sum(images_dict['m0']).item() in [
-            1189.1019287109375,
-            1162.515869140625,
-            1160.343505859375
-        ]
-
         return images_dict, random.randint(0, 10)
 
     def __len__(self):
