@@ -11,32 +11,6 @@ from mmvae_hub.utils.plotting.save_samples import save_generated_samples_singleg
 from mmvae_hub.utils.utils import init_twolevel_nested_dict, dict_to_device
 
 
-def classify_cond_gen_samples_(exp, labels: Tensor, cond_samples: typing.Mapping[str, Tensor]) \
-        -> typing.Mapping[str, typing.Mapping[str, float]]:
-    labels = np.reshape(labels, (labels.shape[0], len(exp.labels)))
-    clfs = exp.clfs
-    eval_labels = {l_key: {} for l_key in exp.labels}
-    for key in clfs.keys():
-        if key in cond_samples.keys():
-            mod_cond_gen = cond_samples[key]
-            mod_clf = clfs[key]
-            mod_cond_gen = transform_gen_samples(mod_cond_gen, exp.clf_transforms[key]).to(exp.flags.device)
-            # classify generated sample to evaluate coherence
-            attr_hat = mod_clf(mod_cond_gen)
-            for l, label_str in enumerate(exp.labels):
-                if exp.flags.dataset == 'testing':
-                    # when using the testing dataset, the vae attr_hat might contain nans.
-                    # Replace them for testing purposes
-                    score = exp.eval_label(np.nan_to_num(attr_hat.cpu().data.numpy()), labels, index=l)
-                else:
-                    # score is nan if it only contains one class.
-                    score = exp.eval_label(attr_hat.cpu().data.numpy(), labels, index=l)
-                eval_labels[label_str][key] = score
-        else:
-            print(str(key) + 'not existing in cond_gen_samples')
-    return eval_labels
-
-
 def classify_cond_gen_samples(exp, labels: Tensor, cond_samples: typing.Mapping[str, Tensor]) \
         -> typing.Mapping[str, Tensor]:
     """
