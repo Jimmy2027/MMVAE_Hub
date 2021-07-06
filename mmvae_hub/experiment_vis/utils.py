@@ -24,7 +24,7 @@ from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
 
-FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop']
+FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop', 'planar_vae']
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
@@ -437,12 +437,12 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_mofop_2021_06_27_11_44_04_964266'
+    # experiment_uid = 'polymnist_planar_vae_2021_07_03_11_09_55_238096'
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_mofop_2021_06_27_11_44_04_964266']:
+    for id in ['polymnist_planar_vae_2021_07_03_11_09_55_238096']:
         upload_notebook_to_db(id)

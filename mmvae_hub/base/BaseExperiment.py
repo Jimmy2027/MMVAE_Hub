@@ -1,14 +1,22 @@
+import os
 import random
-from abc import abstractmethod
+import typing
+from abc import abstractmethod, ABC
+from itertools import chain, combinations
+from typing import Mapping, Iterable
 
-from torch import optim
+import numpy as np
+import torch
+from torch import optim, Tensor
 
-from mmvae_hub.networks.BaseMMVae import *
+from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
 from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, EGfMVAE, PGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
+from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE
+from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
 
 
@@ -79,6 +87,8 @@ class BaseExperiment(ABC):
             model = MoFoPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'pgfmop':
             model = MoFoPoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'planar_vae':
+            model = PlanarVAE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
