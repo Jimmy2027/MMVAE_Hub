@@ -6,12 +6,14 @@ from mmvae_hub.mimic.experiment import MimicExperiment
 from mmvae_hub.mimic.flags import parser, MimicFlagsSetup
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
+DATASET = 'mimic'
+
 if __name__ == '__main__':
 
     flags = parser.parse_args()
     flags.dataset = 'mimic'
-    flags_setup = MimicFlagsSetup(get_config_path(flags=flags))
-    flags = flags_setup.setup(flags)
+    flags_setup = MimicFlagsSetup(get_config_path(dataset=DATASET, flags=flags))
+    flags = flags_setup.setup(flags, additional_args={'dataset': DATASET})
 
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
                      f'Experiment {flags.experiment_uid} finished.'):
