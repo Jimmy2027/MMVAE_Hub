@@ -24,6 +24,20 @@ sp_pgfm = {
     "amortized_flow": [False]
 }
 
+sp_joint_elbo = {
+    'n_gpus': [1],
+    'method': ['joint_elbo'],
+    'beta': [1],
+    'class_dim': [256],
+    "num_mods": [1],
+    "num_flows": [5],
+    # "initial_learning_rate": [9e-05],
+    "end_epoch": [100],
+    "coupling_dim": [512],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
+
 sp_mofop = {
     'n_gpus': [1],
     'method': ['mofop'],
