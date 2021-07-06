@@ -9,7 +9,7 @@ from mmvae_hub.utils.setup.flags_utils import get_config_path
 search_spaces = {
     # 'method': ['mofop'],
     # 'method': ['fomop'],
-    'method': ['pgfmop'],
+    'method': ['pgfm'],
     # "eval_freq_fid": [1],
     'class_dim': [256],
     "beta": [1],
@@ -21,13 +21,14 @@ search_spaces = {
 }
 
 search_spaces_1 = {
-    'method': ['planar_vae'],
+    'method': ['mofop'],
+    # "dataloader_workers":[0],
     # 'method': ['moe'],
     'class_dim': [256],
     "beta": [1],
-    "num_flows": [1],
+    "num_flows": [0],
     "num_mods": [1],
-    "end_epoch": [100],
+    "end_epoch": [500],
     "weighted_mixture": [False]
 }
 
