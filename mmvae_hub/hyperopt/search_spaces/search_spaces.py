@@ -15,7 +15,7 @@ sp_pgfm = {
     'method': ['pgfm'],
     'beta': [1],
     'class_dim': [256],
-    "num_mods": [1],
+    "num_mods": [3],
     "num_flows": [5],
     # "initial_learning_rate": [9e-05],
     "end_epoch": [100],
