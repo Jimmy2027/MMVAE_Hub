@@ -79,22 +79,23 @@ class MimicExperiment(BaseExperiment):
         return d_train, d_eval
 
     def set_clf_transforms(self) -> dict:
-        if self.flags.text_clf_type == 'word':
-            def text_transform(x):
-                # converts one hot encoding to indices vector
-                return torch.argmax(x, dim=-1)
-        else:
-            def text_transform(x):
-                return x
+        if self.flags.use_clf:
+            if self.flags.text_clf_type == 'word':
+                def text_transform(x):
+                    # converts one hot encoding to indices vector
+                    return torch.argmax(x, dim=-1)
+            else:
+                def text_transform(x):
+                    return x
 
-        # create temporary args to set the number of crops to 1
-        temp_args = Namespace(**vars(self.flags))
-        temp_args.n_crops = 1
-        return {
-            'PA': get_transform_img(temp_args, self.flags.img_clf_type),
-            'Lateral': get_transform_img(temp_args, self.flags.img_clf_type),
-            'text': text_transform
-        }
+            # create temporary args to set the number of crops to 1
+            temp_args = Namespace(**vars(self.flags))
+            temp_args.n_crops = 1
+            return {
+                'PA': get_transform_img(temp_args, self.flags.img_clf_type),
+                'Lateral': get_transform_img(temp_args, self.flags.img_clf_type),
+                'text': text_transform
+            }
 
     def set_rec_weights(self):
         """
