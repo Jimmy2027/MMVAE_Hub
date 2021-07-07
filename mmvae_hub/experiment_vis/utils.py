@@ -16,6 +16,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 from pandas import DataFrame
 
 from mmvae_hub import log
+from mmvae_hub.mimic.experiment import MimicExperiment
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowVAE, FoMoP
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
@@ -38,7 +39,7 @@ def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
     # copy notebook to experiment run
     shutil.copyfile(notebook_path, dest_notebook_path)
 
-    log.info(f'Executing experiment vis notebook {notebook_path}.')
+    log.info(f'Executing experiment vis notebook {dest_notebook_path}.')
     with open(dest_notebook_path) as f:
         nb = nbformat.read(f, as_version=4)
     ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
@@ -272,7 +273,7 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 
 def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None):
     if not flags:
-        dataset = _id.split('_')[0]
+        dataset = _id.split('_')[0].lower()
         flags_setup = BaseFlagsSetup(get_config_path(dataset=dataset))
         flags_path = Path('flags.rar')
         if flags_path.exists():
@@ -292,6 +293,7 @@ def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None
         # load networks from database
         exp.mm_vae = exp.experiments_database.load_networks_from_db(exp.mm_vae)
 
+    exp.set_eval_mode()
     plots = generate_plots(exp, epoch=0)
 
     for p_key, ps in plots.items():
@@ -410,6 +412,8 @@ def get_experiment(flags):
     """
     if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
         return PolymnistExperiment(flags)
+    elif Path(flags.dir_data).name.startswith('mimic') or Path(flags.dir_data).name == 'scratch':
+        return MimicExperiment(flags)
     elif flags.dataset == 'toy':
         return PolymnistExperiment(flags)
     else:
@@ -437,12 +441,13 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_planar_vae_2021_07_03_11_09_55_238096'
+    # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
+    # experiment_uid = 'polymnist_joint_elbo_2021_06_13_20_22_54_132735'
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_planar_vae_2021_07_03_11_09_55_238096']:
+    for id in ['Mimic_joint_elbo_2021_07_06_09_44_52_871882']:
         upload_notebook_to_db(id)
