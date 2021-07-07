@@ -15,7 +15,7 @@ sp_pgfm = {
     'method': ['pgfm'],
     'beta': [1],
     'class_dim': [256],
-    "num_mods": [3],
+    # "num_mods": [3],
     "num_flows": [5],
     # "initial_learning_rate": [9e-05],
     "end_epoch": [100],
@@ -34,6 +34,20 @@ sp_joint_elbo = {
     # "initial_learning_rate": [9e-05],
     "end_epoch": [100],
     "coupling_dim": [512],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
+
+sp_joint_elbo_mimic = {
+    'n_gpus': [1],
+    'method': ['joint_elbo'],
+    'beta': [1],
+    'class_dim': [512],
+    # "num_mods": [1],
+    # "num_flows": [5],
+    "initial_learning_rate": [5e-04],
+    "end_epoch": [150],
+    # "coupling_dim": [512],
     "weighted_mixture": [False],
     "amortized_flow": [False]
 }
