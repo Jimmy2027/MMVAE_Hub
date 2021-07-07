@@ -128,16 +128,21 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
         Create a subspace for all the combinations of the encoded modalities by combining them.
         A joint latent space is then created by fusing all subspaces.
         """
+        # get all subsets that can be created from the batch_mods
         batch_subsets = subsets_from_batchmods(batch_mods)
         distr_subsets = {}
 
-        # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
+            # create subset distr with PoE
             distr_subset = self.fuse_subset(enc_mods, s_key)
+
+            # sample and pass through flows
             z0 = distr_subset.reparameterize()
             zk, log_det_j = self.flow.forward(z0)
+
             distr_subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
 
+        # select expert for z_joint
         z_joint = mixture_component_selection_embedding(enc_mods=distr_subsets, s_key='all',
                                                         flags=self.flags)
         joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=log_det_j)
@@ -426,5 +431,3 @@ class PlanarMixtureMMVae(FlowOfEncModsVAE, MOEMMVae):
 
         # fuse enc_mods
         return (weights_subset * zk_subset).sum(dim=0)
-
-

@@ -120,6 +120,18 @@ class BaseMMVAE(ABC, nn.Module):
     # ==================================================================================================================
     # Generation
     # ==================================================================================================================
+    def generate(self, num_samples=None) -> Mapping[str, Tensor]:
+        """
+        Generate from latents that were sampled from a normal distribution.
+        """
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        z_class = self.get_rand_samples_from_joint(num_samples)
+        z_styles = self.get_random_styles(num_samples)
+
+        random_latents = ReparamLatent(content=z_class, style=z_styles)
+        return self.generate_from_latents(random_latents)
 
     def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
         cond_gen = {}
@@ -149,6 +161,16 @@ class BaseMMVAE(ABC, nn.Module):
             styles[mod_str] = z_style_m
         return styles
 
+    def get_rand_samples_from_joint(self, num_samples: int):
+        """
+        Sample from a standard normal distribution.
+        """
+        mu = torch.zeros(num_samples,
+                         self.flags.class_dim).to(self.flags.device)
+        logvar = torch.zeros(num_samples,
+                             self.flags.class_dim).to(self.flags.device)
+        return Distr(mu, logvar).reparameterize()
+
     def get_random_style_dists(self, num_samples: int) -> Mapping[str, Distr]:
         styles = {}
         for mod_str in self.modalities:
@@ -157,26 +179,6 @@ class BaseMMVAE(ABC, nn.Module):
             dist_m = Distr(mu=s_mu_m, logvar=s_logvar_m)
             styles[mod_str] = dist_m
         return styles
-
-    def generate(self, num_samples=None) -> Mapping[str, Tensor]:
-        """
-        Generate from latents that were sampled from a normal distribution.
-        """
-        if num_samples is None:
-            num_samples = self.flags.batch_size
-
-        z_class = self.get_rand_samples_from_joint(num_samples)
-
-        z_styles = self.get_random_styles(num_samples)
-        random_latents = ReparamLatent(content=z_class, style=z_styles)
-        return self.generate_from_latents(random_latents)
-
-    def get_rand_samples_from_joint(self, num_samples: int):
-        mu = torch.zeros(num_samples,
-                         self.flags.class_dim).to(self.flags.device)
-        logvar = torch.zeros(num_samples,
-                             self.flags.class_dim).to(self.flags.device)
-        return Distr(mu, logvar).reparameterize()
 
     def cond_generation(self, joint_latent: JointLatents, num_samples=None) -> Mapping[str, Mapping[str, Tensor]]:
         if num_samples is None:
