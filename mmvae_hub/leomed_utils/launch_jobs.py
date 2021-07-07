@@ -22,8 +22,8 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
     if which_dataset == 'polymnist':
         python_file = 'polymnist/main_polymnist.py'
         mem = 1500
-        # 1 epochs needs approx. 1 minute
-        num_hours = int(np.round((params['end_epoch'] * 1) / 60)) or 1
+        # 1 epochs needs approx. 2 minutes
+        num_hours = int(np.round((params['end_epoch'] * 2) / 60)) or 1
         # 100 epochs take about 5G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
     elif which_dataset == 'mimic':
