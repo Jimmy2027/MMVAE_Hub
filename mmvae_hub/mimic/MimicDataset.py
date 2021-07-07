@@ -46,7 +46,8 @@ class Mimic(Dataset):
         self._verify_dataset()
 
         self.report_findings_dataset = self.get_report_findings_dataset(dir_dataset)
-        self.args.vocab_size = self.report_findings_dataset.vocab_size
+        if not hasattr(self.args, 'vocab_size'):
+            self.args.vocab_size = self.report_findings_dataset.vocab_size
 
         if transform_images:
             self.transform_img = get_transform_img(args, args.feature_extractor_img, clf_training)
