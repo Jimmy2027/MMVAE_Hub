@@ -52,6 +52,20 @@ sp_joint_elbo_mimic = {
     "amortized_flow": [False]
 }
 
+sp_pgfm_mimic = {
+    'n_gpus': [1],
+    'method': ['pgfm'],
+    'beta': [1],
+    'class_dim': [512],
+    # "num_mods": [3],
+    "num_flows": [1],
+    # "initial_learning_rate": [9e-05],
+    "end_epoch": [150],
+    "coupling_dim": [512],
+    "weighted_mixture": [False],
+    "amortized_flow": [False]
+}
+
 sp_mofop = {
     'n_gpus': [1],
     'method': ['mofop'],
