@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from mmvae_hub import log
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.metrics.average_meters import AverageMeter
 from mmvae_hub.utils.utils import dict2json
@@ -10,28 +11,34 @@ class BaseCallback:
         self.flags = exp.flags
         self.epoch_time = AverageMeter('epoch_time', precision=0)
 
-        self.beta = self.flags.beta
+        self.beta = self.flags.min_beta
 
     def update_epoch(self, train_results: BaseBatchResults, test_results: BaseTestResults, epoch: int,
                      epoch_time: float):
         self.epoch_time.update(epoch_time)
 
-        self.maybe_send_to_db(train_results=train_results, test_results=test_results, epoch=epoch)
+        # set beta_warmup coefficient
+        self.beta = min(
+            [max([self.flags.min_beta, (epoch * 1.) / max([self.flags.beta_warmup, 1.])]), self.flags.max_beta])
+        log.info(f'beta = {self.beta}')
+
+        self.maybe_send_to_db(train_results=train_results, test_results=test_results, epoch=epoch, beta=self.beta)
 
         # save checkpoints after every 5 epochs
         if (epoch + 1) % 5 == 0 or (epoch + 1) == self.flags.end_epoch:
             self.exp.mm_vae.save_networks(epoch)
 
-        return 0 if epoch < self.flags.kl_annealing else self.beta
+        return self.beta
 
-    def maybe_send_to_db(self, train_results: BaseBatchResults, test_results: BaseTestResults, epoch: int):
+    def maybe_send_to_db(self, train_results: BaseBatchResults, test_results: BaseTestResults, epoch: int, beta: float):
         """
-        Send epoch results to db if use_db flags is set.
+        Send epoch results to db if use_db flags is set, otherwise save epoch results as jsonfile.
         """
 
         epoch_results_dict = {'train_results': {**train_results.__dict__},
                               'test_results': {**test_results.__dict__},
-                              'epoch_time': self.epoch_time.get_average()}
+                              'epoch_time': self.epoch_time.get_average(),
+                              'beta': beta}
 
         if self.flags.use_db == 1:
             epoch_results = self.exp.experiments_database.get_experiment_dict()['epoch_results']
