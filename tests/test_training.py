@@ -10,7 +10,7 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-@pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture', 'moe', 'poe', 'pfom'])
+@pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture', 'moe', 'poe', 'pfom', 'pgfm'])
 # @pytest.mark.parametrize("method", ['joint_elbo'])
 def test_run_epochs_polymnist(method: str):
     """
@@ -23,7 +23,9 @@ def test_run_epochs_polymnist(method: str):
         # calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe'] else True
         calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
-                                                                                    # 'weighted_mixture': True
+
+                                                                                    # 'num_mods': 1
+                                                                                    # 'num_flows': 1
                                                                                     })
         trainer = PolymnistTrainer(mst)
         test_results = trainer.run_epochs()
@@ -38,7 +40,8 @@ def test_run_epochs_mimic(method: str):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
         calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
-        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': calc_nll,
+        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': False,
+                                                                                'use_clf': False,
                                                                                 # 'weighted_mixture': True
                                                                                 })
         trainer = MimicTrainer(mst)
@@ -73,14 +76,16 @@ def test_test_generation():
 if __name__ == '__main__':
     # pass
 
-    # test_run_epochs_polymnist(method='gfm')
+    # test_run_epochs_polymnist(method='afom')
     # test_run_epochs_polymnist(method='pfom')
-    # test_run_epochs_polymnist(method='pope')
-    # test_run_epochs_polymnist(method='pgfm')
-    test_run_epochs_polymnist(method='poe')
-    # test_run_epochs_polymnist(method='joint_elbo')
-    test_run_epochs_polymnist(method='moe')
-    # test_run_epochs_polymnist(method='planar_mixture')
+    # test_run_epochs_polymnist(method='gfm')
+    # test_run_epochs_polymnist(method='gfmop')
+    # test_run_epochs_polymnist(method='gfm')
+    # test_run_epochs_polymnist(method='poe')
+    test_run_epochs_polymnist(method='gfm')
+    # test_run_epochs_mimic(method='joint_elbo')
+    # test_run_epochs_polymnist(method='moe')
+    # test_run_epochs_polymnist(method='mofop')
 
     # test_run_epochs_polymnist(method='pope')
     # test_run_planar_mixture_no_flow()
