@@ -2,15 +2,14 @@ import typing
 from typing import Mapping
 
 import torch
-from FrEIA import framework as Ff, modules as Fm
-from torch import Tensor, nn
+from torch import Tensor
 
-from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, EGfMMMDiv, PGfMMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.utils.Dataclasses import BaseEncMod, JointLatentsGfM, JointEmbeddingFoEM, Distr, EncModGfM, \
-    JointLatentsGfMoP, JointLatentsEGfM, JointLatentsFoEM, JointLatents
+    JointLatentsGfMoP, JointLatentsFoEM, JointLatents
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 
 
@@ -27,29 +26,28 @@ class GfMVAE(BaseMMVAE):
         Create a subspace for all the combinations of the encoded modalities by combining them.
         """
         batch_subsets = subsets_from_batchmods(batch_mods)
-        distr_subsets = {}
+        subset_embeddings = {}
 
         # pass all experts through the flow
-        enc_mod_zks = {mod_key: self.encode_expert(enc_mod.latents_class) for mod_key, enc_mod in enc_mods.items()}
+        enc_mod_zks = {mod_key: self.flow(distr.latents_class.reparameterize())[0] for mod_key, distr in
+                       enc_mods.items()}
 
-        # concatenate zks for every modality in each subset
+        # concatenate mus and logvars for every modality in each subset
         for s_key in batch_subsets:
-            if len(s_key.split('_')) == 1:
-                distr_subsets[s_key] = enc_mods[s_key]
-                z_subset = enc_mods[s_key].latents_class.reparameterize()
-            else:
-                z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
-                z_subset, _ = self.flow.rev(z_mixture)
-                distr_subsets[s_key] = z_subset
+            subset_zks = torch.Tensor().to(self.flags.device)
+            for mod in self.subsets[s_key]:
+                subset_zks = torch.cat((subset_zks, enc_mod_zks[mod.name].unsqueeze(dim=0)), dim=0)
+            # mean of zks
+            z_mean = torch.mean(subset_zks, dim=0)
+            # calculate inverse flow
+            z_subset, _ = self.flow.rev(z_mean)
+
+            subset_embeddings[s_key] = z_subset
 
             if len(self.subsets[s_key]) == len(batch_mods):
                 joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
 
-        return JointLatentsGfM(joint_embedding=joint_embedding, subsets=distr_subsets)
-
-    def encode_expert(self, expert_distr: Distr) -> EncModGfM:
-        zk, _ = self.flow(expert_distr.reparameterize())
-        return EncModGfM(zk=zk)
+        return JointLatentsGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
 
 
 class GfMoPVAE(JointElboMMVae):
@@ -91,54 +89,6 @@ class GfMoPVAE(JointElboMMVae):
         # pass the mixture backwards through the flow.
         z_joint, _ = self.flow.rev(z_mixture)
         return z_joint
-
-    def encode_expert(self, expert_distr: Distr) -> EncModGfM:
-        zk, _ = self.flow(expert_distr.reparameterize())
-        return EncModGfM(zk=zk)
-
-
-class EGfMVAE(BaseMMVAE):
-    """Embedding Generalized f-Mean method."""
-
-    def __init__(self, exp, flags, modalities, subsets):
-        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        self.mm_div = EGfMMMDiv()
-
-        def subnet_fc(dims_in, dims_out):
-            inter_dim = flags.flow_dim
-            return nn.Sequential(nn.Linear(dims_in, inter_dim), nn.ReLU(),
-                                 nn.Linear(inter_dim, dims_out))
-
-        # a simple chain of operations is collected by ReversibleSequential
-        self.flow = Ff.SequenceINN(flags.class_dim)
-        for _ in range(flags.num_flows):
-            self.flow.append(Fm.AllInOneBlock, subnet_constructor=subnet_fc, permute_soft=True)
-
-    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
-                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
-        """
-        Create a subspace for all the combinations of the encoded modalities by combining them.
-        """
-        batch_subsets = subsets_from_batchmods(batch_mods)
-        distr_subsets = {}
-
-        # pass all experts through the flow
-        enc_mod_zks = {mod_key: self.encode_expert(enc_mod.latents_class) for mod_key, enc_mod in enc_mods.items()}
-
-        # concatenate zks for every modality in each subset
-        for s_key in batch_subsets:
-            if len(s_key.split('_')) == 1:
-                distr_subsets[s_key] = enc_mods[s_key].latents_class.reparameterize()
-                z_subset = distr_subsets[s_key]
-            else:
-                z_mixture = mixture_component_selection_embedding(enc_mods=enc_mod_zks, s_key=s_key, flags=self.flags)
-                z_subset, _ = self.flow(z_mixture, rev=True)
-                distr_subsets[s_key] = z_subset
-
-            if len(self.subsets[s_key]) == len(batch_mods):
-                joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
-
-        return JointLatentsEGfM(joint_embedding=joint_embedding, subsets=distr_subsets)
 
     def encode_expert(self, expert_distr: Distr) -> EncModGfM:
         zk, _ = self.flow(expert_distr.reparameterize())

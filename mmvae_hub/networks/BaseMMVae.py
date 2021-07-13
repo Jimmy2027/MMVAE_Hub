@@ -1,7 +1,7 @@
 import os
 from abc import ABC
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 import torch.nn as nn

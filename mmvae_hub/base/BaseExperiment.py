@@ -12,7 +12,7 @@ from torch import optim, Tensor
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
-from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, EGfMVAE, PGfMVAE
+from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE
@@ -79,8 +79,6 @@ class BaseExperiment(ABC):
             model = GfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'afom':
             model = AfomMMVAE(self, self.flags, self.modalities, self.subsets)
-        elif self.flags.method == 'egfm':
-            model = EGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'gfmop':
             model = GfMoPVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'mofop':

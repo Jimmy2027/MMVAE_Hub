@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights

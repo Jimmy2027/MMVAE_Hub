@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass
-from typing import Mapping, Optional, Iterable, Union
+from typing import Mapping, Optional, Iterable
 
 import torch
 from torch import Tensor
@@ -160,33 +160,25 @@ class JointLatentsFoEM:
 class JointLatentsGfM:
     """Joint Latens for generalized f-means methods."""
     joint_embedding: JointEmbeddingFoEM
-    subsets: Mapping[str, Union[Tensor, BaseEncMod]]
+    subsets: Mapping[str, Tensor]
 
     def get_joint_embeddings(self):
         return self.joint_embedding.embedding
 
     def get_subset_embedding(self, s_key: str):
-        if len(s_key.split('_')) == 1:
-            return self.subsets[s_key].latents_class.reparameterize()
-        else:
-            return self.subsets[s_key]
+        return self.subsets[s_key]
 
     def get_q0(self, subset_key: str):
         """Get the mean of the unimodal latents and the embeddings of the multimodal latents."""
         if subset_key == 'joint':
             return self.joint_embedding.embedding
-        elif len(subset_key.split('_')) == 1:
-            return self.subsets[subset_key].latents_class.mu
         return self.subsets[subset_key]
 
     def get_lreval_data(self):
         lr_data = {'q0': {}}
 
         for key in self.subsets:
-            if len(key.split('_')) == 1:
-                lr_data['q0'][key] = self.subsets[key].latents_class.mu.cpu()
-            else:
-                lr_data['q0'][key] = self.subsets[key].cpu()
+            lr_data['q0'][key] = self.subsets[key].cpu()
 
         lr_data['q0']['joint'] = self.subsets['_'.join(self.joint_embedding.mod_strs)].cpu()
 
@@ -342,15 +334,13 @@ class JointLatentsFoS:
     def get_lreval_data(self):
         lr_data = {'q0': {}, 'zk': {}}
         for key in self.subsets:
-            lr_data['q0'][key] =self.get_q0(key).cpu()
+            lr_data['q0'][key] = self.get_q0(key).cpu()
 
-
-        lr_data['q0']['joint'] =  self.get_joint_q0().cpu()
+        lr_data['q0']['joint'] = self.get_joint_q0().cpu()
 
         for key in self.subsets:
             # get the latents after application of flows.
-            lr_data['zk'][key] =  self.get_zk(key).cpu()
-
+            lr_data['zk'][key] = self.get_zk(key).cpu()
 
         lr_data['zk']['joint'] = self.get_joint_zk().cpu()
 
@@ -391,7 +381,6 @@ class JointLatentsMoFoP(JointLatentsFoS):
         lr_data['zk']['joint'] = self.get_joint_zk().cpu()
 
         return lr_data
-
 
 
 @dataclass
