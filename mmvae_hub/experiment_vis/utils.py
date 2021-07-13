@@ -343,11 +343,14 @@ def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None
             plt.show()
 
 
-def bw_compat_epoch_results(epoch_results: dict, method: str) -> dict:
+def bw_compat_epoch_results(epoch_results: dict, method: str, flags:dict):
     """
     Adapt epoch results for backwards compatibility.
     """
-    # some experiments have 'lr_eval_qk' instead of 'lr_eval_zk'
+    if 'max_beta' not in flags or flags['max_beta'] is None:
+        flags['max_beta'] = flags['min_beta'] = flags['beta']
+
+        # some experiments have 'lr_eval_qk' instead of 'lr_eval_zk'
     if 'lr_eval_qk' in epoch_results:
         epoch_results['lr_eval_zk'] = epoch_results['lr_eval_qk']
 
@@ -361,7 +364,7 @@ def bw_compat_epoch_results(epoch_results: dict, method: str) -> dict:
         else:
             epoch_results['lr_eval_q0'] = epoch_results['lr_eval']
 
-    return epoch_results
+    return epoch_results, flags
 
 
 def make_experiments_dataframe(experiments):
@@ -389,12 +392,12 @@ def make_experiments_dataframe(experiments):
                 exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
 
             # for backwards compatibility:
-            last_epoch_results = bw_compat_epoch_results(last_epoch_results, method)
+            last_epoch_results, flags = bw_compat_epoch_results(last_epoch_results, method, exp['flags'])
 
             # if lr_eval and gen_eval, add results to df.
             if (last_epoch_results['lr_eval_q0'] or last_epoch_results['lr_eval_zk']) \
                     and last_epoch_results['gen_eval']:
-                results_dict = {**exp['flags'], 'end_epoch': last_epoch, '_id': exp['_id']}
+                results_dict = {**flags, 'end_epoch': last_epoch, '_id': exp['_id']}
                 # try:
                 if 'expvis_url' in exp:
                     results_dict['expvis_url'] = exp['expvis_url']
@@ -479,14 +482,14 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 if __name__ == '__main__':
     # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
-    experiment_uid = 'polymnist_pgfm_2021_07_12_16_35_38_204782'
+    # experiment_uid = 'polymnist_pgfm_2021_07_12_16_35_38_204782'
     # show_generated_figs(_id=experiment_uid)
-    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    experiment_dict = experiments_database.get_experiment_dict()
-    plot_betas(experiment_dict)
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiment_dict = experiments_database.get_experiment_dict()
+    # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    # for id in ['polymnist_pgfm_2021_07_12_09_36_26_980735']:
-    # upload_notebook_to_db(id)
+    for id in ['polymnist_pgfm_2021_07_09_21_52_29_311887']:
+        upload_notebook_to_db(id)
