@@ -293,7 +293,7 @@ def plot_prd_scores(df):
 
 def plot_betas(logs_dict: dict) -> None:
     betas = []
-    epochs = [k for k in logs_dict['epoch_results']]
+    epochs = [int(k) for k in logs_dict['epoch_results']]
 
     if 'min_beta' not in logs_dict['flags']:
         betas = [logs_dict['flags']['beta'] for _ in epochs]
@@ -302,8 +302,10 @@ def plot_betas(logs_dict: dict) -> None:
             if 'beta' in epoch_values:
                 betas.append(epoch_values['beta'])
 
+    x_ticks = epochs[0::int(len(epochs) / 15)]
+    x_ticks.append(epochs[-1])
     plt.plot(epochs, betas)
-    plt.xscale('log')
+    plt.xticks(x_ticks)
     plt.legend(['beta'])
     plt.show()
 
@@ -477,14 +479,14 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 if __name__ == '__main__':
     # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
-    # experiment_uid = 'polymnist_pgfm_2021_07_08_08_11_50_930590	'
+    experiment_uid = 'polymnist_pgfm_2021_07_12_16_35_38_204782'
     # show_generated_figs(_id=experiment_uid)
-    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    # experiment_dict = experiments_database.get_experiment_dict()
-    # plot_betas(experiment_dict)
+    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    experiment_dict = experiments_database.get_experiment_dict()
+    plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_pgfm_2021_07_12_09_36_26_980735']:
-        upload_notebook_to_db(id)
+    # for id in ['polymnist_pgfm_2021_07_12_09_36_26_980735']:
+    # upload_notebook_to_db(id)
