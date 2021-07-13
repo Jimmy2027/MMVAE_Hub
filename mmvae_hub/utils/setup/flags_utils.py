@@ -156,7 +156,7 @@ class BaseFlagsSetup:
 
         If flags_path is None, flags will be loaded from the db using the _id.
         """
-        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512)]
+        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0)]
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict or flags_path is None:
@@ -178,6 +178,10 @@ class BaseFlagsSetup:
                 for k, v in add_args.items():
                     flags[k] = v
 
+            if 'min_beta' not in flags:
+                flags['min_beta'] = flags['beta']
+                flags['max_beta'] = flags['beta']
+
             # becomes immutable..
             flags = dict2pyobject(flags, 'flags')
 
@@ -194,6 +198,10 @@ class BaseFlagsSetup:
             if add_args is not None:
                 for k, v in add_args.items():
                     setattr(flags, k, v)
+
+            if not hasattr(flags, 'min_beta'):
+                setattr(flags, 'min_beta', flags.beta)
+                setattr(flags, 'max_beta', flags.beta)
 
         return flags
 

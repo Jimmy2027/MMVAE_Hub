@@ -109,9 +109,13 @@ parser.add_argument('--beta_style', type=float, default=1.0,
 parser.add_argument('--beta_content', type=float, default=1.0,
                     help="default weight of sum of weighted content divergence terms")
 
-# annealing
-parser.add_argument('--kl_annealing', type=int, default=0,
-                    help="number of kl annealing steps; 0 if no annealing should be done")
+# kl annealing
+parser.add_argument('--beta_warmup', type=int, default=100, metavar='N',
+                    help='number of epochs for warm-up. Set to 0 to turn warmup off.')
+parser.add_argument('--max_beta', type=float, default=1., metavar='MB',
+                    help='max beta for warm-up')
+parser.add_argument('--min_beta', type=float, default=0.0, metavar='MB',
+                    help='min beta for warm-up')
 
 # FLOWS
 parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")

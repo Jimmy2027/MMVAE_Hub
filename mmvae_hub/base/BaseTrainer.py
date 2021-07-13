@@ -34,9 +34,6 @@ class BaseTrainer:
 
         self.begin_time = time.time()
 
-        if self.flags.kl_annealing:
-            self.exp.mm_vae.flags.beta = 0
-
     def _setup_tblogger(self):
         writer = SummaryWriter(self.flags.dir_logs)
         tb_logger = BaseTBLogger(self.flags.str_experiment, writer)
@@ -220,7 +217,7 @@ class BaseTrainer:
             self.exp.experiments_database.insert_dict(run_metadata)
             self.exp.experiments_database.save_networks_to_db(dir_checkpoints=self.flags.dir_checkpoints, epoch=epoch,
                                                               modalities=self.exp.mm_vae.modalities)
-            self.exp.experiments_database.upload_logfile(self.flags.log_file)
+            # self.exp.experiments_database.upload_logfile(self.flags.log_file)
             self.exp.experiments_database.upload_tensorbardlogs(self.flags.dir_experiment_run / 'logs')
 
             # run jupyter notebook with visualisations

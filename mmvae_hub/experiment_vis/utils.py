@@ -271,6 +271,43 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
         plt.show()
 
 
+def plot_prd_scores(df):
+    prd_scores = {}
+
+    for col in df.columns:
+        if col.startswith('prd'):
+            if 'random' in col:
+                key = 'random'
+            else:
+                num_in_mods = len(col.replace('prd_score_', '').split('_')) - 1
+                key = f'{num_in_mods}_in_mods'
+            if key not in prd_scores:
+                prd_scores[key] = [col]
+            else:
+                prd_scores[key].append(col)
+
+    for k, prd_s in prd_scores.items():
+        df[prd_s].plot.bar(title=k, figsize=(10, 5))
+        plt.show()
+
+
+def plot_betas(logs_dict: dict) -> None:
+    betas = []
+    epochs = [k for k in logs_dict['epoch_results']]
+
+    if 'min_beta' not in logs_dict['flags']:
+        betas = [logs_dict['flags']['beta'] for _ in epochs]
+    else:
+        for epoch, epoch_values in logs_dict['epoch_results'].items():
+            if 'beta' in epoch_values:
+                betas.append(epoch_values['beta'])
+
+    plt.plot(epochs, betas)
+    plt.xscale('log')
+    plt.legend(['beta'])
+    plt.show()
+
+
 def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None):
     if not flags:
         dataset = _id.split('_')[0].lower()
@@ -335,9 +372,6 @@ def make_experiments_dataframe(experiments):
     for exp in experiments.find({}):
         if exp['epoch_results'] is not None and exp['epoch_results']:
             method = exp['flags']['method']
-            # temp
-            if method == 'mofop':
-                sdfasdf = 0
 
             max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
 
@@ -412,7 +446,8 @@ def get_experiment(flags):
     """
     if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
         return PolymnistExperiment(flags)
-    elif Path(flags.dir_data).name.startswith('mimic') or Path(flags.dir_data).name == 'scratch':
+    elif Path(flags.dir_data).name.startswith('mimic') or Path(flags.dir_data).name == 'scratch' or Path(
+            flags.dir_data).name == 'leomed_klugh':
         return MimicExperiment(flags)
     elif flags.dataset == 'toy':
         return PolymnistExperiment(flags)
@@ -442,12 +477,14 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 if __name__ == '__main__':
     # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
-    # experiment_uid = 'polymnist_joint_elbo_2021_06_13_20_22_54_132735'
+    # experiment_uid = 'polymnist_pgfm_2021_07_08_08_11_50_930590	'
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
+    # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
     # df = make_experiments_dataframe(experiments_database.connect())
+    # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['Mimic_joint_elbo_2021_07_06_09_44_52_871882']:
+    for id in ['polymnist_pgfm_2021_07_12_09_36_26_980735']:
         upload_notebook_to_db(id)
