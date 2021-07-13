@@ -13,15 +13,28 @@ pfom_optuna_sp = {
 sp_pgfm = {
     'n_gpus': [1],
     'method': ['pgfm'],
-    'beta': [1],
+    'min_beta': [0],
+    'max_beta': [1],
+    "warmup": [50],
     'class_dim': [256],
     # "num_mods": [3],
     "num_flows": [5],
     # "initial_learning_rate": [9e-05],
-    "end_epoch": [100],
+    "end_epoch": [150],
     "coupling_dim": [512],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
+}
+
+sp_gfm = {
+    'n_gpus': [1],
+    'method': ['pgfm'],
+    'max_beta': [1],
+    "warmup": [0],
+    'class_dim': [256],
+    # "num_mods": [3],
+    "num_flows": [5],
+    # "initial_learning_rate": [9e-05],
+    "end_epoch": [150],
+    "coupling_dim": [512],
 }
 
 sp_joint_elbo = {

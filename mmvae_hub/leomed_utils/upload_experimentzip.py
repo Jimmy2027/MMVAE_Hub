@@ -3,6 +3,7 @@
 Upload zipped experiment folders to the mongo database.
 Use with python upload_experimentzip.py upload_all --src_dir my_src_dir
 """
+import glob
 import shutil
 import tempfile
 import zipfile
@@ -65,10 +66,9 @@ def upload_one(exp_path: Path):
         expvis_url = ppb.upload(pdf_path, plain=True)
         db.insert_dict({'expvis_url': expvis_url})
 
-        # logfile too big, takes too much time
-        # log_file = glob.glob(str(exp_dir) + '/*.log')
-        # if len(log_file):
-        #     db.upload_logfile(Path(log_file[0]))
+        log_file = glob.glob(str(exp_dir) + '/*.log')
+        if len(log_file):
+            db.upload_logfile(Path(log_file[0]))
 
         db.upload_tensorbardlogs(exp_dir / 'logs')
 
@@ -101,5 +101,8 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
+    # upload_one(Path('/Users/Hendrik/Documents/temp/Mimic_joint_elbo_2021_07_06_09_44_52_871882'))
+
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
-        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+        upload_all('/mnt/data/hendrik/leomed_results')
+        # upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
