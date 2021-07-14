@@ -4,13 +4,14 @@ from typing import Mapping
 import torch
 from torch import Tensor
 
-from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.utils.Dataclasses import BaseEncMod, JointLatentsGfM, JointEmbeddingFoEM, Distr, EncModGfM, \
-    JointLatentsGfMoP, JointLatentsFoEM, JointLatents
-from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
+    JointLatentsGfMoP, JointLatents
+from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding, \
+    mixture_component_selection
 
 
 class GfMVAE(BaseMMVAE):
@@ -108,7 +109,7 @@ class PGfMVAE(BaseMMVAE):
         self.flow_logvars = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
-                        batch_mods: typing.Iterable[str]) -> JointLatentsFoEM:
+                        batch_mods: typing.Iterable[str]) -> JointLatents:
         """
         Create a subspace for all the combinations of the encoded modalities by combining them.
         """
@@ -153,6 +154,24 @@ class PGfMVAE(BaseMMVAE):
         mu_k, _ = self.flow_mus(expert_distr.mu)
         logvar_k, _ = self.flow_logvars(expert_distr.logvar)
         return Distr(mu=mu_k, logvar=logvar_k)
+
+
+class MopGfM(PGfMVAE):
+    """Mixture of parameter GfM method."""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+        self.mm_div = BaseMMDiv()
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatents:
+        # apply pgfm method
+        subset_distrs = super().fuse_modalities(enc_mods, batch_mods).subsets
+
+        # select expert for z_joint
+        joint_distr = mixture_component_selection(distrs=subset_distrs, s_key='all', flags=self.flags)
+
+        return JointLatents(batch_mods, joint_distr=joint_distr, subsets=subset_distrs)
 
 
 class PGfMoPVAE(BaseMMVAE):
