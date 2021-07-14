@@ -26,7 +26,7 @@ sp_pgfm = {
 
 sp_gfm = {
     'n_gpus': [1],
-    'method': ['pgfm'],
+    'method': ['gfm'],
     'max_beta': [1],
     "beta_warmup": [0],
     'class_dim': [256],
