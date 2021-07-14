@@ -143,8 +143,8 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
             distr_subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
 
         # select expert for z_joint
-        z_joint = mixture_component_selection_embedding(enc_mods=distr_subsets, s_key='all',
-                                                        flags=self.flags)
+        subsets = {k: v.zk for k, v in distr_subsets}
+        z_joint = mixture_component_selection_embedding(subset_embeds=subsets, s_key='all', flags=self.flags)
         joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=log_det_j)
 
         # weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)

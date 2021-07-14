@@ -212,14 +212,17 @@ def load_dataset(args, **kwargs):
 
         train_ds = PolymnistDataset(Path(dir_data) / 'train', transform=transform,
                                     num_modalities=1)
+        val_ds = PolymnistDataset(Path(dir_data) / 'train', transform=transform,
+                                  num_modalities=1)
         test_ds = PolymnistDataset(Path(dir_data) / 'train', transform=transform,
                                    num_modalities=1)
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
                                   num_workers=kwargs['num_workers'], drop_last=True)
-        val_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True,
+        val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=True,
                                 num_workers=kwargs['num_workers'], drop_last=True)
+        test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=True,
+                                 num_workers=kwargs['num_workers'], drop_last=True)
 
-        test_loader = None
     else:
         raise Exception('Wrong name of the dataset!')
 

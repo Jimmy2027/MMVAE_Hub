@@ -22,19 +22,20 @@ def subsets_from_batchmods(batchmods: typing.Iterable[str]) -> set:
     return set(sorted(subsets))
 
 
-def mixture_component_selection_embedding(enc_mods: typing.Mapping[str, EncModPlanarMixture], s_key: str, flags,
+def mixture_component_selection_embedding(subset_embeds: typing.Mapping[str, Tensor], s_key: str, flags,
                                           weight_joint: bool = True) -> Tensor:
     """
     For each element in batch select an expert from subset.
+    subset_embeds: embeddings of each subset.
     s_key: keys of the experts that can be selected. If all experts can be selected (e.g. for MoPoE) s_key should be set to "all".
     """
-    num_samples = enc_mods[list(enc_mods)[0]].zk.shape[0]
-    s_keys = [s_key for s_key in enc_mods] if s_key == 'all' else s_key.split('_')
-    zk_subset = torch.Tensor().to(flags.device)
+    num_samples = subset_embeds[list(subset_embeds)[0]].shape[0]
+    s_keys = [s_key for s_key in subset_embeds] if s_key == 'all' else s_key.split('_')
+    z_subset = torch.Tensor().to(flags.device)
 
     if flags.weighted_mixture:
-        # define confidence of expert by the mean of zk. Sample experts with probability proportional to confidence.
-        confidences = [enc_mods[s_k].zk.mean().abs() for s_k in s_keys]
+        # define confidence of expert by the mean of z_subset. Sample experts with probability proportional to confidence.
+        confidences = [subset_embeds[s_k].mean().abs() for s_k in s_keys]
         bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
         if sum(bins) != num_samples:
             bins[confidences.index(max(confidences))] += num_samples - sum(bins)
@@ -44,25 +45,24 @@ def mixture_component_selection_embedding(enc_mods: typing.Mapping[str, EncModPl
 
     # get enc_mods for subset
     for chunk_size, s_k in zip(bins, s_keys):
-        zk_subset = torch.cat(
-            (zk_subset, enc_mods[s_k].zk[zk_subset.shape[0]:zk_subset.shape[0] + chunk_size]), dim=0)
+        z_subset = torch.cat(
+            (z_subset, subset_embeds[s_k][z_subset.shape[0]:z_subset.shape[0] + chunk_size]), dim=0)
 
-    assert zk_subset.shape == torch.Size([num_samples, flags.class_dim])
+    assert z_subset.shape == torch.Size([num_samples, flags.class_dim])
 
     if weight_joint:
         # normalize latents by number of modalities in subset
-        weights_subset = ((1 / float(len(s_keys))) * torch.ones_like(zk_subset).to(flags.device))
+        weights_subset = ((1 / float(len(s_keys))) * torch.ones_like(z_subset).to(flags.device))
 
-        return (weights_subset * zk_subset)
+        return (weights_subset * z_subset)
     else:
-        return zk_subset
+        return z_subset
 
 
-def mixture_component_selection(enc_mods: Mapping[str, BaseEncMod], s_key: str, flags,
-                                subsets: Mapping[str, List[BaseModality]]) -> Distr:
+def mixture_component_selection(distrs: Mapping[str, Distr], s_key: str, flags) -> Distr:
     """For each element in batch select an expert from subset."""
-    num_samples = enc_mods[list(enc_mods)[0]].latents_class.mu.shape[0]
-    mods = subsets[s_key]
+    num_samples = distrs[list(distrs)[0]].mu.shape[0]
+    s_keys = [s_key for s_key in distrs] if s_key == 'all' else s_key.split('_')
 
     mu_subset = torch.Tensor().to(flags.device)
     logvar_subset = torch.Tensor().to(flags.device)
@@ -70,19 +70,19 @@ def mixture_component_selection(enc_mods: Mapping[str, BaseEncMod], s_key: str, 
     if flags.weighted_mixture:
         # define confidence of expert by the inverse of the variance.
         # Sample experts with probability proportional to confidence.
-        confidences = [1 / enc_mods[mod.name].latents_class.logvar.exp().mean().abs() for mod in mods]
+        confidences = [1 / distrs[mod].logvar.exp().mean().abs() for mod in s_keys]
         bins = [int(num_samples * (conf / sum(confidences))) for conf in confidences]
         if sum(bins) != num_samples:
             bins[confidences.index(max(confidences))] += num_samples - sum(bins)
     else:
         # fill zk_subset with an equal amount of each expert
-        bins = split_int_to_bins(number=num_samples, nbr_bins=len(mods))
+        bins = split_int_to_bins(number=num_samples, nbr_bins=len(s_keys))
 
     # get enc_mods for subset
-    for chunk_size, mod in zip(bins, mods):
-        mu_subset = torch.cat((mu_subset, enc_mods[mod.name].latents_class.
+    for chunk_size, mod in zip(bins, s_keys):
+        mu_subset = torch.cat((mu_subset, distrs[mod].
                                mu[mu_subset.shape[0]:mu_subset.shape[0] + chunk_size]), dim=0)
-        logvar_subset = torch.cat((logvar_subset, enc_mods[mod.name].latents_class.
+        logvar_subset = torch.cat((logvar_subset, distrs[mod].
                                    mu[logvar_subset.shape[0]:logvar_subset.shape[0] + chunk_size]), dim=0)
 
     assert mu_subset.shape == torch.Size([num_samples, flags.class_dim])
