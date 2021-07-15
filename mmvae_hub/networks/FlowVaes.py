@@ -143,7 +143,7 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
             distr_subsets[s_key] = SubsetFoS(q0=distr_subset, z0=z0, zk=zk, log_det_j=log_det_j)
 
         # select expert for z_joint
-        subsets = {k: v.zk for k, v in distr_subsets}
+        subsets = {k: v.zk for k, v in distr_subsets.items()}
         z_joint = mixture_component_selection_embedding(subset_embeds=subsets, s_key='all', flags=self.flags)
         joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=log_det_j)
 
