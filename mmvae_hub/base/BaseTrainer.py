@@ -163,13 +163,16 @@ class BaseTrainer:
                         if clf_lr_zk else None
 
                     # log results
-                    self.tb_logger.write_lr_eval({'q0': lr_eval_q0, 'zk': lr_eval_zk})
+                    lr_eval_results = {'q0': lr_eval_q0, 'zk': lr_eval_zk}
+                    log.info(f'Lr eval results: {lr_eval_results}')
+                    self.tb_logger.write_lr_eval(lr_eval_results)
                     test_results.lr_eval_q0 = lr_eval_q0
                     test_results.lr_eval_zk = lr_eval_zk
 
                 if self.flags.use_clf:
                     log.info('test generation')
                     gen_eval = test_generation(self.exp)
+                    log.info(f'Gen eval results: {gen_eval}')
                     self.tb_logger.write_coherence_logs(gen_eval)
                     test_results.gen_eval = flatten_cond_gen_values(gen_eval)
 

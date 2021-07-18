@@ -148,7 +148,6 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
         metrics = exp.metrics(clf_predictions[subset], batch_labels, str_labels=exp.labels)
         metrics_dict = metrics.evaluate()
         results[subset] = metrics.extract_values(metrics_dict)
-    log.info(f'Lr eval results: {results}')
 
     return results
 
