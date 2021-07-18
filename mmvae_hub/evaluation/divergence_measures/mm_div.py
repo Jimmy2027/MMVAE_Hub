@@ -141,7 +141,12 @@ class GfMMMDiv(BaseMMDiv):
             weights = (1 / float(num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
             klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
 
-        joint_div = klds['_'.join(joint_keys)]
+        # joint_div = klds['_'.join(joint_keys)]
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean() * (1 / float(num_samples))
+
         return klds, joint_div
 
     def calc_subset_divergences(self, latent_subsets: Mapping[str, Tensor]):
