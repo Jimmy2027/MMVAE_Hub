@@ -97,14 +97,14 @@ sp_pgfm_mimic = {
 sp_mofop = {
     'n_gpus': [1],
     'method': ['mofop'],
-    'beta': [1.],
+    'max_beta': [1],
+    'min_beta': [0],
+    "beta_warmup": [50],
     'class_dim': [256],
     "num_mods": [1],
-    "num_flows": [1,5],
-    "end_epoch": [500],
-    "coupling_dim": [512],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
+    "num_flows": [0],
+    "end_epoch": [100],
+    "coupling_dim": [512]
 }
 
 sp_mofop_noflow = {
