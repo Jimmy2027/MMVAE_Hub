@@ -357,11 +357,11 @@ class JointElbowMMDiv(MixtureMMDiv, POEMMDiv):
         super().__init__()
 
 
-class FoMoPMMDiv(FoSMMDiv, JointElbowMMDiv):
+class FoMoPMMDiv(FoJMMDiv, JointElbowMMDiv):
     """Planar Flow of Mixture of product of experts multi-modal divergence"""
 
     def __init__(self):
-        FoSMMDiv.__init__(self)
+        FoJMMDiv.__init__(self)
         JointElbowMMDiv.__init__(self)
 
 
