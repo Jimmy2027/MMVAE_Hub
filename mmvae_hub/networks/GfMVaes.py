@@ -10,8 +10,7 @@ from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.utils.Dataclasses import BaseEncMod, JointLatentsGfM, JointEmbeddingFoEM, Distr, EncModGfM, \
     JointLatentsGfMoP, JointLatents
-from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding, \
-    mixture_component_selection
+from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 
 
 class GfMVAE(BaseMMVAE):
@@ -169,15 +168,20 @@ class MopGfM(PGfMVAE):
         subset_distrs = super().fuse_modalities(enc_mods, batch_mods).subsets
 
         # select expert for z_joint
-        joint_distr = mixture_component_selection(distrs=subset_distrs, s_key='all', flags=self.flags)
+        # joint_distr = mixture_component_selection(distrs=subset_distrs, s_key='all', flags=self.flags)
+        mus = torch.cat(tuple(distr.mu.unsqueeze(0) for _, distr in subset_distrs.items()), dim=0)
+        logvars = torch.cat(tuple(distr.logvar.unsqueeze(0) for _, distr in subset_distrs.items()), dim=0)
+
+        weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
+        joint_distr = self.moe_fusion(mus, logvars, weights)
 
         return JointLatents(batch_mods, joint_distr=joint_distr, subsets=subset_distrs)
 
 
 class PGfMoPVAE(BaseMMVAE):
     """
-    Params Generalized f-Means of Product of Experts VAE: class of methods where the means and logvars of all experts are fused with a
-    generalized f-mean.
+    Params Generalized f-Means of Product of Experts VAE: class of methods where the means and logvars of all experts
+    are fused with a generalized f-mean.
     """
 
     def __init__(self, exp, flags, modalities, subsets):
