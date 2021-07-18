@@ -21,8 +21,20 @@ def subsets_from_batchmods(batchmods: typing.Iterable[str]) -> set:
     subsets = ['_'.join(sorted(mod_names)) for mod_names in subsets_list if mod_names]
     return set(sorted(subsets))
 
-
 def mixture_component_selection_embedding(subset_embeds: typing.Mapping[str, Tensor], s_key: str, flags,
+                                          weight_joint: bool = True) -> Tensor:
+    z_subset = torch.Tensor().to(flags.device)
+    num_samples = subset_embeds[list(subset_embeds)[0]].shape[0]
+    s_keys = [s_key for s_key in subset_embeds] if s_key == 'all' else s_key.split('_')
+    experts = torch.cat(tuple(v.unsqueeze(0) for _,v in subset_embeds.items()))
+
+    for sample_idx in range(num_samples):
+        z_subset = torch.cat((z_subset, experts[torch.randint(0, len(s_keys), (1,)).item(), sample_idx].unsqueeze(0)))
+
+    return z_subset
+
+
+def mixture_component_selection_embedding_(subset_embeds: typing.Mapping[str, Tensor], s_key: str, flags,
                                           weight_joint: bool = True) -> Tensor:
     """
     For each element in batch select an expert from subset.
