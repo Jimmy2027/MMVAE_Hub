@@ -31,9 +31,9 @@ sp_mopgfm = {
     "beta_warmup": [0],
     'class_dim': [256],
     # "num_mods": [3],
-    "num_flows": [5],
+    "num_flows": [5, 10],
     # "initial_learning_rate": [9e-05],
-    "end_epoch": [150],
+    "end_epoch": [1500],
     "coupling_dim": [512],
 }
 
