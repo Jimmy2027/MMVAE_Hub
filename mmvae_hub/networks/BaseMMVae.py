@@ -101,9 +101,6 @@ class BaseMMVAE(ABC, nn.Module):
         rec_weight = 1.0
         total_loss = rec_weight * weighted_log_prob + self.flags.beta * kld_weighted
 
-        # temp
-        assert not np.isnan(total_loss.cpu().item())
-
         return total_loss, joint_divergence, log_probs, klds
 
     def calc_log_probs(self, rec_mods: dict, batch_d: dict) -> Tuple[dict, float]:

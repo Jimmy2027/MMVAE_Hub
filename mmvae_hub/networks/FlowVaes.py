@@ -61,7 +61,7 @@ class FlowOfJointVAE(FlowVAE):
         logvar = torch.zeros(num_samples,
                              self.flags.class_dim).to(self.flags.device)
 
-        _, zk, _ = self.flow.forward(Distr(mu, logvar))
+        zk, _ = self.flow.forward(Distr(mu, logvar).reparameterize())
         return zk
 
 
@@ -155,16 +155,20 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
 
 
 class FoMoP(FlowOfJointVAE, JointElboMMVae):
+    "Flow of Mixture of Products of Experts method"
+
     def __init__(self, exp, flags, modalities, subsets):
         FlowOfJointVAE.__init__(self)
         JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = FoMoPMMDiv()
-        self.flow = PlanarFlow(flags)
+        # self.flow = PlanarFlow(flags)
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]):
         q0_latents: JointLatents = super().fuse_modalities(enc_mods, batch_mods)
         q0 = q0_latents.joint_distr
-        z0, zk, log_det_j = self.flow.forward(q0)
+        z0 = q0.reparameterize()
+        zk, log_det_j = self.flow.forward(z0)
         joint_embedding = Joint_embeddings(zk=zk, mod_strs=q0_latents.fusion_subsets_keys, log_det_j=log_det_j, z0=z0)
 
         return JointLatentsFoJ(joint_embedding=joint_embedding, subsets=q0_latents.subsets)
