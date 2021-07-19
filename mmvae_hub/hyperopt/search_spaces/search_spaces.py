@@ -28,15 +28,16 @@ sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
     'max_beta': [1],
-    "beta_warmup": [0],
+    'min_beta': [0],
+    "beta_warmup": [50],
     'class_dim': [256],
     # "num_mods": [3],
-    "num_flows": [5, 10],
+    "num_flows": [10],
+    "eval_freq": [100],
     # "initial_learning_rate": [9e-05],
     "end_epoch": [1500],
     "coupling_dim": [512],
 }
-
 
 sp_gfm = {
     'n_gpus': [1],
@@ -101,10 +102,11 @@ sp_mofop = {
     'min_beta': [0],
     "beta_warmup": [50],
     'class_dim': [256],
-    "num_mods": [1],
-    "num_flows": [0],
-    "end_epoch": [100],
-    "coupling_dim": [512]
+    "num_mods": [3],
+    "num_flows": [5, 10],
+    "end_epoch": [1500],
+    "coupling_dim": [512],
+    "eval_freq": [100],
 }
 
 sp_mofop_noflow = {
