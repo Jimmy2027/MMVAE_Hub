@@ -8,8 +8,7 @@ from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, 
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
-from mmvae_hub.utils.Dataclasses import BaseEncMod, JointLatentsGfM, JointEmbeddingFoEM, Distr, EncModGfM, \
-    JointLatentsGfMoP, JointLatents
+from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 
 
@@ -48,6 +47,45 @@ class GfMVAE(BaseMMVAE):
                 joint_embedding = JointEmbeddingFoEM(embedding=z_subset, mod_strs=s_key.split('_'))
 
         return JointLatentsGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
+
+
+class MoGfMVAE(BaseMMVAE):
+    "Mixture of Generalized f-Means VAE"
+
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = GfMMMDiv()
+
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        subset_embeddings = {}
+
+        # pass all experts through the flow
+        enc_mod_zks = {mod_key: self.flow(distr.latents_class.reparameterize())[0] for mod_key, distr in
+                       enc_mods.items()}
+
+        # concatenate mus and logvars for every modality in each subset
+        for s_key in batch_subsets:
+            subset_zks = torch.Tensor().to(self.flags.device)
+            for mod in self.subsets[s_key]:
+                subset_zks = torch.cat((subset_zks, enc_mod_zks[mod.name].unsqueeze(dim=0)), dim=0)
+            # mean of zks
+            z_mean = torch.mean(subset_zks, dim=0)
+            # calculate inverse flow
+            z_subset, _ = self.flow.rev(z_mean)
+
+            subset_embeddings[s_key] = z_subset
+
+        z_joint = mixture_component_selection_embedding(subset_embeds=subset_embeddings, s_key='all', flags=self.flags)
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+
+        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
 
 
 class GfMoPVAE(JointElboMMVae):
