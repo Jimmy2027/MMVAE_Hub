@@ -186,6 +186,14 @@ class JointLatentsGfM:
 
 
 @dataclass
+class SubsetMoFoGfM:
+    """Subset of Mixture of Flow of GfM"""
+    z0: Optional[Tensor] = None
+    zk: Optional[Tensor] = None
+    log_det_j: Optional[Tensor] = None
+
+
+@dataclass
 class JointLatentsMoGfM(JointLatentsGfM):
     """Joint Latents for mixture of generalized f-means methods."""
 
@@ -361,20 +369,51 @@ class JointLatentsFoS:
 
         return lr_data
 
-    def get_lreval_data(self, data_train: dict):
-        """Add lr values to data_train."""
+    # def get_lreval_data(self, data_train: dict):
+    #     """Add lr values to data_train."""
+    #     for key in self.subsets:
+    #         data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
+    #     joint_q0 = self.get_joint_q0().cpu()
+    #     data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+    #
+    #     for key in self.subsets:
+    #         # get the latents after application of flows.
+    #         data_train['zk'][key] = torch.cat((data_train['zk'][key], self.get_zk(key).cpu()), 0)
+    #     joint_zk = self.get_joint_zk().cpu()
+    #     data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+    #
+    #     return data_train
+
+
+@dataclass
+class JointLatentsMoFoGfM(JointLatentsFoS):
+    """Joint Latens for Mixture of Flow of generalized f-means methods."""
+    joint_embedding: JointEmbeddingFoEM
+    subsets: Mapping[str, SubsetMoFoGfM]
+
+    def get_z0(self, subset_key: str):
+        """Return the mean of q0."""
+        if subset_key == 'joint':
+            return self.get_joint_q0()
+        else:
+            return self.subsets[subset_key].z0
+
+    def get_joint_z0(self):
+        """Return joint z0."""
+        return self.joint_embedding.embedding
+
+    def get_lreval_data(self):
+        lr_data = {'q0': {}, 'zk': {}}
         for key in self.subsets:
-            data_train['q0'][key] = torch.cat((data_train['q0'][key], self.get_q0(key).cpu()), 0)
-        joint_q0 = self.get_joint_q0().cpu()
-        data_train['q0']['joint'] = torch.cat((data_train['q0']['joint'], joint_q0), 0)
+            lr_data['q0'][key] = self.get_z0(key).cpu()
+
+        lr_data['q0']['joint'] = self.get_joint_z0().cpu()
 
         for key in self.subsets:
             # get the latents after application of flows.
-            data_train['zk'][key] = torch.cat((data_train['zk'][key], self.get_zk(key).cpu()), 0)
-        joint_zk = self.get_joint_zk().cpu()
-        data_train['zk']['joint'] = torch.cat((data_train['zk']['joint'], joint_zk), 0)
+            lr_data['zk'][key] = self.get_zk(key).cpu()
 
-        return data_train
+        return lr_data
 
 
 @dataclass
