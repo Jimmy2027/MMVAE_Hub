@@ -25,7 +25,7 @@ from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
 
-FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop', 'planar_vae']
+FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop', 'planar_vae', 'mofogfm']
 
 
 def run_notebook_convert(dir_experiment_run: Path = None) -> Path:
@@ -349,6 +349,7 @@ def bw_compat_epoch_results(epoch_results: dict, method: str, flags:dict):
     """
     if 'max_beta' not in flags or flags['max_beta'] is None:
         flags['max_beta'] = flags['min_beta'] = flags['beta']
+        flags['beta_warmup'] = 0
 
         # some experiments have 'lr_eval_qk' instead of 'lr_eval_zk'
     if 'lr_eval_qk' in epoch_results:
@@ -482,8 +483,8 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 if __name__ == '__main__':
     # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
-    # experiment_uid = 'polymnist_pgfm_2021_07_12_16_35_38_204782'
-    # show_generated_figs(_id=experiment_uid)
+    experiment_uid = 'polymnist_mopgfm_2021_07_18_16_00_02_949672'
+    show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_betas(experiment_dict)
@@ -491,5 +492,5 @@ if __name__ == '__main__':
     # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_pgfm_2021_07_09_21_52_29_311887']:
-        upload_notebook_to_db(id)
+    # for id in ['polymnist_pgfm_2021_07_09_21_52_29_311887']:
+    #     upload_notebook_to_db(id)
