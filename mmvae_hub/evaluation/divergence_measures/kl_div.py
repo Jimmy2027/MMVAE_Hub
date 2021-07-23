@@ -36,6 +36,32 @@ def calc_divergence_embedding(z: Tensor):
 
     return log_p_zk.sum()
 
+def calc_kl_divergence_embedding_flow(z0: Tensor, zk: Tensor, log_det_j: Tensor, norm_value=None) -> Tensor:
+    """
+    Calculate the KL Divergence: DKL = E_q0[ ln p(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
+    """
+
+    # ln p(z_k)  (not averaged)
+    log_p_zk = log_normal_standard(zk, dim=1)
+
+    # ln q(z_0)  (not averaged)
+    log_p_z0 = log_normal_standard(z0, dim=1)
+
+    # N E_q0[ ln q(z_0) - ln p(z_k) ]
+    diff = log_p_z0 - log_p_zk
+    # to minimize the divergence,
+    summed_logs = torch.sum(diff)
+
+    # sum over batches
+    summed_ldj = torch.sum(log_det_j)
+
+    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
+    KLD = (summed_logs - summed_ldj)
+
+    if norm_value is not None:
+        KLD = KLD / float(norm_value)
+
+    return KLD
 
 def calc_kl_divergence_flow(q0: Distr, z0: Tensor, zk: Tensor, log_det_j: Tensor, norm_value=None) -> Tensor:
     """
@@ -55,39 +81,6 @@ def calc_kl_divergence_flow(q0: Distr, z0: Tensor, zk: Tensor, log_det_j: Tensor
 
     # sum over batches
     summed_ldj = torch.sum(log_det_j)
-
-    # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
-    KLD = (summed_logs - summed_ldj)
-
-    if norm_value is not None:
-        KLD = KLD / float(norm_value)
-
-    return KLD
-
-
-def calc_kl_divergence_flow_old(distr0: Distr = None, distr1: Distr = None,
-                                enc_mod: Union[EncModPlanarMixture, SubsetFoS] = None,
-                                norm_value=None) -> Tensor:
-    """
-    Calculate the KL Divergence: DKL = E_q0[ ln q(z_0) - ln p(z_k) ] - E_q_z0[\sum_k log |det dz_k/dz_k-1|].
-    """
-
-    # get the mean and variance of z0
-    mu0, logvar0 = enc_mod.latents_class.mu, enc_mod.latents_class.logvar
-
-    # ln p(z_k)  (not averaged)
-    log_p_zk = log_normal_standard(enc_mod.zk, dim=1)
-
-    # ln q(z_0)  (not averaged)
-    log_q_z0 = log_normal_diag(x=enc_mod.z0, mean=mu0, log_var=logvar0, dim=1)
-
-    # N E_q0[ ln q(z_0) - ln p(z_k) ]
-    diff = log_q_z0 - log_p_zk
-    # to minimize the divergence,
-    summed_logs = torch.sum(diff)
-
-    # sum over batches
-    summed_ldj = torch.sum(enc_mod.log_det_j)
 
     # ldj = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ]
     KLD = (summed_logs - summed_ldj)
