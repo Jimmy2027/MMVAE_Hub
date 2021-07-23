@@ -182,6 +182,9 @@ class BaseFlagsSetup:
                 flags['min_beta'] = flags['beta']
                 flags['max_beta'] = flags['beta']
 
+            if 'num_gfm_flows' not in flags:
+                flags['num_gfm_flows'] = flags['num_flows']
+
             # becomes immutable..
             flags = dict2pyobject(flags, 'flags')
 
@@ -202,6 +205,9 @@ class BaseFlagsSetup:
             if not hasattr(flags, 'min_beta'):
                 setattr(flags, 'min_beta', flags.beta)
                 setattr(flags, 'max_beta', flags.beta)
+
+            if not hasattr(flags, 'num_gfm_flows'):
+                setattr(flags, 'num_gfm_flows', flags.num_flows)
 
         return flags
 

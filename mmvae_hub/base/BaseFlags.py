@@ -122,3 +122,7 @@ parser.add_argument('--num_flows', type=int, default=4, help="Number of flow lay
 parser.add_argument('--amortized_flow', type=str2bool, default=False,
                     help="If True, use amortized flows, as described in Berg et al. 2019")
 parser.add_argument('--coupling_dim', type=int, default=512, help="Dimensions of the coupling layers in flow.")
+
+# Generalized f-Means
+parser.add_argument('--num_gfm_flows', type=int, default=4,
+                    help="Number of flow layers that are used to implement the GfM function.")
