@@ -39,7 +39,10 @@ def train_clf_lr_all_subsets(exp):
             # take random samples from data_train
             data_train[which_lr][s_key] = d[rand_ind_train] if len(d) else None
 
-    lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels) if 'q0' in data_train else None
+    if 'q0' in data_train:
+        lr_results_q0 = train_clf_lr(exp, data_train['q0'], labels)
+    else:
+        lr_results_q0 = None
     lr_results_zk = train_clf_lr(exp, data_train['zk'], labels) if 'zk' in data_train else None
 
     return lr_results_q0, lr_results_zk
