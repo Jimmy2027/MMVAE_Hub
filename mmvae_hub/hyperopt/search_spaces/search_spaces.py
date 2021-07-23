@@ -39,9 +39,9 @@ sp_mopgfm = {
     "coupling_dim": [512],
 }
 
-sp_bmopgfm = {
+sp_bmogfm = {
     'n_gpus': [1],
-    'method': ['mopgfm'],
+    'method': ['bmogfm'],
     'max_beta': [1],
     'min_beta': [0],
     "beta_warmup": [50],
