@@ -39,6 +39,21 @@ sp_mopgfm = {
     "coupling_dim": [512],
 }
 
+sp_bmopgfm = {
+    'n_gpus': [1],
+    'method': ['mopgfm'],
+    'max_beta': [1],
+    'min_beta': [0],
+    "beta_warmup": [50],
+    'class_dim': [256],
+    # "num_mods": [3],
+    "num_flows": [5],
+    "eval_freq": [100],
+    # "initial_learning_rate": [9e-05],
+    "end_epoch": [100],
+    "coupling_dim": [512],
+}
+
 sp_gfm = {
     'n_gpus': [1],
     'method': ['gfm'],
@@ -108,6 +123,7 @@ sp_mofop = {
     "coupling_dim": [512],
     "eval_freq": [100],
 }
+
 
 sp_mofop_noflow = {
     'n_gpus': [1],
