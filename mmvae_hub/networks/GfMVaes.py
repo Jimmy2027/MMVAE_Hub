@@ -1,10 +1,7 @@
 import typing
-from typing import Mapping
 
-import torch
-from torch import Tensor
-
-from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv
+from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv, MoFoGfMMMDiv, \
+    BMoGfMMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
@@ -17,7 +14,7 @@ class GfMVAE(BaseMMVAE):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = GfMMMDiv()
 
-        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
@@ -56,7 +53,7 @@ class MoGfMVAE(BaseMMVAE):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = GfMMMDiv()
 
-        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
@@ -88,6 +85,58 @@ class MoGfMVAE(BaseMMVAE):
         return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
 
 
+class MoFoGfMVAE(BaseMMVAE):
+    """Mixture of Flow of Generalized f-Means VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.mm_div = MoFoGfMMMDiv()
+
+        self.gfm_flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsMoFoGfM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        subset_embeddings = {}
+
+        # pass all experts through the flow
+        enc_mod_zks = {mod_key: self.gfm_flow(distr.latents_class.reparameterize())[0] for mod_key, distr in
+                       enc_mods.items()}
+
+        for s_key in batch_subsets:
+            subset_zks = torch.Tensor().to(self.flags.device)
+            for mod in self.subsets[s_key]:
+                subset_zks = torch.cat((subset_zks, enc_mod_zks[mod.name].unsqueeze(dim=0)), dim=0)
+            # mean of zks
+            z_mean = torch.mean(subset_zks, dim=0)
+            # calculate inverse flow
+            z0_subset, _ = self.gfm_flow.rev(z_mean)
+
+            # pass subset through flow
+            zk_subset, log_det_j = self.flow.forward(z0_subset)
+
+            subset_embeddings[s_key] = SubsetMoFoGfM(z0=z0_subset, zk=zk_subset, log_det_j=log_det_j)
+
+        # select expert for z_joint
+        subsets = {k: v.zk for k, v in subset_embeddings.items()}
+        z_joint = mixture_component_selection_embedding(subset_embeds=subsets, s_key='all', flags=self.flags)
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+
+        return JointLatentsMoFoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
+
+
+class BMoGfMVAE(MoGfMVAE):
+    """ Bounded Mixture of Generalized f-Means VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+        self.mm_div = BMoGfMMMDiv()
+
+
 class GfMoPVAE(JointElboMMVae):
     """GfM of Product of experts VAE"""
 
@@ -95,7 +144,7 @@ class GfMoPVAE(JointElboMMVae):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = GfMoPDiv()
 
-        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
@@ -142,8 +191,8 @@ class PGfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PGfMMMDiv()
-        self.flow_mus = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
-        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow_mus = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatents:
@@ -225,8 +274,8 @@ class PGfMoPVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PGfMMMDiv()
-        self.flow_mus = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
-        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow_mus = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatents:

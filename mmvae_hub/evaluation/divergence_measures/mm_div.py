@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
-from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss, calc_divergence_embedding
+from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss, calc_divergence_embedding, \
+    calc_kl_divergence_embedding_flow
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils.Dataclasses import *
@@ -123,6 +124,41 @@ class MoFoPDiv(BaseMMDiv):
         pass
 
 
+class BMoGfMMMDiv(BaseMMDiv):
+    def __init__(self):
+        super().__init__()
+        self.calc_kl_divergence = calc_kl_divergence
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets: Mapping[str, BaseModality], num_samples: int,
+                  joint_keys: Iterable[str]):
+        """Calculate the Kl divergences for all subsets and the joint latent distribution."""
+        enc_mods = forward_results.enc_mods
+
+        enc_mods_divergences = {mod_str: self.calc_kl_divergence(distr0=enc_mod.latents_class) for mod_str, enc_mod in
+                                enc_mods.items()}
+
+        klds = self.calc_subset_divergences(subsets=forward_results.joint_latents.subsets,
+                                            enc_mods_divergences=enc_mods_divergences)
+
+        # normalize klds with number of modalities in subset and batch_size
+        for subset_key, subset in subsets.items():
+            weights = (1 / float(num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
+            klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
+
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean() * (1 / float(num_samples))
+
+        return klds, joint_div
+
+    def calc_subset_divergences(self, subsets: dict, enc_mods_divergences: dict):
+        subset_mods = {subset_str: [mod for mod in subset_str.split('_')] for subset_str in subsets}
+
+        return {subset_str: max(enc_mods_divergences[mod_str] for mod_str in mod_strs) for subset_str, mod_strs in
+                subset_mods.items()}
+
+
 class GfMMMDiv(BaseMMDiv):
     def __init__(self):
         super().__init__()
@@ -141,7 +177,6 @@ class GfMMMDiv(BaseMMDiv):
             weights = (1 / float(num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
             klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
 
-        # joint_div = klds['_'.join(joint_keys)]
         # joint_div average of all subset divs
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
         # normalize with the number of samples
@@ -157,6 +192,18 @@ class GfMMMDiv(BaseMMDiv):
 
     def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
         pass
+
+
+class MoFoGfMMMDiv(GfMMMDiv):
+    def __init__(self):
+        super().__init__()
+        self.calc_kl_divergence_subsets = calc_kl_divergence_embedding_flow
+
+    def calc_subset_divergences(self, subsets: Mapping[str, SubsetFoS]):
+        return {
+            s_key: self.calc_kl_divergence_subsets(z0=subset.z0, zk=subset.zk, log_det_j=subset.log_det_j)
+            for s_key, subset in subsets.items()
+        }
 
 
 class PGfMMMDiv(BaseMMDiv):

@@ -12,7 +12,7 @@ from torch import optim, Tensor
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
-from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM
+from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE
@@ -89,6 +89,15 @@ class BaseExperiment(ABC):
             model = PlanarVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'mopgfm':
             model = MopGfM(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'mogfm':
+            model = MoGfMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'mofogfm':
+            if self.flags.num_flows == 0:
+                model = MoGfMVAE(self, self.flags, self.modalities, self.subsets)
+            else:
+                model = MoFoGfMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'bmogfm':
+            model = BMoGfMVAE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
