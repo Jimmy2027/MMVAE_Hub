@@ -51,8 +51,8 @@ class HyperoptTrainer:
         self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-4, log=True)
         self.flags.class_dim = trial.suggest_categorical("class_dim", [32, 64, 128, 256, 512, 640])
         self.flags.coupling_dim = trial.suggest_categorical("coupling_dim", [32, 64, 128, 256, 512, 640])
-        self.flags.num_flows = trial.suggest_int("num_flows", low=1, high=20, step=1)
-        self.flags.beta = trial.suggest_float("beta", 0.3, 2.5)
+        self.flags.num_flows = trial.suggest_int("num_gfm_flows", low=1, high=20, step=2)
+        self.flags.beta = trial.suggest_float("max_beta", 1.0, 2.5)
 
         mst = PolymnistExperiment(self.flags)
         mst.set_optimizer()
