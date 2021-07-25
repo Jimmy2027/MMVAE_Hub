@@ -18,10 +18,10 @@ sp_pgfm = {
     "beta_warmup": [50],
     'class_dim': [640],
     # "num_mods": [3],
-    "num_flows": [3],
+    "num_gfm_flows": [3],
     "initial_learning_rate": [7.928188645921211e-05],
     "end_epoch": [1000],
-    "coupling_dim": [512],
+    "coupling_dim": [32],
 }
 
 sp_mopgfm = {
