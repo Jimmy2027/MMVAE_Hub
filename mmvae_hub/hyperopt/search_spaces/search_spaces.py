@@ -14,13 +14,13 @@ sp_pgfm = {
     'n_gpus': [1],
     'method': ['pgfm'],
     'min_beta': [0],
-    'max_beta': [1],
+    'max_beta': [1.7520493158062553],
     "beta_warmup": [50],
-    'class_dim': [256],
+    'class_dim': [640],
     # "num_mods": [3],
-    "num_flows": [5],
-    # "initial_learning_rate": [9e-05],
-    "end_epoch": [150],
+    "num_flows": [3],
+    "initial_learning_rate": [7.928188645921211e-05],
+    "end_epoch": [1000],
     "coupling_dim": [512],
 }
 
