@@ -149,9 +149,9 @@ def samplers_set_epoch(args, train_sampler, test_sampler, epoch: int) -> None:
 
 
 def get_undersample_indices(labels_df: pd.DataFrame):
-    count_class_1 = labels_df[labels_df == 1].count().sum()
-    df_class_0 = labels_df[labels_df == 0]
-    df_class_1 = labels_df[labels_df == 1].dropna(how='all').fillna(0)
+    count_class_1 = len(labels_df[labels_df.Finding == 1])
+    df_class_0 = labels_df[labels_df.Finding == 0]
+    df_class_1 = labels_df[labels_df.Finding == 1].dropna(how='all').fillna(0)
     df_class_0_under = df_class_0.sample(count_class_1)
     return [*df_class_1.index.to_list(), *df_class_0_under.index.to_list()]
 
@@ -165,7 +165,9 @@ def filter_labels(labels: pd.DataFrame, which_labels: List[str], undersample_dat
     for cl in which_labels:
         indices += labels.index[(labels[cl] == -1)].tolist()
     indices = list(set(indices))
+    # drop all samples with label -1
     labels = labels.drop(indices)
+
     if undersample_dataset and split == 'train':
         labels = undersample(labels)
     return labels
