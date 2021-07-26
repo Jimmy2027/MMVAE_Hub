@@ -39,7 +39,8 @@ class MimicIMG(Dataset):
 
         # dir_dataset = Path('/Users/Hendrik/Documents/master3/leomed_klugh/files_small_128')
         self.img_size = img_size
-        dir_dataset = Path(f'/mnt/data/hendrik/mimic_scratch/files_small_{img_size}')
+        # dir_dataset = Path(f'/mnt/data/hendrik/mimic_scratch/files_small_{img_size}')
+        dir_dataset = Path(f'~/klugh/files_small_{img_size}').expanduser()
         fn_img = dir_dataset / f'{split}_{modality}.pt'
 
         self.labels = filter_labels(pd.read_csv(dir_dataset / f'{split}_labels.csv').fillna(0), self.str_labels,
@@ -164,8 +165,8 @@ class LM(pl.LightningModule):
 
 def train_clf(modality: str, img_size: int):
     # temp
-    # train_ds = MimicIMG(modality=modality, split='train', img_size=img_size, undersample_dataset=False, transform=True)
-    train_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=True)
+    train_ds = MimicIMG(modality=modality, split='train', img_size=img_size, undersample_dataset=False, transform=True)
+    # train_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=True)
     eval_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=False)
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=DL_WORKERS)
