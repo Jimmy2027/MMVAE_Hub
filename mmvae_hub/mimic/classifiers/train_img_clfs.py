@@ -19,7 +19,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(DEVICE)
 BATCH_SIZE = 64
 DL_WORKERS = 8
-NUM_EPOCHS = 100
+NUM_EPOCHS = 1
 LR = 0.5e-3
 NUM_GPUS = 1
 
@@ -102,14 +102,14 @@ class LM(pl.LightningModule):
         predictions = self(img)
         loss = self.criterion(predictions, y)
         self.log('train_loss', loss)
-        return {'predictions': predictions, 'targets': y, 'loss': loss}
+        return {'predictions': predictions.cpu(), 'targets': y.cpu(), 'loss': loss}
 
     def training_epoch_end(self, outputs):
         predictions = torch.Tensor()
         targets = torch.Tensor()
         for elem in outputs:
-            predictions = torch.cat((predictions, elem['predictions'].cpu()), dim=0)
-            targets = torch.cat((targets, elem['targets'].cpu()), dim=0)
+            predictions = torch.cat((predictions, elem['predictions']), dim=0)
+            targets = torch.cat((targets, elem['targets']), dim=0)
 
         metrics = {'train_auroc': {}, 'train_avg_precision': {}, 'train_acc': {}, 'train_precision': {},
                    'train_recall': {}}
@@ -132,14 +132,14 @@ class LM(pl.LightningModule):
         loss = self.criterion(predictions, y)
         self.log('val_loss', loss, prog_bar=True)
 
-        return {'predictions': predictions, 'targets': y}
+        return {'predictions': predictions.cpu(), 'targets': y.cpu()}
 
     def validation_epoch_end(self, outputs):
         predictions = torch.Tensor()
         targets = torch.Tensor()
         for elem in outputs:
-            predictions = torch.cat((predictions, elem['predictions'].cpu()), dim=0)
-            targets = torch.cat((targets, elem['targets'].cpu()), dim=0)
+            predictions = torch.cat((predictions, elem['predictions']), dim=0)
+            targets = torch.cat((targets, elem['targets']), dim=0)
 
         metrics = {'auroc': {}, 'avg_precision': {}, 'acc': {}, 'precision': {}, 'recall': {}}
         for idx, label in enumerate(self.str_labels):
@@ -165,8 +165,8 @@ class LM(pl.LightningModule):
 
 def train_clf(modality: str, img_size: int):
     # temp
-    train_ds = MimicIMG(modality=modality, split='train', img_size=img_size, undersample_dataset=False, transform=True)
-    # train_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=True)
+    # train_ds = MimicIMG(modality=modality, split='train', img_size=img_size, undersample_dataset=False, transform=True)
+    train_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=False)
     eval_ds = MimicIMG(modality=modality, split='eval', img_size=img_size, undersample_dataset=False, transform=False)
 
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=DL_WORKERS)
@@ -177,7 +177,9 @@ def train_clf(modality: str, img_size: int):
     # Train model
 
     lightning_module = LM(str_labels=train_ds.str_labels)
-    trainer = pl.Trainer(gpus=NUM_GPUS, max_epochs=NUM_EPOCHS, gradient_clip_val=0.5, stochastic_weight_avg=True,
+    trainer = pl.Trainer(gpus=NUM_GPUS, max_epochs=NUM_EPOCHS,
+                         gradient_clip_val=0.5,
+                         stochastic_weight_avg=True,
                          callbacks=[EarlyStopping(monitor='val_loss', min_delta=0.00,
                                                   patience=5, verbose=True, mode='min')]
                          )
@@ -190,8 +192,8 @@ def train_clf(modality: str, img_size: int):
 
     # Evaluate
 
-    predictions = torch.Tensor().to(DEVICE)
-    targets = torch.Tensor().to(DEVICE)
+    predictions = torch.Tensor()
+    targets = torch.Tensor()
     lightning_module.model.eval()
     lightning_module.model.to(DEVICE)
 
@@ -199,9 +201,9 @@ def train_clf(modality: str, img_size: int):
         for batch in eval_loader:
             x, y = batch
             x = x.to(DEVICE)
-            predictions = lightning_module(x)
+            output = lightning_module(x)
             targets = torch.cat((targets, y.cpu()))
-            predictions = torch.cat((predictions, predictions.cpu()))
+            predictions = torch.cat((predictions, output.cpu()))
 
     for idx, label in enumerate(train_ds.str_labels):
         preds_label = predictions[:, idx]
@@ -222,7 +224,7 @@ def train_clf(modality: str, img_size: int):
 
 
 if __name__ == '__main__':
-    train_clf('pa', 256)
+    # train_clf('pa', 256)
     train_clf('pa', 128)
-    train_clf('lat', 128)
-    train_clf('lat', 256)
+    # train_clf('lat', 128)
+    # train_clf('lat', 256)
