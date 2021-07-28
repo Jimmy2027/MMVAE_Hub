@@ -9,7 +9,6 @@ from collections.abc import MutableMapping
 from pathlib import Path
 
 import numpy as np
-import torch
 import torch.distributed as dist
 from torch import device as Device
 
@@ -244,3 +243,12 @@ def unpack_zipfile(zip_file_path: Path, dest_path=Path) -> None:
     """Extract zip to destination."""
     with zipfile.ZipFile(zip_file_path) as z:
         z.extractall(str(dest_path))
+
+
+def chunks(lst, n):
+    """
+    Yield successive n-sized chunks from lst.
+    Taken from https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks
+    """
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
