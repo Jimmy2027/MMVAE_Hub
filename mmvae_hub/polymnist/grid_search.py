@@ -9,27 +9,34 @@ from mmvae_hub.utils.setup.flags_utils import get_config_path
 search_spaces = {
     # 'method': ['mofop'],
     # 'method': ['fomop'],
-    'method': ['pgfm'],
+    'method': ['mofop'],
     # "eval_freq_fid": [1],
     'class_dim': [256],
-    "beta": [1],
-    "num_flows": [1],
+    "min_beta": [0],
+    "max_beta": [1],
+    "beta_warmup": [50],
+    "num_flows": [5],
     "num_mods": [3],
-    "end_epoch": [100],
+    "end_epoch": [150],
     "weighted_mixture": [False],
     "amortized_flow": [False],
 }
 
 search_spaces_1 = {
-    'method': ['mofop'],
+    'method': ['mogfm'],
     # "dataloader_workers":[0],
     # 'method': ['moe'],
     'class_dim': [256],
-    "beta": [1],
-    "num_flows": [0],
-    "num_mods": [1],
-    "end_epoch": [500],
-    "weighted_mixture": [False]
+    # 'initial_learning_rate': [0.00005],
+    "min_beta": [0],
+    "max_beta": [1],
+    "beta_warmup": [50],
+    "num_gfm_flows": [5],
+    "num_mods": [3],
+    "end_epoch": [1],
+    # "norby": [False],
+    # "use_db": [False],
+    # "calc_prd": [False]
 }
 
 if __name__ == '__main__':
