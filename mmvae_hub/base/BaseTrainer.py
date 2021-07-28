@@ -56,7 +56,9 @@ class BaseTrainer:
 
             # training and testing
             train_results: BaseBatchResults = self.train()
-            test_results = self.test(epoch)
+            last_epoch: bool = (epoch + 1) == self.flags.end_epoch
+            if (epoch + 1) % self.flags.eval_freq == 0 or last_epoch:
+                test_results = self.test(epoch, last_epoch=last_epoch)
 
             self.exp.mm_vae.flags.beta = self.callback.update_epoch(train_results, test_results, epoch,
                                                                     time.time() - end)
@@ -85,7 +87,6 @@ class BaseTrainer:
 
             # forward pass
             forward_results: BaseForwardResults = model(batch_d)
-
             # calculate the loss
             total_loss, joint_divergence, log_probs, klds = model.calculate_loss(forward_results, batch_d)
 
@@ -111,7 +112,7 @@ class BaseTrainer:
         self.tb_logger.write_training_logs(**{k: v for k, v in train_results.items() if k != 'joint_latents'})
         return BaseBatchResults(**train_results)
 
-    def test(self, epoch) -> BaseTestResults:
+    def test(self, epoch, last_epoch: bool) -> BaseTestResults:
         with torch.no_grad():
             self.exp.set_eval_mode()
             model = self.exp.mm_vae
@@ -143,50 +144,48 @@ class BaseTrainer:
             self.tb_logger.write_testing_logs(**{k: v for k, v in averages.items() if k != 'joint_latents'})
 
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
-            last_epoch: bool = (epoch + 1) == self.flags.end_epoch
-            if (epoch + 1) % self.flags.eval_freq == 0 or last_epoch:
 
-                log.info('generating plots')
-                plots = generate_plots(self.exp, epoch)
-                self.tb_logger.write_plots(plots, epoch)
+            log.info('generating plots')
+            plots = generate_plots(self.exp, epoch)
+            self.tb_logger.write_plots(plots, epoch)
 
-                if self.flags.eval_lr:
-                    log.info('evaluation of latent representation')
-                    # train linear classifiers
-                    clf_lr_q0, clf_lr_zk = train_clf_lr_all_subsets(self.exp)
+            if self.flags.eval_lr:
+                log.info('evaluation of latent representation')
+                # train linear classifiers
+                clf_lr_q0, clf_lr_zk = train_clf_lr_all_subsets(self.exp)
 
-                    # test linear classifiers
-                    # methods where the flow is applied on each modality don't have a q0.
-                    lr_eval_q0 = test_clf_lr_all_subsets(clf_lr_q0, self.exp, which_lr='q0') \
-                        if clf_lr_q0 else None
-                    lr_eval_zk = test_clf_lr_all_subsets(clf_lr_zk, self.exp, which_lr='zk') \
-                        if clf_lr_zk else None
+                # test linear classifiers
+                # methods where the flow is applied on each modality don't have a q0.
+                lr_eval_q0 = test_clf_lr_all_subsets(clf_lr_q0, self.exp, which_lr='q0') \
+                    if clf_lr_q0 else None
+                lr_eval_zk = test_clf_lr_all_subsets(clf_lr_zk, self.exp, which_lr='zk') \
+                    if clf_lr_zk else None
 
-                    # log results
-                    lr_eval_results = {'q0': lr_eval_q0, 'zk': lr_eval_zk}
-                    log.info(f'Lr eval results: {lr_eval_results}')
-                    self.tb_logger.write_lr_eval(lr_eval_results)
-                    test_results.lr_eval_q0 = lr_eval_q0
-                    test_results.lr_eval_zk = lr_eval_zk
+                # log results
+                lr_eval_results = {'q0': lr_eval_q0, 'zk': lr_eval_zk}
+                log.info(f'Lr eval results: {lr_eval_results}')
+                self.tb_logger.write_lr_eval(lr_eval_results)
+                test_results.lr_eval_q0 = lr_eval_q0
+                test_results.lr_eval_zk = lr_eval_zk
 
-                if self.flags.use_clf:
-                    log.info('test generation')
-                    gen_eval = test_generation(self.exp)
-                    log.info(f'Gen eval results: {gen_eval}')
-                    self.tb_logger.write_coherence_logs(gen_eval)
-                    test_results.gen_eval = flatten_cond_gen_values(gen_eval)
+            if self.flags.use_clf:
+                log.info('test generation')
+                gen_eval = test_generation(self.exp)
+                log.info(f'Gen eval results: {gen_eval}')
+                self.tb_logger.write_coherence_logs(gen_eval)
+                test_results.gen_eval = flatten_cond_gen_values(gen_eval)
 
-                if self.flags.calc_nll:
-                    log.info('estimating likelihoods')
-                    lhoods = estimate_likelihoods(self.exp)
-                    self.tb_logger.write_lhood_logs(lhoods)
-                    test_results.lhoods = lhoods
+            if self.flags.calc_nll:
+                log.info('estimating likelihoods')
+                lhoods = estimate_likelihoods(self.exp)
+                self.tb_logger.write_lhood_logs(lhoods)
+                test_results.lhoods = lhoods
 
-                if self.flags.calc_prd and (((epoch + 1) % self.flags.eval_freq_fid == 0) or last_epoch):
-                    log.info('calculating prediction score')
-                    prd_scores = calc_prd_score(self.exp)
-                    self.tb_logger.write_prd_scores(prd_scores)
-                    test_results.prd_scores = prd_scores
+            if self.flags.calc_prd and (((epoch + 1) % self.flags.eval_freq_fid == 0) or last_epoch):
+                log.info('calculating prediction score')
+                prd_scores = calc_prd_score(self.exp)
+                self.tb_logger.write_prd_scores(prd_scores)
+                test_results.prd_scores = prd_scores
         return test_results
 
     def setup_phase(self, phase: str):

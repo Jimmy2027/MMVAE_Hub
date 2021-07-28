@@ -36,7 +36,7 @@ class BaseCallback:
         """
 
         epoch_results_dict = {'train_results': {**train_results.__dict__},
-                              'test_results': {**test_results.__dict__},
+                              'test_results': {**test_results.__dict__} if test_results is not None else None,
                               'epoch_time': self.epoch_time.get_average(),
                               'beta': beta}
 
