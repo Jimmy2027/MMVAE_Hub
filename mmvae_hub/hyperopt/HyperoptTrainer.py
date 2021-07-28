@@ -48,7 +48,7 @@ class HyperoptTrainer:
         # do this to store values such that they can be retrieved in the database
         # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
 
-        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-4, log=True)
+        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-3, log=True)
         self.flags.class_dim = trial.suggest_categorical("class_dim", [32, 64, 128, 256, 512, 640])
         self.flags.coupling_dim = trial.suggest_categorical("coupling_dim", [32, 64, 128, 256, 512, 640])
         self.flags.num_flows = trial.suggest_int("num_gfm_flows", low=1, high=20, step=2)
