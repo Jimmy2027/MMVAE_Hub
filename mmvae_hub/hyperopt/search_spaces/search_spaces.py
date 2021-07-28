@@ -124,7 +124,6 @@ sp_mofop = {
     "eval_freq": [100],
 }
 
-
 sp_mofop_noflow = {
     'n_gpus': [1],
     'method': ['mofop'],
@@ -136,4 +135,16 @@ sp_mofop_noflow = {
     "coupling_dim": [512],
     "weighted_mixture": [False],
     "amortized_flow": [False]
+}
+
+sp_mogfm = {
+    'method': ['mogfm'],
+    'class_dim': [256],
+    "min_beta": [0],
+    "max_beta": [1],
+    "beta_warmup": [50],
+    "num_gfm_flows": [5],
+    "num_mods": [3],
+    "end_epoch": [1],
+    'gpu_mem': [30000]
 }
