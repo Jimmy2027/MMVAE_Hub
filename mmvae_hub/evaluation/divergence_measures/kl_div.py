@@ -1,5 +1,6 @@
 import math
-from typing import Union
+
+import torch.nn.functional
 
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights
@@ -31,10 +32,15 @@ def log_normal_standard(x, average=False, reduce=True, dim=None):
         return log_norm
 
 
+def calc_divergence_with_samples(samples_prior: Tensor, samples_q: Tensor):
+    return torch.nn.functional.kl_div(samples_q, samples_prior, reduction='batchmean')
+
+
 def calc_divergence_embedding(z: Tensor):
     log_p_zk = 0.5 * torch.sum(z ** 2, 1)
 
     return log_p_zk.sum()
+
 
 def calc_kl_divergence_embedding_flow(z0: Tensor, zk: Tensor, log_det_j: Tensor, norm_value=None) -> Tensor:
     """
@@ -62,6 +68,7 @@ def calc_kl_divergence_embedding_flow(z0: Tensor, zk: Tensor, log_det_j: Tensor,
         KLD = KLD / float(norm_value)
 
     return KLD
+
 
 def calc_kl_divergence_flow(q0: Distr, z0: Tensor, zk: Tensor, log_det_j: Tensor, norm_value=None) -> Tensor:
     """
