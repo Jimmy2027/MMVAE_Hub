@@ -145,6 +145,6 @@ sp_mogfm = {
     "beta_warmup": [50],
     "num_gfm_flows": [5],
     "num_mods": [3],
-    "end_epoch": [1],
+    "end_epoch": [100],
     'gpu_mem': [30000]
 }
