@@ -160,6 +160,7 @@ class JointLatentsFoEM:
 class JointLatentsGfM:
     """Joint Latens for generalized f-means methods."""
     joint_embedding: JointEmbeddingFoEM
+    subset_samples: Mapping[str, Tensor]
     subsets: Mapping[str, Tensor]
 
     def get_joint_embeddings(self):
