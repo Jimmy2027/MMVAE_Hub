@@ -1,12 +1,13 @@
 import typing
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv, MoFoGfMMMDiv, \
-    BMoGfMMMDiv
+    BMoGfMMMDiv, GfMMMDiv_old
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
+from mmvae_hub.utils.utils import chunks
 
 
 class GfMVAE(BaseMMVAE):
@@ -46,12 +47,12 @@ class GfMVAE(BaseMMVAE):
         return JointLatentsGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
 
 
-class MoGfMVAE(BaseMMVAE):
+class MoGfMVAE_old(BaseMMVAE):
     "Mixture of Generalized f-Means VAE"
 
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        self.mm_div = GfMMMDiv()
+        self.mm_div = GfMMMDiv_old()
 
         self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
@@ -82,7 +83,71 @@ class MoGfMVAE(BaseMMVAE):
         z_joint = mixture_component_selection_embedding(subset_embeds=subset_embeddings, s_key='all', flags=self.flags)
         joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
 
-        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings)
+        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings, subset_samples = None)
+
+class MoGfMVAE(BaseMMVAE):
+    "Mixture of Generalized f-Means VAE"
+
+    def __init__(self, exp, flags, modalities, subsets):
+        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.num_samples = 500
+        self.mm_div = GfMMMDiv(flags=flags, num_samples=self.num_samples)
+        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+        transformed_enc_mods = {}
+        subset_embeddings = {}
+        subset_samples = {}
+
+        # batch_size is not always equal to flags.batch_size
+        batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.mu.shape[0]
+
+        # sample num_samples from enc_mods and pass them through flow
+        # for mod_key, distr in enc_mods.items():
+        #     transformed_samples = torch.Tensor().to(self.flags.device)
+        #     enc_mods_samples = torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0)
+        #                                        for _ in range(self.num_samples)), dim=0) \
+        #         .reshape((self.num_samples * batch_size, self.flags.class_dim))
+            # pass samples batchwise through flow to limit gpu mem usage
+            # for batch in chunks(enc_mods_samples, 100):
+            #     transformed_samples = torch.cat((transformed_samples, self.flow(batch)[0]))
+            # transformed_enc_mods[mod_key] = transformed_samples
+
+        transformed_enc_mods = {
+            mod_key: self.flow(
+                torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0) for _ in range(self.num_samples)),
+                          dim=0).reshape((self.num_samples * batch_size, self.flags.class_dim)))[
+                0] for mod_key, distr in
+            enc_mods.items()}
+
+        for s_key in batch_subsets:
+            subset_zks = torch.Tensor().to(self.flags.device)
+            for mod in self.subsets[s_key]:
+                subset_zks = torch.cat((subset_zks, transformed_enc_mods[mod.name].unsqueeze(dim=0)), dim=0)
+            # mean of zks
+            z_mean = torch.mean(subset_zks, dim=0)
+            # calculate inverse flow
+            samples = self.flow.rev(z_mean)[0]
+
+            # samples = torch.Tensor().to(self.flags.device)
+            # for batch in chunks(z_mean, 100):
+            #     samples = torch.cat((samples, self.flow.rev(batch)[0]))
+
+            samples = samples.reshape((self.num_samples, batch_size, self.flags.class_dim))
+            subset_samples[s_key] = samples
+
+            subset_embeddings[s_key] = samples.mean(dim=0)
+
+        z_joint = mixture_component_selection_embedding(subset_embeds=subset_embeddings, s_key='all', flags=self.flags)
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+
+        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings,
+                                 subset_samples=subset_samples)
 
 
 class MoFoGfMVAE(BaseMMVAE):

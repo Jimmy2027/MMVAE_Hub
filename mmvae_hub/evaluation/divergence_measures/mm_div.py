@@ -1,7 +1,9 @@
 from abc import abstractmethod
 
+from torch.distributions import MultivariateNormal
+
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss, calc_divergence_embedding, \
-    calc_kl_divergence_embedding_flow
+    calc_kl_divergence_embedding_flow, calc_divergence_with_samples
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils.Dataclasses import *
@@ -160,6 +162,47 @@ class BMoGfMMMDiv(BaseMMDiv):
 
 
 class GfMMMDiv(BaseMMDiv):
+    def __init__(self, flags, num_samples: int):
+        super().__init__()
+        self.flags = flags
+        self.calc_kl_divergence = calc_divergence_with_samples
+        self.num_samples = num_samples
+        self.samples_from_prior = MultivariateNormal(torch.zeros(self.flags.class_dim),
+                                                     torch.eye(self.flags.class_dim)). \
+            sample((self.num_samples * self.flags.batch_size,)). \
+            reshape((self.num_samples, self.flags.batch_size, self.flags.class_dim))
+
+    def calc_klds(self, forward_results: BaseForwardResults, subsets: Mapping[str, BaseModality], num_samples: int,
+                  joint_keys: Iterable[str]):
+        """Calculate the Kl divergences for all subsets and the joint latent distribution."""
+
+        subsets_samples = forward_results.joint_latents.subset_samples
+        # the divergences are calculated with the negative log probabilities of the embeddings.
+        klds = self.calc_subset_divergences(subsets_samples)
+
+        # normalize klds with number of modalities in subset and batch_size
+        for subset_key, subset in subsets.items():
+            weights = (1 / float(num_samples)) * torch.ones(len(subset)).to(klds[subset_key].device)
+            klds[subset_key] = (weights * klds[subset_key].squeeze()).sum(dim=0)
+
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean() * (1 / float(num_samples))
+
+        return klds, joint_div
+
+    def calc_subset_divergences(self, latent_subsets: Mapping[str, Tensor]):
+        samples_from_prior = self.samples_from_prior.to(self.flags.device)
+        return {
+            mod_str: self.calc_kl_divergence(samples_prior=samples_from_prior, samples_q=subset_samples)
+            for mod_str, subset_samples in latent_subsets.items()
+        }
+
+    def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
+        pass
+
+class GfMMMDiv_old(BaseMMDiv):
     def __init__(self):
         super().__init__()
         self.calc_kl_divergence = calc_divergence_embedding
@@ -192,7 +235,6 @@ class GfMMMDiv(BaseMMDiv):
 
     def calc_group_divergence(self, device, forward_results: BaseForwardResults, normalization=None) -> BaseDivergences:
         pass
-
 
 class MoFoGfMMMDiv(GfMMMDiv):
     def __init__(self):
