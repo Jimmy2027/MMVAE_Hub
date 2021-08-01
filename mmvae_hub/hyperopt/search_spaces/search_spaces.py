@@ -70,7 +70,7 @@ sp_gfm = {
 sp_joint_elbo = {
     'n_gpus': [1],
     'method': ['joint_elbo'],
-    'beta': [1.4810022901262143],
+    'max_beta': [1.4810022901262143],
     'class_dim': [640],
     "num_mods": [3],
     "initial_learning_rate": [0.0006212184464462084],
