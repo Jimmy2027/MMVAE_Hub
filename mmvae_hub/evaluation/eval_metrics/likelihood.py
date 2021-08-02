@@ -19,7 +19,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     mod_weights = exp.style_weights
     mods = exp.modalities
 
-    s_dist = latents.get_q0(subset_key)
+    s_dist = latents.subsets[subset_key]
     n_total_samples = batch[list(batch)[0]].shape[0] * num_imp_samples
 
     if flags.factorized_representation:
@@ -70,7 +70,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     for m_key, mod in mods.items():
         # compute marginal log-likelihood
         style_mod = l_lin_rep_style[mod.name] if mod in subset else None
-        log.debug(f'Computing log_marginal_estimate for modality {mod}')
+        log.info(f'Computing log_marginal_estimate for modality {mod}')
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,
                                        gen[mod.name],
