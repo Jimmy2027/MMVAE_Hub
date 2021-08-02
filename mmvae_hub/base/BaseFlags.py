@@ -69,7 +69,7 @@ parser.add_argument('--inception_state_dict', type=str, default='../inception_st
 # EVALUATION
 parser.add_argument('--use_clf', default=False, action="store_true",
                     help="flag to indicate if generates samples should be classified")
-parser.add_argument('--calc_nll', default=False, action="store_true",
+parser.add_argument('--calc_nll', type=str2bool, default=True,
                     help="flag to indicate calculation of nll")
 parser.add_argument('--eval_lr', default=False, action="store_true",
                     help="flag to indicate evaluation of latent representations")
