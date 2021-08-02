@@ -143,5 +143,6 @@ sp_mogfm = {
     "coupling_dim": [32],
     "num_mods": [3],
     "end_epoch": [500],
-    'gpu_mem': [30000]
+    'gpu_mem': [30000],
+    "calc_nll": [False]
 }
