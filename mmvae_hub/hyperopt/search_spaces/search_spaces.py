@@ -139,8 +139,9 @@ sp_mogfm = {
     "min_beta": [0],
     "max_beta": [1.5142062143401498],
     "beta_warmup": [50],
-    "num_gfm_flows": [2],
+    "num_gfm_flows": [3],
+    "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [150],
+    "end_epoch": [500],
     'gpu_mem': [30000]
 }

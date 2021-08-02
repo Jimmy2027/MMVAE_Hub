@@ -7,25 +7,53 @@ from mmvae_hub.utils.Dataclasses import BaseTestResults
 def get_missing_mod_scores_gen_eval(results: dict):
     """Get the scores that were achieved with a missing modality."""
     for key, score in results.items():
-        # separate key between str_label, in_mods and out_mods
-        split1 = key.split('__')
-        out_mod = split1[-1]
-        split2 = split1[0].split('_')
-        in_mods = split2[1:]
+        if 'joint' not in key:
+            # separate key between str_label, in_mods and out_mods
+            split1 = key.split('__')
+            out_mod = split1[-1]
+            split2 = split1[0].split('_')
+            in_mods = split2[1:]
 
-        if out_mod not in in_mods:
-            yield score
+            if out_mod not in in_mods:
+                yield score
+
+
+def get_reconstr_mod_scores_gen_eval(results: dict):
+    """Get the scores that were achieved with the modality given as input."""
+    for key, score in results.items():
+        if 'joint' not in key:
+            # separate key between str_label, in_mods and out_mods
+            split1 = key.split('__')
+            out_mod = split1[-1]
+            split2 = split1[0].split('_')
+            in_mods = split2[1:]
+
+            if out_mod in in_mods:
+                yield score
 
 
 def get_missing_mod_scores_prd(results: dict):
     """Get the scores that were achieved with a missing modality."""
+    for key, score in results.items():
+        if 'joint' not in key:
+            # separate key between in_mods and out_mods
+            split = key.split('_')
+            out_mod = split[-1]
+            in_mods = split[:-1]
+
+            if out_mod not in in_mods:
+                yield score
+
+
+def get_reconstr_mod_scores_prd(results: dict):
+    """Get the scores that were achieved with the modality given as input."""
     for key, score in results.items():
         # separate key between in_mods and out_mods
         split = key.split('_')
         out_mod = split[-1]
         in_mods = split[:-1]
 
-        if out_mod not in in_mods:
+        if out_mod in in_mods:
             yield score
 
 
