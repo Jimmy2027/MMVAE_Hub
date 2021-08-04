@@ -31,8 +31,8 @@
   "eval_freq": 10,
   "eval_freq_fid": 1000,
   "end_epoch": 150,
-  "calc_nll": false,
+  "calc_nll": true,
   "eval_lr": true,
-  "calc_prd": false,
-  "use_clf": false
+  "calc_prd": true,
+  "use_clf": true
 }
