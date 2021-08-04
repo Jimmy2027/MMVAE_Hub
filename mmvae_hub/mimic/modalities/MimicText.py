@@ -7,14 +7,14 @@ import torch
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from torch import nn
 from torchvision import transforms
+from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast
 
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.modalities.utils import get_likelihood
-from mmvae_hub.networks.text.ConvNetworkTextClf import ClfText
 from mmvae_hub.networks.text.ConvNetworksTextMimic import EncoderText, DecoderText
 from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
-from mmvae_hub.utils.utils import get_clf_path
 
 
 class MimicText(BaseModality):
@@ -51,12 +51,13 @@ class MimicText(BaseModality):
 
     def get_clf(self):
         if self.flags.use_clf:
-            model_clf = ClfText(self.flags, self.labels)
-            clf_path = get_clf_path(self.flags.dir_clf,
-                                    self.flags.clf_save_m3 + f'vocabsize_{self.flags.vocab_size}{"_bin_label" if self.flags.binary_labels else ""}')
-
-            model_clf.load_state_dict(torch.load(clf_path, map_location=self.flags.device))
-            return model_clf.to(self.flags.device)
+            clf = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased',
+                                                                      num_labels=len(self.labels)).to(
+                self.flags.device)
+            text_clf_path = Path(
+                __file__).parent.parent / f'classifiers/state_dicts/text_clf.pth'
+            clf.load_state_dict(torch.load(text_clf_path, map_location=self.flags.device))
+            return TextClf(self, clf).to(self.flags.device)
 
     def calc_likelihood(self, style_embeddings, class_embeddings):
         return self.likelihood(logits=self.decoder(style_embeddings, class_embeddings)[0], validate_args=False)
@@ -122,3 +123,19 @@ class MimicText(BaseModality):
         else:
             return transforms.ToTensor()(pil_img.resize((imgsize[1], imgsize[2]),
                                                         Image.ANTIALIAS).convert('L'))
+
+
+class TextClf(nn.Module):
+    def __init__(self, text_mod: MimicText, clf):
+        super().__init__()
+        self.text_mod = text_mod
+        self.clf = clf
+        self.tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-uncased')
+
+    def forward(self, x):
+        x_ = [' '.join(sent) for sent in self.text_mod.tensor_to_text(x)]
+
+        item = {key: torch.tensor(val).to(x.device) for key, val in
+                self.tokenizer(x_, return_tensors="pt", padding=True, truncation=True,
+                               max_length=256).items()}
+        return self.clf(**item).logits

@@ -1,14 +1,23 @@
-import os
 import typing
+from pathlib import Path
 
 import torch
+import torchvision.transforms as transforms
 
+from mmvae_hub.mimic.classifiers.train_img_clfs import LM
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
 from mmvae_hub.modalities.utils import get_likelihood
-from mmvae_hub.networks.images.CheXNet import CheXNet
-from mmvae_hub.networks.images.ConvNetworkImgClf import ClfImg
 from mmvae_hub.networks.images.ConvNetworksImgMimic import EncoderImg, DecoderImg
-from mmvae_hub.utils.utils import get_clf_path
+
+
+class LM_(LM):
+    def __init__(self, str_labels: list, transforms):
+        super().__init__(str_labels)
+        self.transforms = transforms
+
+    def forward(self, x):
+        x_ = torch.cat([self.transforms(torch.cat([s for _ in range(3)])).unsqueeze(0) for s in x], dim=0).to(x.device)
+        return self.model(x_)
 
 
 class MimicImg(ModalityIMG):
@@ -29,28 +38,29 @@ class MimicImg(ModalityIMG):
 
         self.plot_img_size = plot_img_size
 
+        self.clf_transforms = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(15),
+            transforms.Resize(256),
+            transforms.CenterCrop(256),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+        ])
+
         self.clf = self.get_clf()
 
     def get_clf(self):
         if self.flags.use_clf:
-            # mapping clf type to clf_save_m*
-            clf_save_names: typing.Mapping[str, str] = {
-                'PA': self.flags.clf_save_m1,
-                'Lateral': self.flags.clf_save_m2,
-            }
-
+            clf_name_mapping = {'PA': 'pa', 'Lateral': 'lat'}
             # finding the directory of the classifier
-            dir_img_clf = os.path.join(self.flags.dir_clf,
-                                       f'Mimic{self.flags.img_size}_{self.flags.img_clf_type}'
-                                       f'{"_bin_label" if self.flags.binary_labels else ""}')
-            dir_img_clf = os.path.expanduser(dir_img_clf)
-
-            # finding and loading state dict
-            clf = ClfImg(self.flags, self.labels) if self.flags.img_clf_type == 'resnet' else CheXNet(
-                len(self.labels))
-            clf_path = get_clf_path(dir_img_clf, clf_save_names[self.name])
-            clf.load_state_dict(torch.load(clf_path, map_location=self.flags.device))
-            return clf.to(self.flags.device)
+            img_clf_path = Path(
+                __file__).parent.parent / f'classifiers/state_dicts/{clf_name_mapping[self.name]}_clf_{self.flags.img_size}.pth'
+            lightning_module = LM_(str_labels=self.labels, transforms=self.clf_transforms)
+            lightning_module.model.load_state_dict(
+                torch.load(img_clf_path, map_location=self.flags.device))
+            return lightning_module.to(self.flags.device)
 
 
 class MimicPA(MimicImg):
