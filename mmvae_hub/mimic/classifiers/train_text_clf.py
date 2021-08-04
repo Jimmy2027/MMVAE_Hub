@@ -1,10 +1,11 @@
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import torch
+from torch import nn
 from torch.utils.data import Dataset, DataLoader
-from transformers import DistilBertTokenizerFast, DistilBertForSequenceClassification
+from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments
+from transformers import DistilBertTokenizerFast
 
 from mmvae_hub.mimic.utils import filter_labels
 
@@ -36,18 +37,20 @@ class MimicFindings(Dataset):
         """
         split: string, either train, eval or test
         """
-        str_label = ['Finding']
+        # str_label = ['Finding']
+        self.str_labels = ['Lung Opacity', 'Pleural Effusion', 'Support Devices']
         # dir_dataset = Path('/Users/Hendrik/Documents/master3/leomed_klugh/files_small_128')
         dir_dataset = Path('/mnt/data/hendrik/mimic_scratch/files_small_128')
         findings = pd.read_csv(dir_dataset / f'{split}_findings.csv')
-        labels = filter_labels(pd.read_csv(dir_dataset / f'{split}_labels.csv').fillna(0), str_label, False, 'train')
+        labels = filter_labels(pd.read_csv(dir_dataset / f'{split}_labels.csv').fillna(0), self.str_labels, False,
+                               'train')
 
         self.df = labels.merge(findings)
 
         # tokenize findings
         self.encodings = tokenizer(self.df['findings'].tolist(), return_tensors="pt", padding=True, truncation=True,
                                    max_length=256)
-        self.labels = self.df['Finding'].tolist()
+        self.labels = self.df[self.str_labels].to_numpy()
 
     def __getitem__(self, idx):
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
@@ -59,8 +62,9 @@ class MimicFindings(Dataset):
 
 
 # %%
-
-train_ds = MimicFindings('train')
+# temp
+# train_ds = MimicFindings('train')
+train_ds = MimicFindings('eval')
 eval_ds = MimicFindings('eval')
 train_ds.df.head()
 
@@ -69,10 +73,7 @@ train_ds.df.head()
 # Load the model from a pretrained checkpoint.
 
 # %%
-
-unique_labels, counts = np.unique(train_ds.df["Finding"], return_counts=True)
-print(unique_labels, counts)
-model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=len(unique_labels)).to(DEVICE)
+model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=len(train_ds.str_labels)).to(DEVICE)
 
 optimizer = torch.optim.Adam([
     {'params': model.distilbert.parameters(), 'lr': 1e-5},
@@ -89,7 +90,6 @@ eval_loader = DataLoader(eval_ds, batch_size=BATCH_SIZE, shuffle=True, num_worke
 
 # %%
 
-from transformers import DistilBertForSequenceClassification, Trainer, TrainingArguments
 
 training_args = TrainingArguments(
     output_dir='./results',  # output directory
@@ -100,9 +100,22 @@ training_args = TrainingArguments(
     weight_decay=0.01,  # strength of weight decay
     logging_dir='./logs',  # directory for storing logs
     logging_steps=10,
+    label_names=train_ds.str_labels
 )
 
-trainer = Trainer(
+
+class MultilabelTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        loss_fct = nn.BCEWithLogitsLoss()
+        loss = loss_fct(logits.view(-1, self.model.config.num_labels),
+                        labels.float().view(-1, self.model.config.num_labels))
+        return (loss, outputs) if return_outputs else loss
+
+
+trainer = MultilabelTrainer(
     model=model,  # the instantiated 🤗 Transformers model to be trained
     args=training_args,  # training arguments, defined above
     train_dataset=train_ds,  # training dataset
@@ -113,7 +126,7 @@ trainer.train()
 
 # %%
 
-trainer.evaluate()
+# trainer.evaluate()
 
 # %%
 
@@ -123,11 +136,11 @@ model = trainer.model
 # Save model
 
 # %%
-torch.save(model.state_dict(), 'text_clf.pth')
+torch.save(model.state_dict(), 'state_dicts/text_clf.pth')
 
-model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=len(unique_labels)).to(DEVICE)
+model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=len(train_ds.str_labels)).to(DEVICE)
 
-model.load_state_dict(torch.load('text_clf.pth', map_location=DEVICE))
+model.load_state_dict(torch.load('state_dicts/text_clf.pth', map_location=DEVICE))
 
 # %%
 
@@ -136,12 +149,9 @@ model.eval()
 
 with torch.no_grad():
     for batch in eval_loader:
-        input_ids = batch['input_ids'].to(DEVICE)
-        attention_mask = batch['attention_mask'].to(DEVICE)
-        labels = batch['labels'].to(DEVICE)
-        output = model(input_ids, attention_mask=attention_mask, labels=labels)
-        # print(output)
-        logits = output.logits
+        labels = batch.pop("labels")
+        outputs = model(**batch)
+        logits = outputs.logits
         # take the argmax of the logits
         predictions.extend(logits.argmax(dim=1).tolist())
         targets.extend(labels.cpu())
