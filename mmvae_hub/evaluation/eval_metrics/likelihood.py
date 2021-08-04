@@ -1,9 +1,9 @@
 import math
 
 import numpy as np
+import torch.nn.functional
 from torch.utils.data import DataLoader
 
-from mmvae_hub import log
 from mmvae_hub.utils.Dataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_marginal_estimate, log_joint_estimate, get_latent_samples
 from mmvae_hub.utils.utils import dict_to_device
@@ -70,10 +70,15 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     for m_key, mod in mods.items():
         # compute marginal log-likelihood
         style_mod = l_lin_rep_style[mod.name] if mod in subset else None
-        log.info(f'Computing log_marginal_estimate for modality {mod}')
+
+        if mod.name == 'text':
+            sdfg =0
+
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,
                                        gen[mod.name],
+                                       torch.nn.functional.one_hot(batch[mod.name].to(torch.int64),
+                                                                   num_classes=flags.vocab_size) if mod.name == 'text' else
                                        batch[mod.name],
                                        style_mod,
                                        l_lin_rep_content)
