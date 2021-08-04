@@ -131,7 +131,6 @@ def log_marginal_estimate(flags, n_samples, likelihood, image, style, content, d
     z_content = content['z']
     mu_content = content['mu']
     logvar_content = content['logvar']
-    log.debug(f'Computing log prob of image with shape: {image.shape}')
     log_p_x_given_z_2d = likelihood.log_prob(image).view(batch_size * n_samples,
                                                          -1).sum(dim=1)
     content_log_q_z_given_x_2d = gaussian_log_pdf(z_content, mu_content, logvar_content)
@@ -200,7 +199,10 @@ def log_joint_estimate(flags, n_samples, likelihoods, targets, styles, content, 
     for k, key in enumerate(styles.keys()):
         batch_d = targets[key]
         d_shape = batch_d.shape
-        if len(d_shape) == 3:
+        if len(d_shape) == 2:
+            batch_d = batch_d.unsqueeze(0).repeat(n_samples, 1, 1)
+            batch_d = batch_d.view(batch_size * n_samples, d_shape[-1])
+        elif len(d_shape) == 3:
             batch_d = batch_d.unsqueeze(0).repeat(n_samples, 1, 1, 1)
             batch_d = batch_d.view(batch_size * n_samples, d_shape[-2], d_shape[-1])
         elif len(d_shape) == 4:
@@ -208,6 +210,8 @@ def log_joint_estimate(flags, n_samples, likelihoods, targets, styles, content, 
             batch_d = batch_d.view(batch_size * n_samples, d_shape[-3], d_shape[-2],
                                    d_shape[-1])
         lhood = likelihoods[key]
+        batch_d = torch.nn.functional.one_hot(batch_d.to(torch.int64),
+                                                                   num_classes=flags.vocab_size) if key == 'text' else batch_d
         log_p_x_given_z_2d = lhood.log_prob(batch_d).view(batch_size * n_samples, -1).sum(dim=1)
         log_px_zs[k] = log_p_x_given_z_2d
 
