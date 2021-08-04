@@ -22,6 +22,7 @@ parser.add_argument('--weighted_sampler', type=str2bool, default=False,
                     help="If a weighted sampler should be used for the dataloader.")
 parser.add_argument('--binary_labels', type=str2bool, default=False,
                     help="If True, label 'Finding' with classes 0 and 1 will be used for the classification evaluation.")
+parser.add_argument('--num_mods', type=int, default=3, help="This flag does not do anything yet.")
 
 # Text Dependent
 parser.add_argument('--len_sequence', type=int, default=128, help="length of sequence")
