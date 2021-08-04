@@ -114,7 +114,7 @@ sp_mofop = {
     'class_dim': [256],
     "num_mods": [3],
     "num_flows": [5, 10],
-    "end_epoch": [1500],
+    "end_epoch": [150],
     "coupling_dim": [512],
     "eval_freq": [100],
 }
