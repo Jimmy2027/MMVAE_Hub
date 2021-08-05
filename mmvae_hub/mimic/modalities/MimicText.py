@@ -39,8 +39,8 @@ class MimicText(BaseModality):
 
         self.clf = self.get_clf()
 
-    def save_data(self, exp, d, fn, args):
-        write_samples_text_to_file(self.tensor_to_text(exp, d.unsqueeze(0)), fn)
+    def save_data(self, d, fn, args):
+        write_samples_text_to_file(self.tensor_to_text(gen_t=d.unsqueeze(0)), fn)
 
     def plot_data(self, d):
         return self.text_to_pil(d.unsqueeze(0), self.plot_img_size, self.font)

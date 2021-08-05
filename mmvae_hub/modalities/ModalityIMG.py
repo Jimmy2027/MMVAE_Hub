@@ -11,7 +11,7 @@ class ModalityIMG(BaseModality):
         super().__init__(flags, name)
         self.data_size = data_size
 
-    def save_data(self, exp, d, fn, args):
+    def save_data(self, d, fn, args):
         img_per_row = args['img_per_row']
         write_samples_img_to_file(d, fn, img_per_row)
 
@@ -24,4 +24,5 @@ class ModalityIMG(BaseModality):
         return d.repeat(1, 1, 1, 1)
 
     def calc_likelihood(self, style_embeddings, class_embeddings):
+
         return self.likelihood(*self.decoder(style_embeddings, class_embeddings), validate_args=False)

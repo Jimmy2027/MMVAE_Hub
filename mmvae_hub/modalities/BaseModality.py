@@ -13,7 +13,7 @@ class BaseModality(ABC):
         self.decoder = None
 
     @abstractmethod
-    def save_data(self, exp, d, fn, args):
+    def save_data(self, d, fn, args):
         pass
 
     @abstractmethod
