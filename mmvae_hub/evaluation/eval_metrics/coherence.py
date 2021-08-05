@@ -181,7 +181,7 @@ def test_generation(exp, dataset=None):
     d_loader = DataLoader(exp.dataset_test if not dataset else dataset,
                           batch_size=args.batch_size,
                           shuffle=True,
-                          num_workers=exp.flags.dataloader_workers, drop_last=False)
+                          num_workers=exp.flags.dataloader_workers, drop_last=True)
 
     batch_labels, rand_coherences, cond_gen_classified = classify_generated_samples(args, d_loader, exp,
                                                                                     mm_vae,
