@@ -61,10 +61,8 @@ class MimicFindings(Dataset):
         return len(self.df)
 
 
-# %%
-# temp
-# train_ds = MimicFindings('train')
-train_ds = MimicFindings('eval')
+train_ds = MimicFindings('train')
+# train_ds = MimicFindings('eval')
 eval_ds = MimicFindings('eval')
 train_ds.df.head()
 
@@ -142,7 +140,7 @@ model = DistilBertForSequenceClassification.from_pretrained(MODEL_NAME, num_labe
 
 model.load_state_dict(torch.load('state_dicts/text_clf.pth', map_location=DEVICE))
 
-# %%
+# todo use evaluation from this post: https://medium.com/huggingface/multi-label-text-classification-using-bert-the-mighty-transformer-69714fa3fb3d
 
 predictions, targets = [], []
 model.eval()
