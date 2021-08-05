@@ -35,7 +35,7 @@ sp_mopgfm = {
     "num_gfm_flows": [3],
     "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [500],
+    "end_epoch": [250],
 }
 
 sp_bmogfm = {
@@ -74,7 +74,7 @@ sp_joint_elbo = {
     'class_dim': [640],
     "num_mods": [3],
     "initial_learning_rate": [0.0006212184464462084],
-    "end_epoch": [500],
+    "end_epoch": [250],
 }
 
 sp_joint_elbo_mimic = {
@@ -142,7 +142,7 @@ sp_mogfm = {
     "num_gfm_flows": [3],
     "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [500],
+    "end_epoch": [250],
     'gpu_mem': [30000],
     "calc_nll": [False]
 }
