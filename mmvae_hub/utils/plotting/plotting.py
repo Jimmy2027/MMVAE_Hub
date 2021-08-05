@@ -1,15 +1,13 @@
 import os
 
-import torch
-
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.plotting import plot
 from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.plotting import plot
 
 
-def generate_plots(exp, epoch):
+def generate_plots(exp, epoch, nbr_samples_x: int = 10, nbr_samples_y: int = 10):
     plots = {}
     if exp.flags.factorized_representation:
         # mnist to mnist: swapping content and style intra modal
@@ -17,7 +15,7 @@ def generate_plots(exp, epoch):
         plots['swapping'] = swapping_figs
 
     for M in range(len(exp.modalities.keys())):
-        cond_k = generate_conditional_fig_M(exp, epoch, M + 1)
+        cond_k = generate_conditional_fig_M(exp, epoch, M + 1, nbr_samples_x, nbr_samples_y)
         plots['cond_gen_' + str(M + 1).zfill(2)] = cond_k
 
     plots['random'] = generate_random_samples_plots(exp, epoch)
@@ -92,13 +90,13 @@ def generate_swapping_plot(exp, epoch):
     return swap_plots
 
 
-def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModality], subsets) -> Mapping[str, Tensor]:
-    nbr_samples = 10
+def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModality], subsets, nbr_samples_x: int = 10,
+                       nbr_samples_y: int = 10) -> Mapping[str, Tensor]:
     test_samples = exp.test_samples
     model = exp.mm_vae.eval()
 
     # get style from random sampling
-    random_styles = model.get_random_styles(nbr_samples)
+    random_styles = model.get_random_styles(nbr_samples_y)
 
     cond_plots = {}
     for s_key in subsets:
@@ -110,16 +108,17 @@ def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModal
             for m_key_out in mods:
                 mod_out = mods[m_key_out]
                 rec = torch.zeros(exp.plot_img_size,
-                                  dtype=torch.float32).repeat(100 + M * 10, 1, 1, 1)
+                                  dtype=torch.float32).repeat(nbr_samples_x * nbr_samples_y + M * nbr_samples_x, 1, 1,
+                                                              1)
                 for m, sample in enumerate(test_samples):
                     for n, mod_in in enumerate(s_in):
                         c_in = mod_in.plot_data(sample[mod_in.name])
-                        rec[m + n * 10, :, :, :] = c_in
+                        rec[m + n * nbr_samples_x, :, :, :] = c_in
                 cond_plots[s_key + '__' + mod_out.name] = rec
 
             # style transfer
-            for i in range(len(test_samples)):
-                for j in range(len(test_samples)):
+            for i in range(nbr_samples_y):
+                for j in range(nbr_samples_x):
                     i_batch = {
                         mod.name: test_samples[j][mod.name].unsqueeze(0)
                         for o, mod in enumerate(s_in)
@@ -145,12 +144,13 @@ def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModal
                         rec = cond_plots[s_key + '__' + mod_out.name]
                         squeezed = cond_gen_samples[mod_out.name].squeeze(0)
                         p_out = mod_out.plot_data(squeezed)
-                        rec[(i + M) * 10 + j, :, :, :] = p_out
+                        rec[(i + M) * nbr_samples_x + j, :, :, :] = p_out
                         cond_plots[s_key + '__' + mod_out.name] = rec
     return cond_plots
 
 
-def generate_conditional_fig_M(exp: BaseExperiment, epoch: int, M: int) -> Mapping[str, Tensor]:
+def generate_conditional_fig_M(exp: BaseExperiment, epoch: int, M: int, nbr_samples_x: int = 10,
+                               nbr_samples_y: int = 10) -> Mapping[str, Tensor]:
     """
     Generates conditional figures.
     M: the number of input modalities that are used as conditioner for the generation.
@@ -158,7 +158,7 @@ def generate_conditional_fig_M(exp: BaseExperiment, epoch: int, M: int) -> Mappi
     mods: Mapping[str, BaseModality] = exp.modalities
     subsets = exp.subsets
 
-    cond_plots = generate_cond_imgs(exp, M, mods, subsets)
+    cond_plots = generate_cond_imgs(exp, M, mods, subsets, nbr_samples_x, nbr_samples_y)
 
     for s_key_in in subsets:
         subset = subsets[s_key_in]

@@ -37,10 +37,11 @@ def save_generated_samples_singlegroup(exp, batch_id, group_name, samples):
             os.makedirs(dir_f)
 
     cnt_samples = batch_id * exp.flags.batch_size
+
     for k in range(exp.flags.batch_size):
         for i, key in enumerate(samples.keys()):
             mod = exp.modalities[key]
             fn_out = os.path.join(dir_save, key, str(cnt_samples).zfill(6) +
                                   mod.file_suffix)
-            mod.save_data(samples[key][k], fn_out, {'img_per_row': 1})
+            mod.save_data(d=samples[key][k], fn=fn_out, args={'img_per_row': 1})
         cnt_samples += 1

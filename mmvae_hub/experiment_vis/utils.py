@@ -12,10 +12,6 @@ import numpy as np
 import pandas as pd
 from IPython.display import display, HTML
 from matplotlib import pyplot as plt
-from nbconvert import HTMLExporter, PDFExporter
-from nbconvert.preprocessors import ExecutePreprocessor
-from pandas import DataFrame
-
 from mmvae_hub import log
 from mmvae_hub.mimic.experiment import MimicExperiment
 from mmvae_hub.modalities import BaseModality
@@ -27,6 +23,9 @@ from mmvae_hub.utils.MongoDB import MongoDatabase
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 from mmvae_hub.utils.utils import dict2json
+from nbconvert import HTMLExporter, PDFExporter
+from nbconvert.preprocessors import ExecutePreprocessor
+from pandas import DataFrame
 
 FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop', 'planar_vae', 'mofogfm']
 
@@ -407,11 +406,15 @@ def load_experiment(experiment_dir: Path = None, flags=None, _id: str = None):
     return exp
 
 
-def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None):
+def show_generated_figs(experiment_dir: Path = None, flags=None, _id: str = None, return_plots: bool = False,
+                        nbr_samples_x: int = 10, nbr_samples_y: int = 10):
     exp = load_experiment(experiment_dir, flags, _id)
 
     exp.set_eval_mode()
-    plots = generate_plots(exp, epoch=0)
+    plots = generate_plots(exp, epoch=0, nbr_samples_x=nbr_samples_x, nbr_samples_y=nbr_samples_y)
+
+    if return_plots:
+        return plots
 
     for p_key, ps in plots.items():
         for name, fig in ps.items():
