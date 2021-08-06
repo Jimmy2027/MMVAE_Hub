@@ -70,11 +70,11 @@ sp_gfm = {
 sp_joint_elbo = {
     'n_gpus': [1],
     'method': ['joint_elbo'],
-    'max_beta': [1.4810022901262143],
-    'class_dim': [640],
-    "num_mods": [3],
-    "initial_learning_rate": [0.0006212184464462084],
-    "end_epoch": [250],
+    'max_beta': [2.5],
+    'class_dim': [512],
+    "num_mods": [1],
+    "initial_learning_rate": [0.001],
+    "end_epoch": [100],
 }
 
 sp_joint_elbo_mimic = {
@@ -108,15 +108,12 @@ sp_pgfm_mimic = {
 sp_mofop = {
     'n_gpus': [1],
     'method': ['mofop'],
-    'max_beta': [1],
-    'min_beta': [0],
-    "beta_warmup": [50],
-    'class_dim': [256],
-    "num_mods": [3],
-    "num_flows": [5],
-    "end_epoch": [150],
-    "coupling_dim": [512],
-    "eval_freq": [100],
+    'max_beta': [2.5],
+    'class_dim': [512],
+    "num_mods": [1],
+    "initial_learning_rate": [0.001],
+    "end_epoch": [100],
+    "num_flows": [1],
 }
 
 sp_mofop_noflow = {
@@ -146,7 +143,6 @@ sp_mogfm = {
     'gpu_mem': [30000],
     "calc_nll": [False]
 }
-
 
 sp_joint_elbo_article = {
     'n_gpus': [1],
