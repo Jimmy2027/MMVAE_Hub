@@ -19,7 +19,11 @@ NUM_EPOCHS = 1
 
 # %%
 
-tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_NAME)
+if not Path('tokenizer').exists():
+    tokenizer = DistilBertTokenizerFast.from_pretrained(MODEL_NAME)
+    tokenizer.save_pretrained('tokenizer')
+else:
+    tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer')
 
 
 # %% md
@@ -40,7 +44,8 @@ class MimicFindings(Dataset):
         # str_label = ['Finding']
         self.str_labels = ['Lung Opacity', 'Pleural Effusion', 'Support Devices']
         # dir_dataset = Path('/Users/Hendrik/Documents/master3/leomed_klugh/files_small_128')
-        dir_dataset = Path('/mnt/data/hendrik/mimic_scratch/files_small_128')
+        # dir_dataset = Path('/mnt/data/hendrik/mimic_scratch/files_small_128')
+        dir_dataset = Path('~/klugh/files_small_128').expanduser()
         findings = pd.read_csv(dir_dataset / f'{split}_findings.csv')
         labels = filter_labels(pd.read_csv(dir_dataset / f'{split}_labels.csv').fillna(0), self.str_labels, False,
                                'train')
