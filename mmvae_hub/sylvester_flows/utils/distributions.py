@@ -9,10 +9,10 @@ from torch.autograd import Variable
 MIN_EPSILON = 1e-5
 MAX_EPSILON = 1. - 1e-5
 
-PI = Variable(torch.FloatTensor([math.pi]))
-PI.requires_grad = False
-if torch.cuda.is_available():
-    PI = PI.cuda()
+# PI = Variable(torch.FloatTensor([math.pi]))
+# PI.requires_grad = False
+# if torch.cuda.is_available():
+#     PI = PI.to()
 
 
 # N(x | mu, var) = 1/sqrt{2pi var} exp[-1/(2 var) (x-mean)(x-mean)]

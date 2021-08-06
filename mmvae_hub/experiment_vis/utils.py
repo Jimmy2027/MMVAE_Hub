@@ -565,7 +565,7 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 if __name__ == '__main__':
     # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
-    # experiment_uid = 'polymnist_mopgfm_2021_07_31_12_05_21_355664'
+    # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
@@ -577,5 +577,5 @@ if __name__ == '__main__':
     # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_mopgfm_2021_07_31_17_42_58_416337']:
+    for id in ['Mimic_mopgfm_2021_08_05_10_24_13_857815']:
         upload_notebook_to_db(id)

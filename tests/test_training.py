@@ -1,6 +1,7 @@
 import tempfile
 
 import pytest
+from norby.utils import get_readable_elapsed_time
 
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.mimic.MimicTrainer import MimicTrainer
@@ -20,8 +21,8 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        # calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe'] else True
-        calc_nll = False
+        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm'] else True
+        # calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
 
                                                                                     # 'num_mods': 1
@@ -40,9 +41,9 @@ def test_run_epochs_mimic(method: str):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
         calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
-        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': False,
-                                                                                'use_clf': False,
-                                                                                # 'weighted_mixture': True
+        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': True,
+                                                                                'use_clf': True,
+                                                                                # 'calc_prd': True
                                                                                 })
         trainer = MimicTrainer(mst)
         test_results = trainer.run_epochs()
@@ -75,17 +76,24 @@ def test_test_generation():
 
 if __name__ == '__main__':
     # pass
+    from time import time
 
+    start_time = time()
     # test_run_epochs_polymnist(method='afom')
     # test_run_epochs_polymnist(method='pfom')
     # test_run_epochs_polymnist(method='gfm')
     # test_run_epochs_polymnist(method='gfmop')
-    # test_run_epochs_polymnist(method='gfm')
+    # test_run_epochs_polymnist(method='fomop')
     # test_run_epochs_polymnist(method='poe')
-    test_run_epochs_polymnist(method='gfm')
-    # test_run_epochs_mimic(method='joint_elbo')
-    # test_run_epochs_polymnist(method='moe')
-    # test_run_epochs_polymnist(method='mofop')
+    # test_run_epochs_polymnist(method='mopgfm')
+    test_run_epochs_mimic(method='joint_elbo')
+    # test_run_epochs_polymnist(method='iwmogfm')
+
+    # test_run_epochs_polymnist(method='mogfm')
+    elapsed_time = time() - start_time
+    print(get_readable_elapsed_time(elapsed_time))
+
+    # test_run_epochs_polymnist(method='mofogfm')
 
     # test_run_epochs_polymnist(method='pope')
     # test_run_planar_mixture_no_flow()

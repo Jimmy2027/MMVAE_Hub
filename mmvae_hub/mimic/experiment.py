@@ -88,12 +88,9 @@ class MimicExperiment(BaseExperiment):
                 def text_transform(x):
                     return x
 
-            # create temporary args to set the number of crops to 1
-            temp_args = Namespace(**vars(self.flags))
-            temp_args.n_crops = 1
             return {
-                'PA': get_transform_img(temp_args, self.flags.img_clf_type),
-                'Lateral': get_transform_img(temp_args, self.flags.img_clf_type),
+                'PA': get_transform_img(self.flags, self.flags.img_clf_type),
+                'Lateral': get_transform_img(self.flags, self.flags.img_clf_type),
                 'text': text_transform
             }
 

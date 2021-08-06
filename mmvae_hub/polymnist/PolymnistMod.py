@@ -1,6 +1,7 @@
 import os
 
 import torch
+from torch import distributions as dist
 
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
 from mmvae_hub.modalities.utils import get_likelihood
@@ -19,6 +20,11 @@ class PolymnistMod(ModalityIMG):
         self.file_suffix = '.png'
         self.encoder = EncoderImg(flags).to(flags.device)
         self.decoder = DecoderImg(flags).to(flags.device)
+
+        self.pz = dist.Laplace  # prior
+        self.px_z = dist.Laplace  # likelihood
+        self.qz_x = dist.Laplace  # posterior
+
         self.likelihood = get_likelihood(self.likelihood_name)
         self.rec_weight = 1.0
         # self.transform = transforms.Compose([transforms.ToTensor()])

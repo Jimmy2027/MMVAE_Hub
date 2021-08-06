@@ -208,6 +208,21 @@ class JointLatentsMoGfM(JointLatentsGfM):
 
         return lr_data
 
+@dataclass
+class JointLatentsIwMoGfM(JointLatentsGfM):
+    """Joint Latents for importance weighted mixture of generalized f-means methods."""
+
+
+    def get_lreval_data(self):
+        lr_data = {'q0': {}}
+
+        for key in self.subsets:
+            lr_data['q0'][key] = self.subsets[key].cpu()
+
+        lr_data['q0']['joint'] = self.joint_embedding.embedding.cpu()
+
+        return lr_data
+
 
 @dataclass
 class JointLatentsGfMoP(JointLatentsGfM):

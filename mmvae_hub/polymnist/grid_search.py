@@ -7,41 +7,30 @@ from mmvae_hub.polymnist.flags import FlagsSetup, parser
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 search_spaces = {
-    # 'method': ['mofop'],
-    # 'method': ['fomop'],
-    'method': ['mofop'],
-    # "eval_freq_fid": [1],
-    'class_dim': [256],
-    "min_beta": [0],
-    "max_beta": [1],
-    "beta_warmup": [50],
-    "num_flows": [5],
+    'method': ['joint_elbo'],
+    'beta': [1.4810022901262143],
+    'class_dim': [640],
     "num_mods": [3],
+    "initial_learning_rate": [0.0006212184464462084],
     "end_epoch": [150],
-    "weighted_mixture": [False],
-    "amortized_flow": [False],
 }
 
 search_spaces_1 = {
-    'method': ['mogfm'],
-    # "dataloader_workers":[0],
-    # 'method': ['moe'],
-    'class_dim': [256],
-    # 'initial_learning_rate': [0.00005],
+    'method': ['mopgfm'],
+    "initial_learning_rate": [0.0009253348001968961],
+    'class_dim': [640],
     "min_beta": [0],
-    "max_beta": [1],
+    "max_beta": [1.5142062143401498],
     "beta_warmup": [50],
-    "num_gfm_flows": [5],
+    "num_gfm_flows": [3],
+    "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [1],
-    # "norby": [False],
-    # "use_db": [False],
-    # "calc_prd": [False]
+    "end_epoch": [150],
 }
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_1]:
+    for grid in [search_spaces]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

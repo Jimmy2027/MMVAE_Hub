@@ -67,12 +67,22 @@ class DecoderImg(nn.Module):
         )
 
     def forward(self, style_latent_space: Tensor, class_latent_space: Tensor):
+        iwae = False
+        if len(class_latent_space.shape) == 3:
+            iwae = True
+            K = class_latent_space.shape[0]
+            batch_size = class_latent_space.shape[1]
+
+            class_latent_space = class_latent_space.reshape(
+                (class_latent_space.shape[0] * class_latent_space.shape[1], class_latent_space.shape[2]))
         if self.flags.factorized_representation:
             z = torch.cat((style_latent_space, class_latent_space), dim=1)
         else:
             z = class_latent_space
         x_hat = self.decoder(z)
         # x_hat = torch.sigmoid(x_hat)
+        if iwae:
+            x_hat = x_hat.reshape((K, batch_size, *x_hat.shape[1:]))
         return x_hat, torch.tensor(0.75).to(z.device)  # NOTE: consider learning scale param, too
 
 # class EncoderImg(nn.Module):

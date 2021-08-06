@@ -104,5 +104,5 @@ if __name__ == '__main__':
     # upload_one(Path('/Users/Hendrik/Documents/temp/Mimic_joint_elbo_2021_07_06_09_44_52_871882'))
 
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
-        upload_all('/mnt/data/hendrik/leomed_results')
-        # upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+        # upload_all('/mnt/data/hendrik/leomed_results')
+        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
