@@ -130,7 +130,13 @@ class TextClf(nn.Module):
         super().__init__()
         self.text_mod = text_mod
         self.clf = clf
-        self.tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-uncased')
+        tokenizer_path = Path(__file__).parent.parent / 'classifiers/tokenizer'
+        if not tokenizer_path.exists():
+            tokenizer = DistilBertTokenizerFast.from_pretrained('distilbert-base-uncased')
+            tokenizer.save_pretrained(tokenizer_path)
+        else:
+            tokenizer = DistilBertTokenizerFast.from_pretrained(tokenizer_path)
+        self.tokenizer = tokenizer
 
     def forward(self, x):
         x_ = [' '.join(sent) for sent in self.text_mod.tensor_to_text(x)]
