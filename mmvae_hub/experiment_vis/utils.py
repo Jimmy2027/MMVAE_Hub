@@ -429,6 +429,8 @@ def bw_compat_epoch_results(epoch_results: dict, method: str, flags: dict):
     """
     Adapt epoch results for backwards compatibility.
     """
+    if not epoch_results:
+        sdfgdfgh = 0
     if 'max_beta' not in flags or flags['max_beta'] is None:
         flags['max_beta'] = flags['min_beta'] = flags['beta']
         flags['beta_warmup'] = 0
@@ -564,18 +566,18 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'Mimic_joint_elbo_2021_07_06_09_44_52_871882'
+    experiment_uid = 'polymnist_mogfm_2021_08_02_16_04_19_085928'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
-    # show_generated_figs(_id=experiment_uid)
-    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # show_generated_figs(experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/Mimic_mopgfm_2021_08_05_10_24_13_857815'), _id = experiment_uid)
+    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_basic_batch_logs('train', experiment_dict)
     # plot_basic_batch_logs('test', experiment_dict)
     # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
-    # df = make_experiments_dataframe(experiments_database.connect())
+    df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['Mimic_mopgfm_2021_08_05_10_24_13_857815']:
-        upload_notebook_to_db(id)
+    # for id in ['Mimic_mopgfm_2021_08_05_10_24_13_857815']:
+    #     upload_notebook_to_db(id)

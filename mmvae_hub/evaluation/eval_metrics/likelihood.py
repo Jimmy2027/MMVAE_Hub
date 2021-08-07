@@ -19,7 +19,6 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     mod_weights = exp.style_weights
     mods = exp.modalities
 
-    s_dist = latents.subsets[subset_key]
     n_total_samples = batch[list(batch)[0]].shape[0] * num_imp_samples
 
     if flags.factorized_representation:
@@ -32,9 +31,8 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     else:
         style = None
 
-    l_subset = {'content': s_dist, 'style': style}
     mod_names = mods.keys()
-    l = get_latent_samples(flags, l_subset, num_imp_samples, mod_names)
+    l = latents.get_latent_samples(subset_key=subset_key, n_imp_samples=num_imp_samples, mod_names=mod_names, style=style, model = model)
 
     l_style_rep = l['style']
     l_content_rep = l['content']
@@ -70,9 +68,6 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     for m_key, mod in mods.items():
         # compute marginal log-likelihood
         style_mod = l_lin_rep_style[mod.name] if mod in subset else None
-
-        if mod.name == 'text':
-            sdfg =0
 
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,

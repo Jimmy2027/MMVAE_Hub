@@ -21,7 +21,7 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm'] else True
+        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm','planar_vae'] else True
         # calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
 
@@ -84,9 +84,9 @@ if __name__ == '__main__':
     # test_run_epochs_polymnist(method='gfm')
     # test_run_epochs_polymnist(method='gfmop')
     # test_run_epochs_polymnist(method='fomop')
-    # test_run_epochs_polymnist(method='poe')
-    # test_run_epochs_polymnist(method='mopgfm')
-    test_run_epochs_mimic(method='joint_elbo')
+    test_run_epochs_polymnist(method='planar_vae')
+    # test_run_epochs_polymnist(method='mogfm')
+    # test_run_epochs_mimic(method='joint_elbo')
     # test_run_epochs_polymnist(method='iwmogfm')
 
     # test_run_epochs_polymnist(method='mogfm')

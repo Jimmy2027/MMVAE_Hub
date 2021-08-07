@@ -195,7 +195,7 @@ class MoGfMVAE(BaseMMVAE):
         joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
 
         return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings,
-                                 subset_samples=subset_samples)
+                                 subset_samples=subset_samples, enc_mods=enc_mods)
 
 
 class MoFoGfMVAE(BaseMMVAE):

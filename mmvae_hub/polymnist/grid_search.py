@@ -28,9 +28,30 @@ search_spaces_1 = {
     "end_epoch": [150],
 }
 
+sp_joint_elbo_article = {
+    'n_gpus': [1],
+    'method': ['joint_elbo'],
+    'max_beta': [2.5],
+    "beta_warmup": [0],
+    'class_dim': [512],
+    "num_mods": [5],
+    "initial_learning_rate": [0.001],
+    "end_epoch": [300],
+}
+
+search_space_sylvester = {
+    'method': ['planar_vae'],
+    'max_beta': [2.5],
+    'class_dim': [640],
+    "num_mods": [1],
+    "initial_learning_rate": [0.0001],
+    "end_epoch": [50],
+    "calc_nll": [False]
+}
+
 if __name__ == '__main__':
 
-    for grid in [search_spaces]:
+    for grid in [search_space_sylvester]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()
