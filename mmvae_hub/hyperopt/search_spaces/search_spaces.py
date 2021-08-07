@@ -110,23 +110,11 @@ sp_mofop = {
     'method': ['mofop'],
     'max_beta': [2.5],
     'class_dim': [512],
-    "num_mods": [1],
+    "num_mods": [1, 2],
     "initial_learning_rate": [0.001],
     "end_epoch": [100],
-    "num_flows": [1],
-}
-
-sp_mofop_noflow = {
-    'n_gpus': [1],
-    'method': ['mofop'],
-    'beta': [1.],
-    'class_dim': [256],
-    "num_mods": [3],
-    "num_flows": [0],
-    "end_epoch": [500],
-    "coupling_dim": [512],
-    "weighted_mixture": [False],
-    "amortized_flow": [False]
+    "num_flows": [5],
+    "calc_nll": [False]
 }
 
 sp_mogfm = {
