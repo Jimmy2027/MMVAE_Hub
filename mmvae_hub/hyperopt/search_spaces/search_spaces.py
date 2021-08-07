@@ -32,10 +32,10 @@ sp_mopgfm = {
     "min_beta": [0],
     "max_beta": [1.5142062143401498],
     "beta_warmup": [50],
-    "num_gfm_flows": [3],
+    "num_gfm_flows": [5],
     "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [250],
+    "end_epoch": [300],
 }
 
 sp_bmogfm = {
@@ -126,8 +126,23 @@ sp_mogfm = {
     "beta_warmup": [50],
     "num_gfm_flows": [3],
     "coupling_dim": [32],
+    "num_mods": [5],
+    "end_epoch": [300],
+    'gpu_mem': [30000],
+    "calc_nll": [False]
+}
+
+sp_mogfm_ = {
+    'method': ['mogfm'],
+    "initial_learning_rate": [0.0009253348001968961],
+    'class_dim': [640],
+    "min_beta": [0],
+    "max_beta": [1.5142062143401498],
+    "beta_warmup": [50],
+    "num_gfm_flows": [3],
+    "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [30],
+    "end_epoch": [300],
     'gpu_mem': [30000],
     "calc_nll": [False]
 }
