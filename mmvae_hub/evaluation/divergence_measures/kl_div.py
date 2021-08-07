@@ -33,7 +33,7 @@ def log_normal_standard(x, average=False, reduce=True, dim=None):
 
 
 def calc_divergence_with_samples(samples_prior: Tensor, samples_q: Tensor):
-    return torch.nn.functional.kl_div(samples_q, samples_prior, reduction='batchmean')
+    return torch.nn.functional.kl_div(samples_q, samples_prior, reduction='batchmean', log_target=True)
 
 
 def calc_divergence_embedding(z: Tensor):
