@@ -127,6 +127,7 @@ sp_mogfm = {
     "num_gfm_flows": [3],
     "coupling_dim": [32],
     "num_mods": [5],
+    "batch_size": [128],
     "end_epoch": [300],
     'gpu_mem': [30000],
     "calc_nll": [False]
