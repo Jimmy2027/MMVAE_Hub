@@ -21,7 +21,7 @@ parser.add_argument('--num_channels_m1', type=int, default=1, help="number of ch
 parser.add_argument('--img_size_m2', type=int, default=32, help="img dimension (width/height)")
 parser.add_argument('--num_channels_m2', type=int, default=3, help="number of channels in images")
 parser.add_argument('--dim', type=int, default=64, help="number of classes on which the data set trained")
-parser.add_argument('--data_multiplications', type=int, default=1, help="number of pairs per sample")
+parser.add_argument('--data_multiplications', type=int, default=20, help="number of pairs per sample")
 parser.add_argument('--num_hidden_layers', type=int, default=1, help="number of channels in images")
 
 # multimodal
