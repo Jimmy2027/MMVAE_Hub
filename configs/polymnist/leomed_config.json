@@ -9,7 +9,6 @@
   "use_db": true,
   "dataloader_workers": 12,
   "kl_annealing": 0,
-  "data_multiplications": 20,
   "div_weight_uniform_content": 0.25,
   "num_hidden_layers": 1,
   "style_dim": 0,
