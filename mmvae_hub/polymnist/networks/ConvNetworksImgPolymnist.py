@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 
 from mmvae_hub.networks.utils.layers import Flatten, Unflatten
 
@@ -8,31 +7,27 @@ from mmvae_hub.networks.utils.layers import Flatten, Unflatten
 class EncoderImg(nn.Module):
     """
     Adopted from:
-    https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb
+    https://www.cs.toronto.edu/~lczhang/360/lec/w05/autoencoder.html
     """
-
     def __init__(self, flags):
         super(EncoderImg, self).__init__()
-        torch.manual_seed(42)
+
         self.flags = flags
-        self.shared_encoder = nn.Sequential(  # input shape (3, 28, 28)
-            nn.Conv2d(3, 10, kernel_size=4, stride=2, padding=1),  # -> (10, 14, 14)
-            # nn.Dropout2d(0.5),
+        self.shared_encoder = nn.Sequential(                          # input shape (3, 28, 28)
+            nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1),     # -> (32, 14, 14)
             nn.ReLU(),
-            nn.Conv2d(10, 20, kernel_size=4, stride=2, padding=1),  # -> (20, 7, 7)
-            # nn.Dropout2d(0.5),
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),    # -> (64, 7, 7)
             nn.ReLU(),
-            Flatten(),  # -> (980)
-            nn.Linear(980, flags.style_dim + flags.class_dim),  # -> (style_dim + class_dim)
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),   # -> (128, 4, 4)
+            nn.ReLU(),
+            Flatten(),                                                # -> (2048)
+            nn.Linear(2048, flags.style_dim + flags.class_dim),       # -> (ndim_private + ndim_shared)
             nn.ReLU(),
         )
 
         # content branch
         self.class_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
-        # temp
         self.class_logvar = nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim)
-        # self.class_logvar = nn.Sequential(nn.Linear(flags.style_dim + flags.class_dim, flags.class_dim), nn.Softplus())
-
         # optional style branch
         if flags.factorized_representation:
             self.style_mu = nn.Linear(flags.style_dim + flags.class_dim, flags.style_dim)
@@ -41,49 +36,40 @@ class EncoderImg(nn.Module):
     def forward(self, x):
         h = self.shared_encoder(x)
         if self.flags.factorized_representation:
-            return self.style_mu(h), self.style_logvar(h), self.class_mu(h), self.class_logvar(h), h
+            return self.style_mu(h), self.style_logvar(h), self.class_mu(h), \
+                   self.class_logvar(h)
         else:
-            # return None, None, self.class_mu(h), self.class_logvar(h).log(), h
-            return None, None, self.class_mu(h), self.class_logvar(h), h
+            return None, None, self.class_mu(h), self.class_logvar(h)
 
 
 class DecoderImg(nn.Module):
     """
     Adopted from:
-    https://colab.research.google.com/github/smartgeometry-ucl/dl4g/blob/master/variational_autoencoder.ipynb
+    https://www.cs.toronto.edu/~lczhang/360/lec/w05/autoencoder.html
     """
-
     def __init__(self, flags):
         super(DecoderImg, self).__init__()
         self.flags = flags
-        torch.manual_seed(42)
         self.decoder = nn.Sequential(
-            nn.Linear(flags.style_dim + flags.class_dim, 980),  # -> (980)
+            nn.Linear(flags.style_dim + flags.class_dim, 2048),                                # -> (2048)
             nn.ReLU(),
-            Unflatten((20, 7, 7)),  # -> (20, 7, 7)
-            nn.ConvTranspose2d(20, 10, kernel_size=4, stride=2, padding=1),  # -> (10, 14, 14)
+            Unflatten((128, 4, 4)),                                                            # -> (128, 4, 4)
+            nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1),                   # -> (64, 7, 7)
             nn.ReLU(),
-            nn.ConvTranspose2d(10, 3, kernel_size=4, stride=2, padding=1),  # -> (3, 11, 11)
+            nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),  # -> (32, 14, 14)
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, 3, kernel_size=3, stride=2, padding=1, output_padding=1),   # -> (3, 28, 28)
         )
 
-    def forward(self, style_latent_space: Tensor, class_latent_space: Tensor):
-        iwae = False
-        if len(class_latent_space.shape) == 3:
-            iwae = True
-            K = class_latent_space.shape[0]
-            batch_size = class_latent_space.shape[1]
-
-            class_latent_space = class_latent_space.reshape(
-                (class_latent_space.shape[0] * class_latent_space.shape[1], class_latent_space.shape[2]))
+    def forward(self, style_latent_space, class_latent_space):
         if self.flags.factorized_representation:
             z = torch.cat((style_latent_space, class_latent_space), dim=1)
         else:
             z = class_latent_space
         x_hat = self.decoder(z)
         # x_hat = torch.sigmoid(x_hat)
-        if iwae:
-            x_hat = x_hat.reshape((K, batch_size, *x_hat.shape[1:]))
         return x_hat, torch.tensor(0.75).to(z.device)  # NOTE: consider learning scale param, too
+
 
 # class EncoderImg(nn.Module):
 #     def __init__(self, flags):
