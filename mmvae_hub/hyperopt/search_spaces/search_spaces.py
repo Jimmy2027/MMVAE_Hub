@@ -38,6 +38,21 @@ sp_mopgfm = {
     "end_epoch": [300],
 }
 
+sp_iwmopgfm = {
+    'n_gpus': [1],
+    'method': ['iwmogfm'],
+    "initial_learning_rate": [0.0009253348001968961],
+    'class_dim': [640],
+    "min_beta": [0],
+    "max_beta": [1.5142062143401498],
+    "beta_warmup": [50],
+    "num_gfm_flows": [3],
+    "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [300],
+    "calc_nll": [False]
+}
+
 sp_bmogfm = {
     'n_gpus': [1],
     'method': ['bmogfm'],
