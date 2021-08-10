@@ -21,7 +21,7 @@ def train_clf_lr_all_subsets(exp):
     subsets = exp.subsets
 
     train_loader = DataLoader(exp.dataset_train, batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.dataloader_workers)
+                              num_workers=args.dataloader_workers, drop_last=True)
 
     training_steps = exp.flags.steps_per_training_epoch
 
@@ -108,7 +108,7 @@ def test_clf_lr_all_subsets(clf_lr: Mapping[str, Mapping[str, LogisticRegression
     mm_vae.eval()
 
     d_loader = DataLoader(exp.dataset_test, batch_size=exp.flags.batch_size, shuffle=False,
-                          num_workers=exp.flags.dataloader_workers, drop_last=False)
+                          num_workers=exp.flags.dataloader_workers, drop_last=True)
 
     training_steps = exp.flags.steps_per_training_epoch or len(d_loader)
     log.info(f'Creating {training_steps} batches of latent representations for classifier testing '
