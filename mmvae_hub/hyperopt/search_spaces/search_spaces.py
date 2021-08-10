@@ -32,7 +32,7 @@ sp_mopgfm = {
     "min_beta": [0],
     "max_beta": [1.5142062143401498],
     "beta_warmup": [50],
-    "num_gfm_flows": [5],
+    "num_gfm_flows": [3],
     "coupling_dim": [32],
     "num_mods": [3],
     "end_epoch": [300],
@@ -156,5 +156,5 @@ sp_joint_elbo_article = {
     'class_dim': [512],
     "num_mods": [3],
     "initial_learning_rate": [0.001],
-    "end_epoch": [100],
+    "end_epoch": [300],
 }
