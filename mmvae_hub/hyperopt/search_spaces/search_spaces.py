@@ -154,7 +154,7 @@ sp_joint_elbo_article = {
     'max_beta': [2.5],
     "beta_warmup": [0],
     'class_dim': [512],
-    "num_mods": [5],
+    "num_mods": [3],
     "initial_learning_rate": [0.001],
-    "end_epoch": [300],
+    "end_epoch": [100],
 }
