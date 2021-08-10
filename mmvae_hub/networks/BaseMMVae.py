@@ -51,7 +51,7 @@ class BaseMMVAE(ABC, nn.Module):
             if mod_str in input_batch:
                 enc_mods[mod_str] = {}
 
-                style_mu, style_logvar, class_mu, class_logvar, _ = mod.encoder(input_batch[mod_str])
+                style_mu, style_logvar, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
                 assert class_mu.mean() is not None
                 assert class_logvar.mean() is not None
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
