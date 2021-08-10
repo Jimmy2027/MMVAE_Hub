@@ -90,8 +90,8 @@ class iwMoGfMVAE(BaseMMVAE):
 
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        self.K = 11
-        self.mm_div = GfMMMDiv(flags=flags, num_samples=self.K)
+        self.num_samples = 100
+        self.mm_div = GfMMMDiv(flags=flags, num_samples=self.num_samples)
         self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
@@ -101,16 +101,16 @@ class iwMoGfMVAE(BaseMMVAE):
         """
         batch_subsets = subsets_from_batchmods(batch_mods)
         transformed_enc_mods = {}
+        subset_embeddings = {}
         subset_samples = {}
 
         # batch_size is not always equal to flags.batch_size
         batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.mu.shape[0]
 
         transformed_enc_mods = {
-            # todo: use laplace distr for enc mods?
             mod_key: self.flow(
-                torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0) for _ in range(self.K)),
-                          dim=0).reshape((self.K * batch_size, self.flags.class_dim)))[
+                torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0) for _ in range(self.num_samples)),
+                          dim=0).reshape((self.num_samples * batch_size, self.flags.class_dim)))[
                 0] for mod_key, distr in
             enc_mods.items()}
 
@@ -123,14 +123,18 @@ class iwMoGfMVAE(BaseMMVAE):
             # calculate inverse flow
             samples = self.flow.rev(z_mean)[0]
 
-            samples = samples.reshape((self.K, batch_size, self.flags.class_dim)).moveaxis(0, 1)
+            samples = samples
             subset_samples[s_key] = samples
 
-        z_joint = mixture_component_selection_embedding(subset_embeds=subset_samples, s_key='all', flags=self.flags)
-        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+            # subset_embeddings[s_key] = samples.mean(dim=0)
 
-        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_samples,
-                                 subset_samples=subset_samples)
+        selection = mixture_component_selection_embedding(subset_embeds=subset_samples, s_key='all', flags=self.flags).reshape((self.num_samples, batch_size, self.flags.class_dim))
+        z_joint = selection.mean(dim=0)
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+        subset_samples = {k:samples.reshape((self.num_samples, batch_size, self.flags.class_dim)) for k, samples in subset_samples.items()}
+
+        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets={k:samples.mean(dim=0) for k, samples in subset_samples.items()},
+                                 subset_samples=subset_samples, enc_mods=enc_mods)
 
 
 class MoGfMVAE(BaseMMVAE):
