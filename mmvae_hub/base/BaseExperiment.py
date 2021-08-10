@@ -16,7 +16,7 @@ from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMV
     iwMoGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
-from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE
+from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE, VAE
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
 
@@ -141,6 +141,7 @@ class BaseExperiment(ABC):
 
         optimizer = optim.Adam(params, lr=self.flags.initial_learning_rate, betas=(self.flags.beta_1,
                                                                                    self.flags.beta_2))
+        self.flags.num_parameters = len(params)
         self.optimizer = optimizer
 
     @abstractmethod
