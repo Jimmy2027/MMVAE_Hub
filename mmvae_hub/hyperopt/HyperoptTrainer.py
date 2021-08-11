@@ -37,9 +37,12 @@ class HyperoptTrainer:
         self.flags.norby = False
         self.flags.use_db = False
 
+        self.flags.beta_warmup = 30
+
         self.flags.end_epoch = 150
         # self.flags.end_epoch = 1
         self.flags.calc_prd = True
+        self.flags.calc_nll = False
 
         eval_freq = 150
         self.flags.eval_freq_fid = eval_freq
@@ -76,10 +79,10 @@ def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
 
 if __name__ == '__main__':
     dataset = 'polymnist'
-    method = 'mopgfm'
+    method = 'joint_elbo'
     flags = parser.parse_args()
 
-    study_name = f'hyperopt-{method}-missing_mod_score'
+    study_name = f'hyperopt-{method}-missing_mod_score_newarchitecture'
 
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
