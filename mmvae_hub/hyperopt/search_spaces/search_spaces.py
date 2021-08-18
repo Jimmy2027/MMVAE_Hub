@@ -27,15 +27,16 @@ sp_pgfm = {
 sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
-    "initial_learning_rate": [0.0009253348001968961],
-    'class_dim': [640],
+    "initial_learning_rate": [0.00084902],
+    'class_dim': [1280],
     "min_beta": [0],
-    "max_beta": [1.5142062143401498],
-    "beta_warmup": [50],
-    "num_gfm_flows": [3],
-    "coupling_dim": [32],
+    "max_beta": [1.53570792849623],
+    "beta_warmup": [100],
+    "num_gfm_flows": [1],
+    "coupling_dim": [256],
     "num_mods": [3],
-    "end_epoch": [300],
+    "batch_size": [128],
+    "end_epoch": [500],
 }
 
 sp_iwmopgfm = {
@@ -134,16 +135,16 @@ sp_mofop = {
 
 sp_mogfm = {
     'method': ['mogfm'],
-    "initial_learning_rate": [0.0009253348001968961],
-    'class_dim': [640],
+    "initial_learning_rate": [0.00084902],
+    'class_dim': [1280],
     "min_beta": [0],
-    "max_beta": [1.5142062143401498],
-    "beta_warmup": [50],
-    "num_gfm_flows": [3],
-    "coupling_dim": [32],
-    "num_mods": [5],
+    "max_beta": [1.53570792849623],
+    "beta_warmup": [100],
+    "num_gfm_flows": [1],
+    "coupling_dim": [256],
+    "num_mods": [3],
     "batch_size": [128],
-    "end_epoch": [300],
+    "end_epoch": [500],
     'gpu_mem': [30000],
     "calc_nll": [False]
 }
