@@ -11,7 +11,7 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-@pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture', 'moe', 'poe', 'pfom', 'pgfm'])
+@pytest.mark.parametrize("method", ['joint_elbo', 'planar_mixture', 'moe', 'poe', 'pfom', 'pgfm', 'mopgfm'])
 # @pytest.mark.parametrize("method", ['joint_elbo'])
 def test_run_epochs_polymnist(method: str):
     """
@@ -21,7 +21,7 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm','planar_vae'] else True
+        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm','planar_vae', 'sylvester_vae_noflow', 'iwmogfm'] else True
         # calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # test_run_epochs_polymnist(method='gfm')
     # test_run_epochs_polymnist(method='gfmop')
     # test_run_epochs_polymnist(method='fomop')
-    test_run_epochs_polymnist(method='planar_vae')
+    test_run_epochs_polymnist(method='iwmogfm')
     # test_run_epochs_polymnist(method='mogfm')
     # test_run_epochs_mimic(method='joint_elbo')
     # test_run_epochs_polymnist(method='iwmogfm')
