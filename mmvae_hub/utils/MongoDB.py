@@ -40,7 +40,7 @@ class MongoDatabase:
 
     @staticmethod
     def get_mongodb_uri():
-        dbconfig = json2dict(Path(__file__).parent.parent.parent / 'configs/mmvae_db.json')
+        dbconfig = json2dict(Path('~/.config/mmvaedb.json').expanduser())
         return dbconfig['mongodb_URI']
 
     def insert_dict(self, d: dict):
