@@ -27,16 +27,29 @@ sp_pgfm = {
 sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
-    "initial_learning_rate": [0.00084902],
-    'class_dim': [1280],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
     "min_beta": [0],
-    "max_beta": [1.53570792849623],
-    "beta_warmup": [100],
-    "num_gfm_flows": [1],
-    "coupling_dim": [256],
+    "max_beta": [2.5],
+    "beta_warmup": [0],
+    "num_gfm_flows": [3],
+    "coupling_dim": [256, 512],
     "num_mods": [3],
-    "batch_size": [128],
-    "end_epoch": [500],
+    "end_epoch": [300],
+}
+
+iwmoe = {
+    'method': ['iwmoe'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
+    "min_beta": [0],
+    "max_beta": [2.5],
+    "beta_warmup": [0],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [1],
+    "calc_nll": [False]
 }
 
 sp_iwmopgfm = {
@@ -88,9 +101,10 @@ sp_joint_elbo = {
     'method': ['joint_elbo'],
     'max_beta': [2.5],
     'class_dim': [512],
-    "num_mods": [1],
-    "initial_learning_rate": [0.001],
-    "end_epoch": [100],
+    "beta_warmup": [0],
+    "num_mods": [3, 5],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [300],
 }
 
 sp_joint_elbo_mimic = {
