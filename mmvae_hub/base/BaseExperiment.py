@@ -16,6 +16,7 @@ from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMV
     iwMoGfMVAE
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
+from mmvae_hub.networks.iwVaes import iwMoE
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE, VAE
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -88,6 +89,8 @@ class BaseExperiment(ABC):
             model = MoFoPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'planar_vae':
             model = PlanarVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'sylvester_vae_noflow':
+            model = VAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'mopgfm':
             model = MopGfM(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'mogfm':
@@ -103,6 +106,8 @@ class BaseExperiment(ABC):
             model = MoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm':
             model = iwMoGfMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmoe':
+            model = iwMoE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

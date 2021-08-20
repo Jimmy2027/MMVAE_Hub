@@ -20,7 +20,7 @@ search_spaces = {
 }
 
 search_spaces_1 = {
-    'method': ['mogfm'],
+    'method': ['iwmogfm'],
     "initial_learning_rate": [0.0009253348001968961],
     'class_dim': [640],
     "min_beta": [0],
@@ -29,7 +29,7 @@ search_spaces_1 = {
     "num_gfm_flows": [3],
     "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [300],
+    "end_epoch": [1],
     "calc_nll": [False]
 }
 
@@ -46,17 +46,18 @@ sp_joint_elbo_article = {
 
 search_space_sylvester = {
     'method': ['planar_vae'],
-    'max_beta': [2.5],
-    'class_dim': [640],
+    'max_beta': [1.],
+    'class_dim': [64],
     "num_mods": [1],
-    "initial_learning_rate": [0.0001],
+    "num_flows": [5],
+    "initial_learning_rate": [0.0005],
     "end_epoch": [50],
     "calc_nll": [False]
 }
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces]:
+    for grid in [search_spaces_1]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()
