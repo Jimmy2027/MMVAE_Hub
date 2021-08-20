@@ -19,19 +19,19 @@ class iwJointLatents:
     zss: Mapping[str, Distribution]
 
     def get_joint_embeddings(self):
-        return self.joint_distr.reparameterize()
+        return self.subsets['_'.join(sorted(self.fusion_subsets_keys))].qz_x_tilde.rsample()
 
     def get_subset_embedding(self, s_key: str):
-        return self.subsets[s_key].reparameterize()
+        return self.subsets[s_key].qz_x_tilde.rsample()
 
     def get_q0(self, subset_key: str):
         """Return the mean of the subset."""
         if subset_key == 'joint':
             return self.get_joint_q0()
-        return self.subsets[subset_key].mu
+        return self.subsets[subset_key].qz_x_tilde.mean
 
     def get_joint_q0(self):
-        return self.joint_distr.mu
+        return self.subsets['_'.join(sorted(self.fusion_subsets_keys))].qz_x_tilde.mean
 
     def get_lreval_data(self) -> dict:
         """Get lr_data for the lr evaluation."""
@@ -54,28 +54,38 @@ class iwJointLatents:
 
     def get_latent_samples(self, subset_key: str, n_imp_samples, mod_names=None, style=None, model=None):
         """Sample n_imp_samples from the latents."""
-        l_c = self.subsets[subset_key]
-        l_s = style
-        l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
-        l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
-        c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
+        c_embed = self.subsets[subset_key].qz_x_tilde.rsample((n_imp_samples,))
 
-        styles = {}
-        c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
+        c = {'mu': self.subsets[subset_key].qz_x_tilde.loc.unsqueeze(0).repeat(n_imp_samples, 1, 1), 'logvar': self.subsets[subset_key].qz_x_tilde.scale.unsqueeze(0).repeat(n_imp_samples, 1, 1),
+             'z': c_embed}
 
-        if style is not None:
-            for k, key in enumerate(l_s.keys()):
-                l_s_mod = l_s[key]
-                l_s_m_rep = l_s_mod[0].unsqueeze(0).repeat(n_imp_samples, 1, 1)
-                l_s_lv_rep = l_s_mod[1].unsqueeze(0).repeat(n_imp_samples, 1, 1)
-                s_emb = Distr(l_s_m_rep, l_s_lv_rep).reparameterize()
-                s = {'mu': l_s_m_rep, 'logvar': l_s_lv_rep, 'z': s_emb}
-                styles[key] = s
-        else:
-            for k, key in enumerate(mod_names):
-                styles[key] = None
-
+        styles = {key: None for k, key in enumerate(mod_names)}
         return {'content': c, 'style': styles}
+
+    # def get_latent_samples(self, subset_key: str, n_imp_samples, mod_names=None, style=None, model=None):
+    #     """Sample n_imp_samples from the latents."""
+    #     c_embed = self.subsets[subset_key].qz_x_tilde.rsample(n_imp_samples)
+    #     l_s = style
+    #     l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    #     l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    #     c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
+    #
+    #     styles = {}
+    #     c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
+    #
+    #     if style is not None:
+    #         for k, key in enumerate(l_s.keys()):
+    #             l_s_mod = l_s[key]
+    #             l_s_m_rep = l_s_mod[0].unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    #             l_s_lv_rep = l_s_mod[1].unsqueeze(0).repeat(n_imp_samples, 1, 1)
+    #             s_emb = Distr(l_s_m_rep, l_s_lv_rep).reparameterize()
+    #             s = {'mu': l_s_m_rep, 'logvar': l_s_lv_rep, 'z': s_emb}
+    #             styles[key] = s
+    #     else:
+    #         for k, key in enumerate(mod_names):
+    #             styles[key] = None
+    #
+    #     return {'content': c, 'style': styles}
 
 
 @dataclass

@@ -22,6 +22,15 @@ class iwMoE(MOEMMVae):
 
     def forward(self, input_batch: dict) -> iwForwardResults:
         enc_mods, joint_latents = self.inference(input_batch)
+
+        # reconstruct modalities
+        rec_mods = self.decode(enc_mods, joint_latents)
+
+        return iwForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=rec_mods)
+
+    def inference(self, input_batch) -> tuple[Mapping[str, BaseEncMod], iwJointLatents]:
+        enc_mods, joint_latents = super().inference(input_batch)
+
         subsets = {}
         zss = {}
         for subset_str, subset in joint_latents.subsets.items():
@@ -30,10 +39,7 @@ class iwMoE(MOEMMVae):
 
         joint_latents = iwJointLatents(fusion_subsets_keys=joint_latents.fusion_subsets_keys, subsets=subsets, zss=zss)
 
-        # reconstruct modalities
-        rec_mods = self.decode(enc_mods, joint_latents)
-
-        return iwForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=rec_mods)
+        return enc_mods, joint_latents
 
     def forward_(self, input_batch: dict) -> iwForwardResults:
         enc_mods = self.inference(input_batch)
@@ -55,22 +61,6 @@ class iwMoE(MOEMMVae):
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
 
         return enc_mods
-
-    # def inference(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, iwEncMod]:
-    #     enc_mods = {}
-    #     for mod_str, mod in self.modalities.items():
-    #         if mod_str in input_batch:
-    #             _, _, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
-    #
-    #             qz_x = distr.Laplace(loc=class_mu, scale=class_logvar)
-    #             enc_mods[mod_str] = iwEncMod(qz_x=qz_x, zs=qz_x.rsample(torch.Size([self.K])))
-    #
-    #     batch_subsets = subsets_from_batchmods(batch_mods)
-    #
-    #     for s_key in batch_subsets:
-    #
-    #
-    #     return enc_mods
 
     def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
         """Decoder outputs each reconstructed modality as a dict."""
@@ -114,7 +104,12 @@ class iwMoE(MOEMMVae):
             klds[mod_str] = log_mean_exp(kl_div).sum()
 
         total_loss = log_mean_exp(torch.cat(losses, 1)).sum()
-        return total_loss, None, log_probs, klds
+
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean()
+        return total_loss, joint_div, log_probs, klds
 
     def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
         """
@@ -124,8 +119,8 @@ class iwMoE(MOEMMVae):
         """
 
         # infer latents from batch
-        enc_mods = self.inference(input_samples)
+        enc_mods, joint_latents = self.inference(input_samples)
 
-        subset_embedding = enc_mods[subset_key].qz_x.mean
+        subset_embedding = joint_latents.subsets[subset_key].qz_x_tilde.mean
         cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
         return self.generate_from_latents(cond_mod_in)
