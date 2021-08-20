@@ -13,7 +13,7 @@ import torch.distributed as dist
 from torch import device as Device
 
 from mmvae_hub import log
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 
 
 # Print iterations progress
@@ -43,6 +43,7 @@ def reweight_weights(w):
 
 
 def get_items_from_dict(in_dict: Mapping[str, Tensor]) -> Mapping[str, float]:
+    """Put all elements in dict to cpu"""
     return {k1: v1.cpu().item() for k1, v1 in in_dict.items()}
 
 

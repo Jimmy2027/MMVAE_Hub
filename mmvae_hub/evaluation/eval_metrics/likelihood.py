@@ -4,8 +4,8 @@ import numpy as np
 import torch.nn.functional
 from torch.utils.data import DataLoader
 
-from mmvae_hub.utils.Dataclasses import *
-from mmvae_hub.utils.metrics.likelihood import log_marginal_estimate, log_joint_estimate, get_latent_samples
+from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.metrics.likelihood import log_marginal_estimate, log_joint_estimate
 from mmvae_hub.utils.utils import dict_to_device
 
 LOG2PI = float(np.log(2.0 * math.pi))

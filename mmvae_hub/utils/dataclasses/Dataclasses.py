@@ -31,7 +31,7 @@ class Distr:
          reparameterization trick.
         """
         std = self.logvar.mul(0.5).exp_()
-        eps = Variable(std.data.new(std.size()).normal_())
+        eps = std.data.new(std.size()).normal_()
         return eps.mul(std).add_(self.mu)
 
 
@@ -249,6 +249,7 @@ class SubsetMoFoGfM:
 @dataclass
 class JointLatentsMoGfM(JointLatentsGfM):
     """Joint Latents for mixture of generalized f-means methods."""
+    epss:Tensor
 
     def get_lreval_data(self):
         lr_data = {'q0': {}}

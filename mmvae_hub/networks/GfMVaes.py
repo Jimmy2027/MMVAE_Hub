@@ -1,11 +1,13 @@
 import typing
 
+from torch.distributions import MultivariateNormal
+
 from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv, MoFoGfMMMDiv, \
     BMoGfMMMDiv, GfMMMDiv_old
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.MixtureVaes import JointElboMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 
 
@@ -90,9 +92,14 @@ class iwMoGfMVAE(BaseMMVAE):
 
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        self.num_samples = 100
-        self.mm_div = GfMMMDiv(flags=flags, num_samples=self.num_samples)
+        self.K = 1
+        self.mm_div = GfMMMDiv(flags=flags, K=self.K)
         self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+
+    def reparam_with_eps(self, distr: Distr, eps: Tensor):
+        """Apply the reparameterization trick on distr with given epsilon"""
+        std = distr.logvar.mul(0.5).exp_()
+        return eps.mul(std).add_(distr.mu)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
@@ -107,10 +114,16 @@ class iwMoGfMVAE(BaseMMVAE):
         # batch_size is not always equal to flags.batch_size
         batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.mu.shape[0]
 
+        # sample K*bs samples from prior
+        epss = MultivariateNormal(torch.zeros(self.flags.class_dim, device=self.flags.device),
+                                  torch.eye(self.flags.class_dim, device=self.flags.device)). \
+            sample((self.K * batch_size,)).reshape((self.K, batch_size, self.flags.class_dim))
+
         transformed_enc_mods = {
             mod_key: self.flow(
-                torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0) for _ in range(self.num_samples)),
-                          dim=0).reshape((self.num_samples * batch_size, self.flags.class_dim)))[
+                torch.cat(tuple(self.reparam_with_eps(distr.latents_class, epss[k_idx]).unsqueeze(dim=0) for k_idx in
+                                range(self.K)),
+                          dim=0).reshape((self.K * batch_size, self.flags.class_dim)))[
                 0] for mod_key, distr in
             enc_mods.items()}
 
@@ -128,13 +141,14 @@ class iwMoGfMVAE(BaseMMVAE):
 
             # subset_embeddings[s_key] = samples.mean(dim=0)
 
-        selection = mixture_component_selection_embedding(subset_embeds=subset_samples, s_key='all', flags=self.flags).reshape((self.num_samples, batch_size, self.flags.class_dim))
-        z_joint = selection.mean(dim=0)
+        subset_samples = {k: samples.reshape((self.K, batch_size, self.flags.class_dim)) for k, samples in
+                          subset_samples.items()}
+        z_joint = torch.cat([v.squeeze() for _, v in subset_samples.items()], dim=0)
         joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
-        subset_samples = {k:samples.reshape((self.num_samples, batch_size, self.flags.class_dim)) for k, samples in subset_samples.items()}
 
-        return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets={k:samples.mean(dim=0) for k, samples in subset_samples.items()},
-                                 subset_samples=subset_samples, enc_mods=enc_mods)
+        return JointLatentsMoGfM(joint_embedding=joint_embedding,
+                                 subsets={k: samples.mean(dim=0) for k, samples in subset_samples.items()},
+                                 subset_samples=subset_samples, enc_mods=enc_mods, epss=epss)
 
 
 class MoGfMVAE(BaseMMVAE):
@@ -200,6 +214,17 @@ class MoGfMVAE(BaseMMVAE):
 
         return JointLatentsMoGfM(joint_embedding=joint_embedding, subsets=subset_embeddings,
                                  subset_samples=subset_samples, enc_mods=enc_mods)
+
+    def calc_log_probs(self, rec_mods: dict, batch_d: dict) -> typing.Tuple[dict, float]:
+        log_probs = {}
+        weighted_log_prob = 0.0
+        for mod_str, mod in self.modalities.items():
+            ba = batch_d[mod_str]
+            log_probs[mod_str] = -mod.calc_log_prob(out_dist=rec_mods[mod_str], target=ba,
+                                                    norm_value=self.flags.batch_size)
+
+            weighted_log_prob += mod.rec_weight * log_probs[mod.name]
+        return log_probs, weighted_log_prob
 
 
 class MoFoGfMVAE(BaseMMVAE):

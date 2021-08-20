@@ -10,7 +10,7 @@ from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 from mmvae_hub.utils.utils import split_int_to_bins
 
@@ -123,7 +123,7 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
         self.mm_div = MoFoPDiv()
         self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
-    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatents:
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatentsMoFoP:
         """
         Create a subspace for all the combinations of the encoded modalities by combining them.
         A joint latent space is then created by fusing all subspaces.
@@ -145,7 +145,7 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
         # select expert for z_joint
         subsets = {k: v.zk for k, v in distr_subsets.items()}
         z_joint = mixture_component_selection_embedding(subset_embeds=subsets, s_key='all', flags=self.flags)
-        joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=log_det_j)
+        joint_embedding = JointEmbeddingFoS(embedding=z_joint, mod_strs=[k for k in batch_subsets], log_det_j=None)
 
         # weights = (1 / float(mus.shape[0])) * torch.ones(mus.shape[0]).to(self.flags.device)
         # joint_distr = self.moe_fusion(mus, logvars, weights)

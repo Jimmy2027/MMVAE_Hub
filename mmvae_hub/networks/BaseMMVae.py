@@ -11,7 +11,7 @@ from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection as moe
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import *
 
 
@@ -129,6 +129,22 @@ class BaseMMVAE(ABC, nn.Module):
 
         random_latents = ReparamLatent(content=z_class, style=z_styles)
         return self.generate_from_latents(random_latents)
+
+    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
+        """
+        Generate samples conditioned with input samples for a given subset.
+
+        subset_key str: The key indicating which subset is used for the generation.
+        """
+
+        # infer latents from batch
+        enc_mods, joint_latent = self.inference(input_samples)
+
+        # c_rep is embedding of subset
+        c_rep = joint_latent.get_subset_embedding(subset_key)
+
+        cond_mod_in = ReparamLatent(content=c_rep, style=style)
+        return self.generate_from_latents(cond_mod_in)
 
     def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
         cond_gen = {}

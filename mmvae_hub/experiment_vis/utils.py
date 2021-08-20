@@ -18,7 +18,7 @@ from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowVAE, FoMoP
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
-from mmvae_hub.utils.Dataclasses import ReparamLatent
+from mmvae_hub.utils.dataclasses.Dataclasses import ReparamLatent
 from mmvae_hub.utils.MongoDB import MongoDatabase
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
@@ -319,7 +319,7 @@ def plot_betas(logs_dict: dict) -> None:
     plt.show()
 
 
-def save_cond_gen(_id: str, save_path: Path):
+def save_cond_gen(_id: str, save_path: Path, with_title: bool = True):
     """
     Save examples of the cond gen to save_path.
     """
@@ -334,50 +334,55 @@ def save_cond_gen(_id: str, save_path: Path):
     # get style from random sampling
     random_styles = model.get_random_styles(1)
 
-    input_samples = {}
+    input_samples = {k:{} for k in range(len(test_samples))}
 
     # save input images
     for _, mod in mods.items():
-        input_sample = mod.plot_data(test_samples[0][mod.name])
-        input_samples[mod.name] = input_sample
-        plt.imshow(input_sample.cpu().moveaxis(0, -1))
-        plt.axis('off')
-        savefig_path = save_path / 'input_samples' / f'{mod.name}.png'
-        savefig_path.parent.mkdir(exist_ok=True, parents=True)
-        plt.title(f'{mod.name}', fontsize=30)
-        plt.savefig(savefig_path, bbox_inches='tight', pad_inches=0)
+        for inp_class in range(len(test_samples)):
+            input_sample = mod.plot_data(test_samples[inp_class][mod.name])
+            input_samples[inp_class][mod.name] = input_sample
+            plt.imshow(input_sample.cpu().moveaxis(0, -1))
+            plt.axis('off')
+            savefig_path = save_path / 'input_samples' / f'{mod.name}_{inp_class}.png'
+            savefig_path.parent.mkdir(exist_ok=True, parents=True)
+
+            if with_title:
+                plt.title(f'{mod.name}', fontsize=30)
+            plt.savefig(savefig_path, bbox_inches='tight', pad_inches=0)
         # plt.show()
 
-    for s_key in subsets:
-        subset = subsets[s_key]
-        i_batch = {
-            mod.name: input_samples[mod.name].unsqueeze(0)
-            for mod in subset
-        }
-        # infer latents from batch
-        enc_mods, joint_latent = model.inference(i_batch)
+    for inp_class in input_samples:
+        for s_key in subsets:
+            subset = subsets[s_key]
+            i_batch = {
+                mod.name: input_samples[inp_class][mod.name].unsqueeze(0)
+                for mod in subset
+            }
+            # infer latents from batch
+            enc_mods, joint_latent = model.inference(i_batch)
 
-        # c_rep is embedding of subset
-        c_rep = joint_latent.get_subset_embedding(s_key)
+            # c_rep is embedding of subset
+            c_rep = joint_latent.get_subset_embedding(s_key)
 
-        style = {}
-        for m_key_out in mods:
-            mod_out = mods[m_key_out]
-            if exp.flags.factorized_representation:
-                style[mod_out.name] = random_styles[mod_out.name][i].unsqueeze(0)
-            else:
-                style[mod_out.name] = None
-        cond_mod_in = ReparamLatent(content=c_rep, style=style)
-        cond_gen_samples = model.generate_from_latents(cond_mod_in)
+            style = {}
+            for m_key_out in mods:
+                mod_out = mods[m_key_out]
+                if exp.flags.factorized_representation:
+                    style[mod_out.name] = random_styles[mod_out.name][i].unsqueeze(0)
+                else:
+                    style[mod_out.name] = None
+            cond_mod_in = ReparamLatent(content=c_rep, style=style)
+            cond_gen_samples = model.generate_from_latents(cond_mod_in)
 
-        for out_key, out_plot in cond_gen_samples.items():
-            plt.imshow(out_plot.squeeze().detach().cpu().moveaxis(0, -1))
-            plt.axis('off')
-            savefig_path = save_path / f'{s_key}' / f'{out_key}.png'
-            savefig_path.parent.mkdir(exist_ok=True, parents=True)
-            plt.title(f'{s_key} -> {out_key}', fontsize=30)
-            plt.savefig(savefig_path, bbox_inches='tight', pad_inches=0)
-            # plt.show()
+            for out_key, out_plot in cond_gen_samples.items():
+                plt.imshow(out_plot.squeeze().detach().cpu().moveaxis(0, -1))
+                plt.axis('off')
+                savefig_path = save_path / f'{s_key}' / f'{out_key}_{inp_class}.png'
+                savefig_path.parent.mkdir(exist_ok=True, parents=True)
+                if with_title:
+                    plt.title(f'{s_key} -> {out_key}', fontsize=30)
+                plt.savefig(savefig_path, bbox_inches='tight', pad_inches=0)
+                # plt.show()
 
 
 def load_experiment(experiment_dir: Path = None, flags=None, _id: str = None):
@@ -429,8 +434,6 @@ def bw_compat_epoch_results(epoch_results: dict, method: str, flags: dict):
     """
     Adapt epoch results for backwards compatibility.
     """
-    if not epoch_results:
-        sdfgdfgh = 0
     if 'max_beta' not in flags or flags['max_beta'] is None:
         flags['max_beta'] = flags['min_beta'] = flags['beta']
         flags['beta_warmup'] = 0
@@ -473,57 +476,63 @@ def make_experiments_dataframe(experiments):
                 last_epoch = str(max_epoch)
             last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
 
-            if method not in ['joint_elbo', 'poe', 'moe']:
-                exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
+            if last_epoch_results:
+                if 'gfm' in method and 'num_gfm_flows' in exp['flags']:
+                    exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_gfm_flows']}"
+                elif 'gfm' in method or method not in [
+                    'joint_elbo',
+                    'poe',
+                    'moe',
+                ]:
+                    exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
+                # for backwards compatibility:
+                last_epoch_results, flags = bw_compat_epoch_results(last_epoch_results, method, exp['flags'])
 
-            # for backwards compatibility:
-            last_epoch_results, flags = bw_compat_epoch_results(last_epoch_results, method, exp['flags'])
+                # if lr_eval and gen_eval, add results to df.
+                if (last_epoch_results['lr_eval_q0'] or last_epoch_results['lr_eval_zk']) \
+                        and last_epoch_results['gen_eval']:
+                    results_dict = {**flags, 'end_epoch': last_epoch, '_id': exp['_id']}
+                    # try:
+                    if 'expvis_url' in exp:
+                        results_dict['expvis_url'] = exp['expvis_url']
 
-            # if lr_eval and gen_eval, add results to df.
-            if (last_epoch_results['lr_eval_q0'] or last_epoch_results['lr_eval_zk']) \
-                    and last_epoch_results['gen_eval']:
-                results_dict = {**flags, 'end_epoch': last_epoch, '_id': exp['_id']}
-                # try:
-                if 'expvis_url' in exp:
-                    results_dict['expvis_url'] = exp['expvis_url']
+                    if method == 'fomop':
+                        score_lr, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
+                    elif method in FLOW_METHODS:
+                        score_lr, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
+                    else:
+                        score_lr, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results)
 
-                if method == 'fomop':
-                    score_lr, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
-                elif method in FLOW_METHODS:
-                    score_lr, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
-                else:
-                    score_lr, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results)
+                    scores_gen = []
+                    # get gen_eval results
+                    for key, val in last_epoch_results['gen_eval'].items():
+                        key = key.replace('digit_', '')
+                        results_dict[f'gen_eval_{key}'] = val
+                        scores_gen.append(val)
 
-                scores_gen = []
-                # get gen_eval results
-                for key, val in last_epoch_results['gen_eval'].items():
-                    key = key.replace('digit_', '')
-                    results_dict[f'gen_eval_{key}'] = val
-                    scores_gen.append(val)
+                    scores_prd = []
+                    # get prd scores
+                    if 'prd_scores' in last_epoch_results and last_epoch_results['prd_scores']:
+                        for key, val in last_epoch_results['prd_scores'].items():
+                            results_dict[f'prd_score_{key}'] = val
+                            scores_prd.append(val)
 
-                scores_prd = []
-                # get prd scores
-                if 'prd_scores' in last_epoch_results and last_epoch_results['prd_scores']:
-                    for key, val in last_epoch_results['prd_scores'].items():
-                        results_dict[f'prd_score_{key}'] = val
-                        scores_prd.append(val)
+                    # results_dict['score'] = np.mean(scores)
 
-                # results_dict['score'] = np.mean(scores)
+                    results_dict['score_lr_q0'] = score_lr_q0
+                    results_dict['score_lr_zk'] = score_lr_zk
+                    results_dict['score_lr'] = results_dict['score_lr_zk'] if method in ['planar_mixture', 'pfom'] \
+                        else results_dict['score_lr_q0']
+                    results_dict['score_gen'] = np.mean(scores_gen)
+                    results_dict['score_prd'] = np.mean(scores_prd)
 
-                results_dict['score_lr_q0'] = score_lr_q0
-                results_dict['score_lr_zk'] = score_lr_zk
-                results_dict['score_lr'] = results_dict['score_lr_zk'] if method in ['planar_mixture', 'pfom'] \
-                    else results_dict['score_lr_q0']
-                results_dict['score_gen'] = np.mean(scores_gen)
-                results_dict['score_prd'] = np.mean(scores_prd)
+                    results_dict['score'] = (score_lr / 0.75) + (results_dict['score_gen'] / 0.55) + (
+                            results_dict['score_prd'] / 0.1)
 
-                results_dict['score'] = (score_lr / 0.75) + (results_dict['score_gen'] / 0.55) + (
-                        results_dict['score_prd'] / 0.1)
+                    df = df.append(results_dict, ignore_index=True)
 
-                df = df.append(results_dict, ignore_index=True)
-
-                # except Exception as e:
-                #     print(e)
+                    # except Exception as e:
+                    #     print(e)
 
         else:
             print(f'skipping experiment {exp["_id"]}')
@@ -566,18 +575,18 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    experiment_uid = 'polymnist_mogfm_2021_08_02_16_04_19_085928'
+    # experiment_uid = 'polymnist_mogfm_2021_07_28_08_19_20_361917'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/Mimic_mopgfm_2021_08_05_10_24_13_857815'), _id = experiment_uid)
-    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_basic_batch_logs('train', experiment_dict)
     # plot_basic_batch_logs('test', experiment_dict)
     # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
-    df = make_experiments_dataframe(experiments_database.connect())
+    # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    # for id in ['Mimic_mopgfm_2021_08_05_10_24_13_857815']:
-    #     upload_notebook_to_db(id)
+    for id in ['polymnist_mogfm_2021_08_08_11_17_52_628153']:
+        upload_notebook_to_db(id)

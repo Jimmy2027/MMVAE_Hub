@@ -2,13 +2,12 @@
 
 import typing
 from itertools import chain, combinations
-from typing import Mapping, List
+from typing import Mapping
 
 import torch
 from torch import Tensor
 
-from mmvae_hub.modalities import BaseModality
-from mmvae_hub.utils.Dataclasses import EncModPlanarMixture, Distr, BaseEncMod
+from mmvae_hub.utils.dataclasses.Dataclasses import Distr
 from mmvae_hub.utils.utils import split_int_to_bins
 
 
@@ -21,12 +20,13 @@ def subsets_from_batchmods(batchmods: typing.Iterable[str]) -> set:
     subsets = ['_'.join(sorted(mod_names)) for mod_names in subsets_list if mod_names]
     return set(sorted(subsets))
 
+
 def mixture_component_selection_embedding(subset_embeds: typing.Mapping[str, Tensor], s_key: str, flags,
                                           weight_joint: bool = True) -> Tensor:
     z_subset = torch.Tensor().to(flags.device)
     num_samples = subset_embeds[list(subset_embeds)[0]].shape[0]
     s_keys = [s_key for s_key in subset_embeds] if s_key == 'all' else s_key.split('_')
-    experts = torch.cat(tuple(v.unsqueeze(0) for _,v in subset_embeds.items()))
+    experts = torch.cat(tuple(v.unsqueeze(0) for _, v in subset_embeds.items()))
 
     for sample_idx in range(num_samples):
         z_subset = torch.cat((z_subset, experts[torch.randint(0, len(s_keys), (1,)).item(), sample_idx].unsqueeze(0)))
@@ -35,7 +35,7 @@ def mixture_component_selection_embedding(subset_embeds: typing.Mapping[str, Ten
 
 
 def mixture_component_selection_embedding_(subset_embeds: typing.Mapping[str, Tensor], s_key: str, flags,
-                                          weight_joint: bool = True) -> Tensor:
+                                           weight_joint: bool = True) -> Tensor:
     """
     For each element in batch select an expert from subset.
     subset_embeds: embeddings of each subset.
@@ -43,7 +43,7 @@ def mixture_component_selection_embedding_(subset_embeds: typing.Mapping[str, Te
     """
     num_samples = subset_embeds[list(subset_embeds)[0]].shape[0]
     s_keys = [s_key for s_key in subset_embeds] if s_key == 'all' else s_key.split('_')
-    z_subset = torch.Tensor().to(flags.device)
+    z_subset = torch.Tensor(device=flags.device)
 
     if flags.weighted_mixture:
         # define confidence of expert by the mean of z_subset. Sample experts with probability proportional to confidence.
@@ -64,7 +64,7 @@ def mixture_component_selection_embedding_(subset_embeds: typing.Mapping[str, Te
 
     if weight_joint:
         # normalize latents by number of modalities in subset
-        weights_subset = ((1 / float(len(s_keys))) * torch.ones_like(z_subset).to(flags.device))
+        weights_subset = ((1 / float(len(s_keys))) * torch.ones_like(z_subset, device=flags.device))
 
         return (weights_subset * z_subset)
     else:

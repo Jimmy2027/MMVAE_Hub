@@ -5,7 +5,7 @@ from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 
 
 class MOEMMVae(BaseMMVAE):

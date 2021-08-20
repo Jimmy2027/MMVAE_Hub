@@ -7,7 +7,7 @@ import numpy as np
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP, FoMoP
 from mmvae_hub.networks.GfMVaes import GfMVAE
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 
 
 class AverageMeter(object):
@@ -29,10 +29,11 @@ class AverageMeter(object):
         self.count = 0
 
     def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+        if val:
+            self.val = val
+            self.sum += val * n
+            self.count += n
+            self.avg = self.sum / self.count
 
     def __str__(self) -> str:
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
@@ -101,8 +102,9 @@ class AverageMeterLatents(AverageMeterDict):
 
         for mod_string, enc_mods in val.items():
             for key in self.vals[mod_string]:
-                self.vals[mod_string][key]['mu'].append(val[mod_string].__dict__[key].mu.mean().item())
-                self.vals[mod_string][key]['logvar'].append(val[mod_string].__dict__[key].logvar.mean().item())
+                if key in val[mod_string].__dict__:
+                    self.vals[mod_string][key]['mu'].append(val[mod_string].__dict__[key].mu.mean().item())
+                    self.vals[mod_string][key]['logvar'].append(val[mod_string].__dict__[key].logvar.mean().item())
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, typing.Tuple[float, float]]]:
         return {mod_str: {k: {'mu': np.mean(v['mu']), 'logvar': np.mean(v['logvar'])} for k, v in enc_mods.items()} for

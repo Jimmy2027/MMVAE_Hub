@@ -2,7 +2,7 @@ import math
 
 import torch.nn.functional
 
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights
 
 
@@ -33,7 +33,14 @@ def log_normal_standard(x, average=False, reduce=True, dim=None):
 
 
 def calc_divergence_with_samples(samples_prior: Tensor, samples_q: Tensor):
-    return torch.nn.functional.kl_div(samples_q, samples_prior, reduction='batchmean', log_target=True)
+    """
+    First average over the log diff for the K samples, then average the kl-divergence over the batch.
+    """
+    shape = samples_prior.shape
+    samples_prior = samples_prior.reshape(shape[0] * shape[1], shape[-1])
+    samples_q = samples_q.reshape(shape[0] * shape[1], shape[-1])
+    # samples_q * (samples_q.log() - samples_prior.log())
+    return torch.nn.functional.kl_div(samples_prior, samples_q, reduction='batchmean', log_target=True)
 
 
 def calc_divergence_embedding(z: Tensor):

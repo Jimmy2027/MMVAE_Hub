@@ -5,7 +5,7 @@ import FrEIA.modules as Fm
 import torch
 from torch import nn
 
-from mmvae_hub.utils.Dataclasses import PlanarFlowParams
+from mmvae_hub.utils.dataclasses.Dataclasses import PlanarFlowParams
 
 
 class AffineFlow(nn.Module):

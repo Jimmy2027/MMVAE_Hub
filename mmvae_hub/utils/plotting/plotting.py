@@ -3,7 +3,7 @@ import os
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.plotting import plot
 
 
@@ -123,21 +123,12 @@ def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModal
                         mod.name: test_samples[j][mod.name].unsqueeze(0)
                         for o, mod in enumerate(s_in)
                     }
-                    # infer latents from batch
-                    enc_mods, joint_latent = model.inference(i_batch)
-
-                    # c_rep is embedding of subset
-                    c_rep = joint_latent.get_subset_embedding(s_key)
-
-                    style = {}
-                    for m_key_out in mods:
-                        mod_out = mods[m_key_out]
-                        if exp.flags.factorized_representation:
-                            style[mod_out.name] = random_styles[mod_out.name][i].unsqueeze(0)
-                        else:
-                            style[mod_out.name] = None
-                    cond_mod_in = ReparamLatent(content=c_rep, style=style)
-                    cond_gen_samples = model.generate_from_latents(cond_mod_in)
+                    if exp.flags.factorized_representation:
+                        style = {mod_str: random_styles[mod_str][i] for mod_str in mods}
+                    else:
+                        style = {mod_str: None for mod_str in mods}
+                    cond_gen_samples = model.conditioned_generation(input_samples=i_batch, subset_key=s_key,
+                                                                    style=style)
 
                     for m_key_out in mods:
                         mod_out = mods[m_key_out]

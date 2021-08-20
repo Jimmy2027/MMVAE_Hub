@@ -3,7 +3,7 @@
 import torch.nn as nn
 
 from mmvae_hub.networks.utils import flows
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 
 
 class PlanarFlow(nn.Module):
