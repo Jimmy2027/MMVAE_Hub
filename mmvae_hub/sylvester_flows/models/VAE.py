@@ -1,28 +1,27 @@
 from __future__ import print_function
 
+import numpy as np
+import os
 import torch.nn as nn
-
-import mmvae_hub.sylvester_flows.models.flows as flows
-from mmvae_hub.networks.BaseMMVae import BaseMMVAE
+from mmvae_hub.sylvester_flows.models import flows
 from mmvae_hub.sylvester_flows.models.layers import GatedConv2d, GatedConvTranspose2d
 from mmvae_hub.sylvester_flows.optimization.loss import multinomial_loss_function
-from mmvae_hub.utils.Dataclasses import *
+from mmvae_hub.utils.dataclasses.Dataclasses import *
 
 
-class VAE(BaseMMVAE):
+class VAE(nn.Module):
     """
     The base VAE class containing gated convolutional encoder and decoder architecture.
     Can be used as a base class for VAE's with normalizing flows.
     """
 
-    def __init__(self, exp, flags, modalities, subsets):
-        super().__init__(exp, flags, modalities, subsets)
-        args = flags
-
+    def __init__(self, exp, args, modalities, subsets):
+        super(VAE, self).__init__()
+        self.flags = args
         # extract model settings from args
+        # self.z_size = args.z_size
         self.z_size = args.class_dim
         self.input_size = [3, 28, 28]
-        # self.flags.input_size = self.input_size
         self.input_type = 'multinomial'
 
         if self.input_size == [1, 28, 28] or self.input_size == [3, 28, 28]:
@@ -38,297 +37,10 @@ class VAE(BaseMMVAE):
         self.q_z_nn_output_dim = 256
 
         # auxiliary
-        if args.device.__str__() == 'cuda':
+        if True:
             self.FloatTensor = torch.cuda.FloatTensor
         else:
-            self.FloatTensor = torch.FloatTensor
-
-        # log-det-jacobian = 0 without flows
-        self.log_det_j = Variable(self.FloatTensor(1).zero_()).to(args.device)
-
-    def create_encoder(self):
-        """
-        Helper function to create the elemental blocks for the encoder. Creates a gated convnet encoder.
-        the encoder expects data as input of shape (batch_size, num_channels, width, height).
-        """
-
-        if self.input_type == 'binary':
-            q_z_nn = nn.Sequential(
-                GatedConv2d(self.input_size[0], 32, 5, 1, 2),
-                GatedConv2d(32, 32, 5, 2, 2),
-                GatedConv2d(32, 64, 5, 1, 2),
-                GatedConv2d(64, 64, 5, 2, 2),
-                GatedConv2d(64, 64, 5, 1, 2),
-                GatedConv2d(64, 256, self.last_kernel_size, 1, 0),
-
-            )
-            q_z_mean = nn.Linear(256, self.z_size)
-            q_z_var = nn.Sequential(
-                nn.Linear(256, self.z_size),
-                nn.Softplus(),
-            )
-            return q_z_nn, q_z_mean, q_z_var
-
-        elif self.input_type == 'multinomial':
-            act = None
-
-            q_z_nn = nn.Sequential(
-                GatedConv2d(self.input_size[0], 32, 5, 1, 2, activation=act),
-                GatedConv2d(32, 32, 5, 2, 2, activation=act),
-                GatedConv2d(32, 64, 5, 1, 2, activation=act),
-                GatedConv2d(64, 64, 5, 2, 2, activation=act),
-                GatedConv2d(64, 64, 5, 1, 2, activation=act),
-                GatedConv2d(64, 256, self.last_kernel_size, 1, 0, activation=act)
-            )
-            q_z_mean = nn.Linear(256, self.z_size)
-            q_z_var = nn.Sequential(
-                nn.Linear(256, self.z_size),
-                nn.Softplus(),
-                nn.Hardtanh(min_val=0.01, max_val=7.)
-
-            )
-            return q_z_nn, q_z_mean, q_z_var
-
-    def create_decoder(self):
-        """
-        Helper function to create the elemental blocks for the decoder. Creates a gated convnet decoder.
-        """
-
-        num_classes = 256
-
-        if self.input_type == 'binary':
-            p_x_nn = nn.Sequential(
-                GatedConvTranspose2d(self.z_size, 64, self.last_kernel_size, 1, 0),
-                GatedConvTranspose2d(64, 64, 5, 1, 2),
-                GatedConvTranspose2d(64, 32, 5, 2, 2, 1),
-                GatedConvTranspose2d(32, 32, 5, 1, 2),
-                GatedConvTranspose2d(32, 32, 5, 2, 2, 1),
-                GatedConvTranspose2d(32, 32, 5, 1, 2)
-            )
-
-            p_x_mean = nn.Sequential(
-                nn.Conv2d(32, self.input_size[0], 1, 1, 0),
-                nn.Sigmoid()
-            )
-            return p_x_nn, p_x_mean
-
-        elif self.input_type == 'multinomial':
-            act = None
-            p_x_nn = nn.Sequential(
-                GatedConvTranspose2d(self.z_size, 64, self.last_kernel_size, 1, 0, activation=act),
-                GatedConvTranspose2d(64, 64, 5, 1, 2, activation=act),
-                GatedConvTranspose2d(64, 32, 5, 2, 2, 1, activation=act),
-                GatedConvTranspose2d(32, 32, 5, 1, 2, activation=act),
-                GatedConvTranspose2d(32, 32, 5, 2, 2, 1, activation=act),
-                GatedConvTranspose2d(32, 32, 5, 1, 2, activation=act)
-            )
-
-            p_x_mean = nn.Sequential(
-                nn.Conv2d(32, 256, 5, 1, 2),
-                nn.Conv2d(256, self.input_size[0] * num_classes, 1, 1, 0),
-                # output shape: batch_size, num_channels * num_classes, pixel_width, pixel_height
-            )
-
-            return p_x_nn, p_x_mean
-
-        else:
-            raise ValueError('invalid input type!!')
-
-    def reparameterize(self, mu, var):
-        """
-        Samples z from a multivariate Gaussian with diagonal covariance matrix using the
-         reparameterization trick.
-        """
-
-        # std = logvar.mul(0.5).exp_()
-        # eps = Variable(std.data.new(std.size()).normal_())
-        # return eps.mul(std).add_(mu)
-
-        std = var.sqrt()
-        eps = self.FloatTensor(std.size()).normal_()
-        eps = Variable(eps)
-        z = eps.mul(std).add_(mu)
-
-        return z
-
-    def encode(self, x):
-        """
-        Encoder expects following data shapes as input: shape = (batch_size, num_channels, width, height)
-        """
-
-        h = self.q_z_nn(x)
-        h = h.view(h.size(0), -1)
-        mean = self.q_z_mean(h)
-        var = self.q_z_var(h)
-
-        return mean, var
-
-    def decode(self, z):
-        """
-        Decoder outputs reconstructed image in the following shapes:
-        x_mean.shape = (batch_size, num_channels, width, height)
-        """
-
-        z = z.view(z.size(0), self.z_size, 1, 1)
-        h = self.p_x_nn(z)
-        x_mean = self.p_x_mean(h)
-
-        return x_mean
-
-    def forward(self, x):
-        """
-        Evaluates the model as a whole, encodes and decodes. Note that the log det jacobian is zero
-         for a plain VAE (without flows), and z_0 = z_k.
-        """
-
-        # mean and variance of z
-        z_mu, z_var = self.encode(x)
-        # sample z
-        z = self.reparameterize(z_mu, z_var)
-        x_mean = self.decode(z)
-
-        return x_mean, z_mu, z_var, self.log_det_j, z, z
-
-
-class PlanarVAE(VAE):
-    """
-    Variational auto-encoder with planar flows in the encoder.
-    """
-
-    def __init__(self, exp, flags, modalities, subsets):
-        super(PlanarVAE, self).__init__(exp, flags, modalities, subsets)
-        args = flags
-
-        # Initialize log-det-jacobian to zero
-        self.log_det_j = 0.
-
-        # Flow parameters
-        flow = flows.Planar
-        self.num_flows = args.num_flows
-
-        # Amortized flow parameters
-        self.amor_u = nn.Linear(self.q_z_nn_output_dim, self.num_flows * self.z_size)
-        self.amor_w = nn.Linear(self.q_z_nn_output_dim, self.num_flows * self.z_size)
-        self.amor_b = nn.Linear(self.q_z_nn_output_dim, self.num_flows)
-
-        # Normalizing flow layers
-        for k in range(self.num_flows):
-            flow_k = flow()
-            self.add_module('flow_' + str(k), flow_k)
-
-    def encode(self, x):
-        """
-        Encoder that ouputs parameters for base distribution of z and flow parameters.
-        """
-
-        batch_size = x.size(0)
-
-        h = self.q_z_nn(x)
-        h = h.view(-1, self.q_z_nn_output_dim)
-        mean_z = self.q_z_mean(h)
-        var_z = self.q_z_var(h)
-
-        # return amortized u an w for all flows
-        u = self.amor_u(h).view(batch_size, self.num_flows, self.z_size, 1)
-        w = self.amor_w(h).view(batch_size, self.num_flows, 1, self.z_size)
-        b = self.amor_b(h).view(batch_size, self.num_flows, 1, 1)
-
-        return mean_z, var_z, u, w, b
-
-    def forward(self, input_batch: Mapping[str, Tensor]) -> BaseForwardResults:
-        """
-        Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
-        Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
-        """
-        enc_mods, joint_latents = self.inference(input_batch)
-
-        rec_mods = {}
-        for mod_str, enc_mod in enc_mods.items():
-            rec_mods[mod_str] = self.decode(enc_mod.zk)
-
-        return BaseForwardResults(enc_mods=enc_mods, rec_mods=rec_mods, joint_latents=None)
-
-    def inference(self, input_batch):
-        enc_mods = {}
-        for mod_str, mod_data in input_batch.items():
-            self.log_det_j = 0.
-
-            z_mu, z_logvar, u, w, b = self.encode(mod_data)
-            latents_class = Distr(mu=z_mu, logvar=z_logvar)
-
-            # Sample z_0
-            z = [self.reparameterize(z_mu, z_logvar)]
-
-            # Normalizing flows
-            for k in range(self.num_flows):
-                flow_k = getattr(self, 'flow_' + str(k))
-                z_k, log_det_jacobian = flow_k(z[k], u[:, k, :, :], w[:, k, :, :], b[:, k, :, :])
-                z.append(z_k)
-                self.log_det_j += log_det_jacobian
-
-            enc_mods[mod_str] = EncModPlanarMixture(latents_class=latents_class, z0=z[0], zk=z_k,
-                                                    log_det_j=self.log_det_j, flow_params=None)
-        joint_latents = JointLatentsFoEM(joint_embedding=JointEmbeddingFoEM(embedding=z_k, mod_strs=[mod_str]),
-                                         subsets={mod_str: z_k})
-        return enc_mods, joint_latents
-
-    def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
-        float, float, dict, Mapping[str, float]]:
-        enc_mod = forward_results.enc_mods[[k for k in forward_results.enc_mods][0]]
-        rec_mod = forward_results.rec_mods[[k for k in forward_results.rec_mods][0]]
-        x = batch_d[[k for k in batch_d][0]]
-        loss, rec, kl = multinomial_loss_function(rec_mod, x, enc_mod.latents_class.mu,
-                                                  enc_mod.latents_class.logvar, enc_mod.z0, enc_mod.zk,
-                                                  enc_mod.log_det_j, self.flags, beta=self.flags.beta)
-
-        klds = {mod_str: kl for mod_str in batch_d}
-        log_probs = {mod_str: rec for mod_str in batch_d}
-        return loss, kl, log_probs, klds
-
-    def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
-        cond_gen = {}
-        for mod_str, mod in self.modalities.items():
-            recon_mean = self.decode(latents.content)
-            num_classes = 256
-            # Find largest class logit
-            tmp = recon_mean.view(-1, num_classes, *self.input_size).max(dim=1)[1]
-            recon_mean = tmp.float() / (num_classes - 1.)
-
-            cond_gen[mod_str] = recon_mean
-        return cond_gen
-
-
-class VAE_(nn.Module):
-    """
-    The base VAE class containing gated convolutional encoder and decoder architecture.
-    Can be used as a base class for VAE's with normalizing flows.
-    """
-
-    def __init__(self, args):
-        super(VAE_, self).__init__()
-
-        # extract model settings from args
-        self.z_size = args.z_size
-        self.input_size = args.input_size
-        self.input_type = args.input_type
-
-        if self.input_size == [1, 28, 28] or self.input_size == [3, 28, 28]:
-            self.last_kernel_size = 7
-        elif self.input_size == [1, 28, 20]:
-            self.last_kernel_size = (7, 5)
-        else:
-            raise ValueError('invalid input size!!')
-
-        self.q_z_nn, self.q_z_mean, self.q_z_var = self.create_encoder()
-        self.p_x_nn, self.p_x_mean = self.create_decoder()
-
-        self.q_z_nn_output_dim = 256
-
-        # auxiliary
-        if args.cuda:
-            self.FloatTensor = torch.cuda.FloatTensor
-        else:
-            self.FloatTensor = torch.FloatTensor
+            self.FloatTensor = torch.FloatTensor.to(args.device)
 
         # log-det-jacobian = 0 without flows
         self.log_det_j = Variable(self.FloatTensor(1).zero_())
@@ -427,10 +139,6 @@ class VAE_(nn.Module):
          reparameterization trick.
         """
 
-        # std = logvar.mul(0.5).exp_()
-        # eps = Variable(std.data.new(std.size()).normal_())
-        # return eps.mul(std).add_(mu)
-
         std = var.sqrt()
         eps = self.FloatTensor(std.size()).normal_()
         eps = Variable(eps)
@@ -442,7 +150,7 @@ class VAE_(nn.Module):
         """
         Encoder expects following data shapes as input: shape = (batch_size, num_channels, width, height)
         """
-
+        x = x['m0']
         h = self.q_z_nn(x)
         h = h.view(h.size(0), -1)
         mean = self.q_z_mean(h)
@@ -462,28 +170,121 @@ class VAE_(nn.Module):
 
         return x_mean
 
+    def inference(self, x):
+        # mean and variance of z
+        z_mu, z_var = self.encode(x)
+        # sample z
+        z = self.reparameterize(z_mu, z_var)
+
+        return {'m0': BaseEncMod(latents_class=Distr(z_mu, z_var))}, JointLatentsFoS(
+            joint_embedding=JointEmbeddingFoS(embedding=z, mod_strs=['m0'], log_det_j=self.log_det_j),
+            subsets={'m0': SubsetFoS(q0=Distr(z_mu, z_var), zk=z, z0=z)})
+
     def forward(self, x):
         """
         Evaluates the model as a whole, encodes and decodes. Note that the log det jacobian is zero
          for a plain VAE (without flows), and z_0 = z_k.
         """
+        enc_mods, joint_latent = self.inference(x)
 
-        # mean and variance of z
-        z_mu, z_var = self.encode(x)
-        # sample z
-        z = self.reparameterize(z_mu, z_var)
-        x_mean = self.decode(z)
+        x_mean = self.decode(joint_latent.joint_embedding.embedding)
 
-        return x_mean, z_mu, z_var, self.log_det_j, z, z
+        return BaseForwardResults(enc_mods=enc_mods,
+                                  joint_latents=joint_latent, rec_mods={'m0': x_mean})
+
+    def batch_to_device(self, batch):
+        """Send the batch to device as Variable."""
+        return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
+
+    def calculate_loss(self, forward_results: BaseForwardResults, batch_d):
+        """
+        Picks the correct loss depending on the input type.
+        """
+        enc_mod = forward_results.enc_mods['m0'].latents_class
+        x = batch_d['m0']
+        loss, rec, kl = multinomial_loss_function(forward_results.rec_mods['m0'], x, enc_mod.mu, enc_mod.logvar,
+                                                  forward_results.joint_latents.joint_embedding.embedding,
+                                                  forward_results.joint_latents.joint_embedding.embedding,
+                                                  forward_results.joint_latents.joint_embedding.log_det_j, self.flags,
+                                                  beta=2.5)
+        bpd = loss.item() / (np.prod(self.input_size) * np.log(2.))
+
+        return loss, kl, {'m0': rec}, {'m0': kl}
+
+    def generate(self, num_samples=None) -> Mapping[str, Tensor]:
+        """
+        Generate from latents that were sampled from a normal distribution.
+        """
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        z_class = self.get_rand_samples_from_joint(num_samples)
+        z_styles = {'m0': None}
+
+        random_latents = ReparamLatent(content=z_class, style=z_styles)
+        return self.generate_from_latents(random_latents)
+
+    def get_rand_samples_from_joint(self, num_samples: int):
+        """
+        Sample from a standard normal distribution.
+        """
+        mu = torch.zeros(num_samples,
+                         self.flags.class_dim).to(self.flags.device)
+        logvar = torch.zeros(num_samples,
+                             self.flags.class_dim).to(self.flags.device)
+        return Distr(mu, logvar).reparameterize()
+
+    def generate_from_latents(self, latents: ReparamLatent) -> Mapping[str, Tensor]:
+        cond_gen = {}
+        for mod_str in ['m0']:
+            suff_stats = self.generate_sufficient_statistics_from_latents(latents)
+            tmp = suff_stats[mod_str].view(-1, 256, 3, 28, 28).max(dim=1)[1]
+            cond_gen[mod_str] = tmp.float() / (256 - 1.)
+        return cond_gen
+
+    def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent):
+        cond_gen = {}
+        for mod_str in ['m0']:
+            style_m = latents.style[mod_str]
+            content = latents.content
+            cond_gen_m = self.decode(content)
+            cond_gen[mod_str] = cond_gen_m
+        return cond_gen
+
+    def cond_generation(self, joint_latent: JointLatents, num_samples=None) -> Mapping[str, Mapping[str, Tensor]]:
+        if num_samples is None:
+            num_samples = self.flags.batch_size
+
+        style_latents = {'m0': None}
+        cond_gen_samples = {}
+        for key in joint_latent.subsets:
+            content_rep = joint_latent.get_subset_embedding(key)
+            latents = ReparamLatent(content=content_rep, style=style_latents)
+            cond_gen_samples[key] = self.generate_from_latents(latents)
+
+        joint_embedding = joint_latent.get_joint_embeddings()
+        joint_latents = ReparamLatent(content=joint_embedding, style=style_latents)
+        cond_gen_samples['joint'] = self.generate_from_latents(joint_latents)
+
+        return cond_gen_samples
+
+    def save_networks(self, epoch: int):
+        dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
+        if not os.path.exists(dir_network_epoch):
+            os.makedirs(dir_network_epoch)
+        torch.save(self, os.path.join(dir_network_epoch, 'sylvester_vae_noflow'))
+
+    def get_random_styles(self, nbr_samples):
+        return {'m0': None}
 
 
-class PlanarVAE_(VAE_):
+class PlanarVAE(VAE):
     """
     Variational auto-encoder with planar flows in the encoder.
     """
 
-    def __init__(self, args):
-        super(PlanarVAE_, self).__init__(args)
+    def __init__(self,  exp, args, modalities, subsets):
+        super(PlanarVAE, self).__init__(exp, args, modalities, subsets)
 
         # Initialize log-det-jacobian to zero
         self.log_det_j = 0.
@@ -506,7 +307,7 @@ class PlanarVAE_(VAE_):
         """
         Encoder that ouputs parameters for base distribution of z and flow parameters.
         """
-
+        x = x['m0']
         batch_size = x.size(0)
 
         h = self.q_z_nn(x)
@@ -521,18 +322,11 @@ class PlanarVAE_(VAE_):
 
         return mean_z, var_z, u, w, b
 
-    def forward(self, x):
-        """
-        Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
-        Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
-        """
-
-        self.log_det_j = 0.
-
-        z_mu, z_logvar, u, w, b = self.encode(x)
-
+    def inference(self, x):
+        # mean and variance of z
+        z_mu, z_var, u, w, b = self.encode(x)
         # Sample z_0
-        z = [self.reparameterize(z_mu, z_logvar)]
+        z = [self.reparameterize(z_mu, z_var)]
 
         # Normalizing flows
         for k in range(self.num_flows):
@@ -541,9 +335,24 @@ class PlanarVAE_(VAE_):
             z.append(z_k)
             self.log_det_j += log_det_jacobian
 
-        x_mean = self.decode(z[-1])
+        return {'m0': BaseEncMod(latents_class=Distr(z_mu, z_var))}, JointLatentsFoS(
+            joint_embedding=JointEmbeddingFoS(embedding=z[-1], mod_strs=['m0'], log_det_j=self.log_det_j),
+            subsets={'m0': SubsetFoS(q0=Distr(z_mu, z_var), zk=z[-1], z0=z[0])})
 
-        return x_mean, z_mu, z_logvar, self.log_det_j, z[0], z[-1]
+    def forward(self, x):
+        """
+        Forward pass with planar flows for the transformation z_0 -> z_1 -> ... -> z_k.
+        Log determinant is computed as log_det_j = N E_q_z0[\sum_k log |det dz_k/dz_k-1| ].
+        """
+
+        self.log_det_j = 0.
+
+        enc_mods, joint_latent = self.inference(x)
+
+        x_mean = self.decode(joint_latent.joint_embedding.embedding)
+
+        return BaseForwardResults(enc_mods=enc_mods,
+                           joint_latents=joint_latent, rec_mods={'m0': x_mean})
 
 
 class OrthogonalSylvesterVAE(VAE):
