@@ -6,7 +6,7 @@ import numpy as np
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import PlanarMixtureMMDiv, PfomMMDiv, PoPEMMDiv, FoMoPMMDiv, \
     MoFoPDiv
-from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae
+from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
@@ -114,12 +114,12 @@ class FlowOfSubsetsVAE(FlowVAE):
         return zk
 
 
-class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
+class MoFoPoE(FlowOfSubsetsVAE, MoPoEMMVae):
     """Mixture of Flow of Product of Experts"""
 
     def __init__(self, exp, flags, modalities, subsets):
         FlowOfSubsetsVAE.__init__(self)
-        JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
+        MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = MoFoPDiv()
         self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
 
@@ -154,12 +154,12 @@ class MoFoPoE(FlowOfSubsetsVAE, JointElboMMVae):
         return JointLatentsMoFoP(joint_embedding=joint_embedding, subsets=distr_subsets)
 
 
-class FoMoP(FlowOfJointVAE, JointElboMMVae):
+class FoMoP(FlowOfJointVAE, MoPoEMMVae):
     "Flow of Mixture of Products of Experts method"
 
     def __init__(self, exp, flags, modalities, subsets):
         FlowOfJointVAE.__init__(self)
-        JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
+        MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = FoMoPMMDiv()
         # self.flow = PlanarFlow(flags)
         self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
@@ -202,10 +202,10 @@ class FoMoP(FlowOfJointVAE, JointElboMMVae):
         return np.mean(scores), np.mean(scores_lr_q0), np.mean(scores_lr_zk)
 
 
-class FoMFoP(FlowOfJointVAE, JointElboMMVae):
+class FoMFoP(FlowOfJointVAE, MoPoEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         FlowOfJointVAE.__init__(self)
-        JointElboMMVae.__init__(self, exp, flags, modalities, subsets)
+        MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PoPEMMDiv()
         self.flow1 = PlanarFlow(flags)
         self.flow2 = PlanarFlow(flags)

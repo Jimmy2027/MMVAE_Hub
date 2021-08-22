@@ -24,9 +24,9 @@ class MOEMMVae(BaseMMVAE):
         return len(subset) == 1
 
 
-class JointElboMMVae(MOEMMVae):
+class MoPoEMMVae(MOEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
-        super(JointElboMMVae, self).__init__(exp, flags, modalities, subsets)
+        super(MoPoEMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = JointElbowMMDiv()
 
     def modality_fusion(self, flags, mus, logvars, weights=None) -> Distr:
@@ -67,7 +67,7 @@ class JointElboMMVae(MOEMMVae):
         return rec_error + flags.beta * div
 
 
-class JSDMMVae(JointElboMMVae):
+class JSDMMVae(MoPoEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         super(JSDMMVae, self).__init__(exp, flags, modalities, subsets)
         self.mm_div = JSDMMDiv()

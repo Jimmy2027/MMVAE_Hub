@@ -5,7 +5,7 @@ from torch.distributions import MultivariateNormal
 from mmvae_hub.evaluation.divergence_measures.mm_div import GfMMMDiv, GfMoPDiv, PGfMMMDiv, BaseMMDiv, MoFoGfMMMDiv, \
     BMoGfMMMDiv, GfMMMDiv_old
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.networks.MixtureVaes import JointElboMMVae
+from mmvae_hub.networks.MixtureVaes import MoPoEMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
@@ -279,7 +279,7 @@ class BMoGfMVAE(MoGfMVAE):
         self.mm_div = BMoGfMMMDiv()
 
 
-class GfMoPVAE(JointElboMMVae):
+class GfMoPVAE(MoPoEMMVae):
     """GfM of Product of experts VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):

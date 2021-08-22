@@ -51,7 +51,7 @@ class BaseExperiment(ABC):
 
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
-        if self.flags.method == 'joint_elbo':
+        if self.flags.method == 'mopoe':
             model = MoPoEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'moe':
             model = MOEMMVae(self, self.flags, self.modalities, self.subsets)
