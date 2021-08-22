@@ -15,11 +15,12 @@ class iwSubset:
 @dataclass
 class iwJointLatents:
     fusion_subsets_keys: Iterable[str]
+    joint_distr: iwSubset
     subsets: Mapping[str, iwSubset]
     zss: Mapping[str, Distribution]
 
     def get_joint_embeddings(self):
-        return self.subsets['_'.join(sorted(self.fusion_subsets_keys))].qz_x_tilde.rsample()
+        return self.joint_distr.qz_x_tilde.rsample()
 
     def get_subset_embedding(self, s_key: str):
         return self.subsets[s_key].qz_x_tilde.rsample()
@@ -31,7 +32,7 @@ class iwJointLatents:
         return self.subsets[subset_key].qz_x_tilde.mean
 
     def get_joint_q0(self):
-        return self.subsets['_'.join(sorted(self.fusion_subsets_keys))].qz_x_tilde.mean
+        return self.joint_distr.qz_x_tilde.mean
 
     def get_lreval_data(self) -> dict:
         """Get lr_data for the lr evaluation."""
@@ -56,7 +57,8 @@ class iwJointLatents:
         """Sample n_imp_samples from the latents."""
         c_embed = self.subsets[subset_key].qz_x_tilde.rsample((n_imp_samples,))
 
-        c = {'mu': self.subsets[subset_key].qz_x_tilde.loc.unsqueeze(0).repeat(n_imp_samples, 1, 1), 'logvar': self.subsets[subset_key].qz_x_tilde.scale.unsqueeze(0).repeat(n_imp_samples, 1, 1),
+        c = {'mu': self.subsets[subset_key].qz_x_tilde.loc.unsqueeze(0).repeat(n_imp_samples, 1, 1),
+             'logvar': self.subsets[subset_key].qz_x_tilde.scale.unsqueeze(0).repeat(n_imp_samples, 1, 1),
              'z': c_embed}
 
         styles = {key: None for k, key in enumerate(mod_names)}

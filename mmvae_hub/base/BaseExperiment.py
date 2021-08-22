@@ -14,9 +14,9 @@ from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoM
     MoFoPoE
 from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, MoGfMVAE_old, \
     iwMoGfMVAE
-from mmvae_hub.networks.MixtureVaes import MOEMMVae, JointElboMMVae, JSDMMVae
+from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
-from mmvae_hub.networks.iwVaes import iwMoE
+from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE, VAE
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -52,7 +52,7 @@ class BaseExperiment(ABC):
     def set_model(self):
         """Chose the right VAE model depending on the chosen method."""
         if self.flags.method == 'joint_elbo':
-            model = JointElboMMVae(self, self.flags, self.modalities, self.subsets)
+            model = MoPoEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'moe':
             model = MOEMMVae(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'poe':
@@ -108,6 +108,8 @@ class BaseExperiment(ABC):
             model = iwMoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmoe':
             model = iwMoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmopoe':
+            model = iwMoPoE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)
