@@ -48,7 +48,21 @@ iwmoe = {
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [1],
+    "end_epoch": [300],
+    "calc_nll": [False]
+}
+
+iwmopoe = {
+    'method': ['iwmopoe'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
+    "min_beta": [0],
+    "max_beta": [2.5],
+    "beta_warmup": [0],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [300],
     "calc_nll": [False]
 }
 
@@ -66,6 +80,7 @@ sp_iwmopgfm = {
     "end_epoch": [300],
     "calc_nll": [False]
 }
+
 
 sp_bmogfm = {
     'n_gpus': [1],
