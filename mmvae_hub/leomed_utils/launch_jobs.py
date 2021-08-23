@@ -22,7 +22,7 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
     if which_dataset == 'polymnist':
         python_file = 'polymnist/main_polymnist.py'
         mem = 500 * params['num_mods']
-        if params['method'] == 'mogfm':
+        if params['method'] == 'mogfm' or params['method'].startswith('iw'):
             num_hours = int(np.round((params['end_epoch'] * 10) / 60 * 0.5 * params['num_mods'])) or 1
         else:
             # 1 epochs needs approx. 2 minutes
