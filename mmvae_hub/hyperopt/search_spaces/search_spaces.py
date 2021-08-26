@@ -31,9 +31,9 @@ sp_mopgfm = {
     'class_dim': [512],
     "min_beta": [0],
     "max_beta": [2.5],
-    "beta_warmup": [0],
-    "num_gfm_flows": [3],
-    "coupling_dim": [256, 512],
+    "beta_warmup": [50],
+    "num_gfm_flows": [1, 3, 6],
+    "coupling_dim": [640],
     "num_mods": [3],
     "end_epoch": [300],
 }
@@ -63,7 +63,8 @@ iwmopoe = {
     # "coupling_dim": [32],
     "num_mods": [3],
     "end_epoch": [300],
-    "calc_nll": [False]
+    "calc_nll": [False],
+    'gpu_mem': [10000],
 }
 
 sp_iwmopgfm = {
@@ -80,7 +81,6 @@ sp_iwmopgfm = {
     "end_epoch": [300],
     "calc_nll": [False]
 }
-
 
 sp_bmogfm = {
     'n_gpus': [1],
