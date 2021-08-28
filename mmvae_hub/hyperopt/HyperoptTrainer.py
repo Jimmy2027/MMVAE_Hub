@@ -79,10 +79,10 @@ def run_hyperopt_epochs(trainer: PolymnistTrainer) -> int:
 
 if __name__ == '__main__':
     dataset = 'polymnist'
-    method = 'joint_elbo'
+    method = 'mopoe'
     flags = parser.parse_args()
 
-    study_name = f'hyperopt-{method}-missing_mod_score_newarchitecture'
+    study_name = f'hyperopt-{method}-missing_mod_random_score_newarchitecture'
 
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
