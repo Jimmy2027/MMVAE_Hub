@@ -111,13 +111,13 @@ sp_gfm = {
     "coupling_dim": [512],
 }
 
-sp_joint_elbo = {
+sp_mopoe = {
     'n_gpus': [1],
-    'method': ['joint_elbo'],
+    'method': ['mopoe'],
     'max_beta': [2.5],
     'class_dim': [512],
     "beta_warmup": [0],
-    "num_mods": [3, 5],
+    "num_mods": [3],
     "initial_learning_rate": [0.0005],
     "end_epoch": [300],
 }
