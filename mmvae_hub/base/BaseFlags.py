@@ -103,7 +103,7 @@ parser.add_argument('--feature_extractor_img', type=str, default='resnet', help=
                     choices=['resnet', 'densenet'])
 
 # LOSS TERM WEIGHTS
-parser.add_argument('--beta', type=float, default=5.0, help="default weight of sum of weighted divergence terms")
+parser.add_argument('--beta', type=float, default=0, help="default weight of sum of weighted divergence terms")
 parser.add_argument('--beta_style', type=float, default=1.0,
                     help="default weight of sum of weighted style divergence terms")
 parser.add_argument('--beta_content', type=float, default=1.0,
