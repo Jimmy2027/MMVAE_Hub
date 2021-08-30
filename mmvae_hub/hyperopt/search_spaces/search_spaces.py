@@ -67,6 +67,21 @@ iwmopoe = {
     'gpu_mem': [10000],
 }
 
+iwmogfm = {
+    'method': ['iwmogfm'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
+    "min_beta": [0],
+    "max_beta": [0],
+    "beta_warmup": [500],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [300],
+    "calc_nll": [False],
+    'gpu_mem': [10000],
+}
+
 sp_iwmopgfm = {
     'n_gpus': [1],
     'method': ['iwmogfm'],
