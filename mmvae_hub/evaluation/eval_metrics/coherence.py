@@ -239,4 +239,6 @@ def flatten_cond_gen_values(gen_eval: dict):
             for g_key in gen_eval['cond'][l_key][s_key]:
                 key = l_key + '_' + s_key + '__' + g_key
                 flattened_dict[key] = gen_eval['cond'][l_key][s_key][g_key]
+
+    flattened_dict['random'] = gen_eval['random']['digit']
     return flattened_dict
