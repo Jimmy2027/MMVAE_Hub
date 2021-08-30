@@ -7,6 +7,28 @@ from torch import Tensor
 
 
 @dataclass
+class JointLatentsiwMoGfM(JointLatentsGfM):
+    """Joint Latents for mixture of generalized f-means methods."""
+    epss: Tensor
+
+    def get_lreval_data(self):
+        lr_data = {'q0': {}}
+
+        for key in self.subsets:
+            lr_data['q0'][key] = self.subsets[key].mean(dim=0).cpu()
+
+        lr_data['q0']['joint'] = self.joint_embedding.embedding.mean(dim=0).cpu()
+
+        return lr_data
+
+    def get_subset_embedding(self, s_key: str):
+        return self.subsets[s_key].mean(dim=0)
+
+    def get_joint_embeddings(self):
+        return self.joint_embedding.embedding.mean(dim=0)
+
+
+@dataclass
 class iwSubset:
     zs: Tensor
     qz_x_tilde: Distribution
