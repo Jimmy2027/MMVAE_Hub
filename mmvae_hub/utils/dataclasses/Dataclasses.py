@@ -249,15 +249,15 @@ class SubsetMoFoGfM:
 @dataclass
 class JointLatentsMoGfM(JointLatentsGfM):
     """Joint Latents for mixture of generalized f-means methods."""
-    epss:Tensor
+    epss: Tensor
 
     def get_lreval_data(self):
         lr_data = {'q0': {}}
 
         for key in self.subsets:
-            lr_data['q0'][key] = self.subsets[key].cpu()
+            lr_data['q0'][key] = self.subsets[key].mean(dim=0).cpu()
 
-        lr_data['q0']['joint'] = self.joint_embedding.embedding.cpu()
+        lr_data['q0']['joint'] = self.joint_embedding.embedding.mean(dim=0).cpu()
 
         return lr_data
 
