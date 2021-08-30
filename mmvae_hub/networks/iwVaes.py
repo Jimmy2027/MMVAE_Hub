@@ -1,11 +1,8 @@
 import math
 
-import torch
-import torch.distributions as distr
 import torch.nn.functional as F
-from mmvae_hub.networks.BaseMMVae import BaseMMVAE
+
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
-from mmvae_hub.utils.dataclasses.Dataclasses import *
 from mmvae_hub.utils.dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
 
@@ -14,11 +11,29 @@ def log_mean_exp(value, dim=0, keepdim=False):
     return torch.logsumexp(value, dim, keepdim=keepdim) - math.log(value.size(dim))
 
 
-class iwMoE(MOEMMVae):
+class iwMMVAE():
+    def __init__(self, flags):
+        self.K = flags.K
+
+    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
+        """
+        Generate samples conditioned with input samples for a given subset.
+
+        subset_key str: The key indicating which subset is used for the generation.
+        """
+
+        # infer latents from batch
+        enc_mods, joint_latents = self.inference(input_samples)
+
+        subset_embedding = joint_latents.subsets[subset_key].qz_x_tilde.mean
+        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
+        return self.generate_from_latents(cond_mod_in)
+
+
+class iwMoE(iwMMVAE, MOEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         MOEMMVae.__init__(self, exp, flags, modalities, subsets)
-
-        self.K = flags.K
+        iwMMVAE.__init__(self, flags)
 
     def forward(self, input_batch: dict) -> iwForwardResults:
         enc_mods, joint_latents = self.inference(input_batch)
@@ -111,24 +126,11 @@ class iwMoE(MOEMMVae):
         joint_div = joint_div.mean()
         return total_loss, joint_div, log_probs, klds
 
-    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
-        """
-        Generate samples conditioned with input samples for a given subset.
 
-        subset_key str: The key indicating which subset is used for the generation.
-        """
-
-        # infer latents from batch
-        enc_mods, joint_latents = self.inference(input_samples)
-
-        subset_embedding = joint_latents.subsets[subset_key].qz_x_tilde.mean
-        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
-        return self.generate_from_latents(cond_mod_in)
-
-
-class iwMoPoE(MoPoEMMVae):
+class iwMoPoE(iwMMVAE, MoPoEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
+        iwMMVAE.__init__(self, flags)
 
         self.K = flags.K
 
@@ -215,23 +217,9 @@ class iwMoPoE(MoPoEMMVae):
             klds[mod_str] = log_mean_exp(kl_div).sum()
 
         total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
-
+        print(total_loss)
         # joint_div average of all subset divs
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
         # normalize with the number of samples
         joint_div = joint_div.mean()
         return total_loss, joint_div, log_probs, klds
-
-    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
-        """
-        Generate samples conditioned with input samples for a given subset.
-
-        subset_key str: The key indicating which subset is used for the generation.
-        """
-
-        # infer latents from batch
-        enc_mods, joint_latents = self.inference(input_samples)
-
-        subset_embedding = joint_latents.subsets[subset_key].qz_x_tilde.mean
-        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
-        return self.generate_from_latents(cond_mod_in)
