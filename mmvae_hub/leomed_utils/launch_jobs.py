@@ -1,10 +1,13 @@
 import os
 import time
+from pathlib import Path
 
 import numpy as np
+import mmvae_hub
 
 
 def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
+    mmvae_hub_dir = Path(mmvae_hub.__file__).parent
     n_cores = 8
 
     flags = ''.join(
@@ -20,7 +23,7 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
     scratch_space = int((params['end_epoch'] // 100) * 5) // n_cores or 1
 
     if which_dataset == 'polymnist':
-        python_file = 'polymnist/main_polymnist.py'
+        python_file = mmvae_hub_dir / 'polymnist/main_polymnist.py'
         mem = 500 * params['num_mods']
         if params['method'] == 'mogfm' or params['method'].startswith('iw'):
             num_hours = int(np.round((params['end_epoch'] * 10) / 60 * 0.5 * params['num_mods'])) or 1
@@ -30,7 +33,7 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         # 100 epochs take about 5G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
     elif which_dataset == 'mimic':
-        python_file = 'mimic/main_mimic.py'
+        python_file = mmvae_hub_dir / 'mimic/main_mimic.py'
         # 1 epochs needs approx. 8 minutes
         num_hours = int(np.round((params['end_epoch'] * 8) / 60)) or 1
         mem = 2500
