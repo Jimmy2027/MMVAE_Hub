@@ -70,15 +70,16 @@ iwmopoe = {
 iwmogfm = {
     'method': ['iwmogfm'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [512],
+    'class_dim': [640],
     "min_beta": [0],
-    "max_beta": [0],
-    "beta_warmup": [500],
-    # "num_gfm_flows": [3],
-    # "coupling_dim": [32],
+    "dataloader_workers": [16],
+    "max_beta": [2.0],
+    "beta_warmup": [50],
     "num_mods": [3],
-    "end_epoch": [300],
+    "end_epoch": [150],
     "calc_nll": [False],
+    "K": [10],
+    "eval_freq": [10],
     'gpu_mem': [10000],
 }
 

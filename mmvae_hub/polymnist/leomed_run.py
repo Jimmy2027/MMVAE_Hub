@@ -9,5 +9,5 @@ for search_space in [iwmogfm]:
     # for search_space in [search_space_je, search_space_gfm, search_space_mofop]:
 
     for params in ParameterGrid(search_space):
-        params["eval_freq"] = 10
+        # params["eval_freq"] = 10
         launch_leomed_jobs(which_dataset='polymnist', params=params)
