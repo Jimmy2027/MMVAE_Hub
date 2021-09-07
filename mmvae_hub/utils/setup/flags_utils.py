@@ -46,7 +46,7 @@ class BaseFlagsSetup:
             flags.save_figure = True
 
         if not hasattr(flags, 'experiment_uid'):
-            experiment_uid = get_experiment_uid(flags.exp_str_prefix, flgas.method)
+            experiment_uid = get_experiment_uid(flags.exp_str_prefix, flags.method)
             flags.experiment_uid = experiment_uid
 
         if not flags.dir_fid:
