@@ -39,6 +39,9 @@ class EncoderImg(nn.Module):
             return self.style_mu(h), self.style_logvar(h), self.class_mu(h), \
                    self.class_logvar(h)
         else:
+            # temp
+            class_mu = self.class_mu(h)
+            assert not class_mu.isnan().all()
             return None, None, self.class_mu(h), self.class_logvar(h)
 
 

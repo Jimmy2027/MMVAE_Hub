@@ -1,7 +1,8 @@
 import math
 
 import torch.nn.functional as F
-
+# from mmvae_hub.networks.GfMVaes import MopGfM
+#
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
 from mmvae_hub.utils.dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
@@ -217,7 +218,7 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
             klds[mod_str] = log_mean_exp(kl_div).sum()
 
         total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
-        print(total_loss)
+
         # joint_div average of all subset divs
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
         # normalize with the number of samples
