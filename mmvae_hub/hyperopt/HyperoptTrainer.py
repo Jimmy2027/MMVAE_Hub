@@ -51,9 +51,14 @@ class HyperoptTrainer:
         # do this to store values such that they can be retrieved in the database
         # self.flags.str_experiment = trial.suggest_categorical('exp_uid', [self.flags.str_experiment])
 
-        self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-3, log=True)
-        self.flags.class_dim = trial.suggest_categorical("class_dim", [256, 512, 640, 1280])
-        self.flags.beta = trial.suggest_float("max_beta", 1.0, 2.5)
+        # self.flags.initial_learning_rate = trial.suggest_float("initial_learning_rate", 1e-5, 1e-3, log=True)
+        # self.flags.class_dim = trial.suggest_categorical("class_dim", [256, 512, 640, 1280])
+        # self.flags.beta = trial.suggest_float("max_beta", 1.0, 2.5)
+
+        self.flags.initial_learning_rate = 0.0005
+        self.flags.class_dim = 640
+        self.flags.beta = 2.0
+
         if method in ['mopgfm', 'mogfm']:
             self.flags.coupling_dim = trial.suggest_categorical("coupling_dim", [32, 64, 128, 256, 512, 640])
             self.flags.num_flows = trial.suggest_int("num_gfm_flows", low=1, high=20, step=2)
@@ -82,7 +87,7 @@ if __name__ == '__main__':
     method = 'mopgfm'
     flags = parser.parse_args()
 
-    study_name = f'hyperopt-{method}-missing_mod_random_score_newarchitecture'
+    study_name = f'hyperopt-{method}-coupling_dim-nbrflows'
 
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
