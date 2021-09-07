@@ -54,7 +54,7 @@ def upload_one(exp_path: Path):
 
         db.insert_dict(results)
 
-        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs']]
+        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs'] if len(mod_str.split('_')) == 1]
         dir_checkpoints = exp_dir / 'checkpoints'
         db.save_networks_to_db(
             dir_checkpoints=dir_checkpoints,
@@ -101,8 +101,8 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
-    # upload_one(Path('/Users/Hendrik/Documents/temp/Mimic_joint_elbo_2021_07_06_09_44_52_871882'))
-
+    # upload_one(Path('/Users/Hendrik/Desktop/polymnist_iwmopoe_2021_08_30_11_10_58_920798.zip'))
+    #
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
-        upload_all('/mnt/data/hendrik/leomed_results')
-        # upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+        # upload_all('/mnt/data/hendrik/mmvae_hub/experiments')
+        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')

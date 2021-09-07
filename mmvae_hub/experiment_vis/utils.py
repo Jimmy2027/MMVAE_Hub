@@ -334,7 +334,7 @@ def save_cond_gen(_id: str, save_path: Path, with_title: bool = True):
     # get style from random sampling
     random_styles = model.get_random_styles(1)
 
-    input_samples = {k:{} for k in range(len(test_samples))}
+    input_samples = {k: {} for k in range(len(test_samples))}
 
     # save input images
     for _, mod in mods.items():
@@ -463,7 +463,9 @@ def make_experiments_dataframe(experiments):
     """
     df = pd.DataFrame()
     for exp in experiments.find({}):
-        if exp['epoch_results'] is not None and exp['epoch_results']:
+        if 'epoch_results' not in exp:
+            print(f'Experiment {exp._id} has no experiment results. Please delete that document in the database.')
+        elif exp['epoch_results'] is not None and exp['epoch_results']:
             method = exp['flags']['method']
 
             max_epoch = max(int(epoch) for epoch in exp['epoch_results'])
@@ -575,7 +577,7 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
 
 
 if __name__ == '__main__':
-    # experiment_uid = 'polymnist_mogfm_2021_07_28_08_19_20_361917'
+    experiment_uid = 'polymnist_iwmoe_2021_08_20_22_57_45_366346'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/Mimic_mopgfm_2021_08_05_10_24_13_857815'), _id = experiment_uid)
@@ -588,5 +590,5 @@ if __name__ == '__main__':
     # df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_mogfm_2021_08_08_11_17_52_628153']:
+    for id in ['polymnist_iwmopoe_2021_08_23_16_40_35_951706']:
         upload_notebook_to_db(id)

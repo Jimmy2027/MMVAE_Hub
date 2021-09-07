@@ -5,6 +5,7 @@ from mmvae_hub.utils.setup.flags_utils import str2bool
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--dataset', type=str, help="Which dataset to use.")
+parser.add_argument('--experiment_uid', type=str, help="Unique identifier of experiment run.", default=None)
 parser.add_argument('--config_path', type=str, default=None, help="Path to the json config.")
 parser.add_argument('--leomed', type=str2bool, default=False,
                     help="If experiment is running on the leomed cluster, set this flag to True. This will make sure "

@@ -21,16 +21,36 @@ search_spaces = {
 
 search_spaces_1 = {
     'method': ['iwmogfm'],
-    "initial_learning_rate": [0.0009253348001968961],
+    "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
-    "max_beta": [1.5142062143401498],
+    "dataloader_workers": [16],
+    "max_beta": [2.0],
     "beta_warmup": [50],
-    "num_gfm_flows": [3],
-    "coupling_dim": [32],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [1],
-    "calc_nll": [False]
+    "end_epoch": [150],
+    "calc_nll": [False],
+    "K": [10],
+    "eval_freq": [10],
+}
+
+search_spaces_2 = {
+    'method': ['iwmopgfm'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [640],
+    "min_beta": [0],
+    "dataloader_workers": [16],
+    "max_beta": [2.0],
+    "beta_warmup": [50],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [150],
+    "calc_nll": [False],
+    "K": [10],
+    "eval_freq": [10],
 }
 
 sp_joint_elbo_article = {
@@ -39,9 +59,9 @@ sp_joint_elbo_article = {
     'max_beta': [2.5],
     "beta_warmup": [0],
     'class_dim': [512],
-    "num_mods": [5],
+    "num_mods": [3],
     "initial_learning_rate": [0.001],
-    "end_epoch": [300],
+    "end_epoch": [1],
 }
 
 search_space_sylvester = {
