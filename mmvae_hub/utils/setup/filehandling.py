@@ -13,10 +13,10 @@ def create_dir(dir_name):
     os.makedirs(dir_name)
 
 
-def get_experiment_uid(flags) -> str:
+def get_experiment_uid(exp_str_prefix: str, method: str) -> str:
     dateTimeObj = datetime.now()
     dateStr = dateTimeObj.strftime("%Y_%m_%d_%H_%M_%S_%f")
-    return flags.exp_str_prefix + '_' + flags.method + '_' + dateStr
+    return exp_str_prefix + '_' + method + '_' + dateStr
 
 
 def create_dir_structure_testing(exp):

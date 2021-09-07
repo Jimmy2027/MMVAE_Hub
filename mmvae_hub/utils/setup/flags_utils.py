@@ -45,8 +45,9 @@ class BaseFlagsSetup:
             # calc_prd needs saved figures
             flags.save_figure = True
 
-        experiment_uid = get_experiment_uid(flags)
-        flags.experiment_uid = experiment_uid
+        if not hasattr(flags, 'experiment_uid'):
+            experiment_uid = get_experiment_uid(flags.exp_str_prefix, flgas.method)
+            flags.experiment_uid = experiment_uid
 
         if not flags.dir_fid:
             flags.dir_fid = flags.dir_experiment
@@ -156,7 +157,8 @@ class BaseFlagsSetup:
 
         If flags_path is None, flags will be loaded from the db using the _id.
         """
-        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0), ('vocab_size', 2900)]
+        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0),
+                    ('vocab_size', 2900)]
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict or flags_path is None:
