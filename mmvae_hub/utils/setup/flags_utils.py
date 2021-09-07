@@ -45,7 +45,7 @@ class BaseFlagsSetup:
             # calc_prd needs saved figures
             flags.save_figure = True
 
-        if not hasattr(flags, 'experiment_uid'):
+        if not flags.experiment_uid:
             experiment_uid = get_experiment_uid(flags.exp_str_prefix, flags.method)
             flags.experiment_uid = experiment_uid
 
