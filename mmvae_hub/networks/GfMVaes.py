@@ -197,7 +197,7 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
             # kl_div = torch.nn.functional.kl_div(epss, subset_samples, reduce=False, log_target=True).mean(-1)
             epss = torch.where(epss.abs() <= 0.001, torch.tensor(0.01, device=self.flags.device), epss)
             # print(subset_samples.max(), subset_samples.min(), subset_samples.abs().min())
-            interm1 = ((subset_samples / epss) + 1e-4).abs()
+            interm1 = (subset_samples / epss).abs() + 1e-4
             print('interm1: ', interm1.min(), interm1.max())
             interm2 = torch.log(interm1)
             print('interm2: ', interm2.min(), interm2.max())
