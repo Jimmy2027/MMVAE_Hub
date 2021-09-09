@@ -93,23 +93,8 @@ class BaseTrainer:
             # backprop
             self.exp.optimizer.zero_grad()
             total_loss.backward()
-            # temp
-            for _, mod in model.modalities.items():
-                # torch.nn.utils.clip_grad_norm_(mod.encoder.parameters(), 5)
-                # with torch.no_grad():
-                #     for p in mod.encoder.parameters():
-                #         torch.nan_to_num_(p, nan=0,posinf=0, neginf=0)
-
-                print(max(p.grad.max() for p in mod.encoder.parameters()))
-                assert not sum(p.grad.isnan().all() for p in mod.encoder.parameters())
-
-            # temp
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
             self.exp.optimizer.step()
 
-            # temp
-            # for _, mod in model.modalities.items():
-            #     assert not sum(p.isnan().all() for p in mod.encoder.parameters())
             results = {**forward_results.__dict__, 'joint_divergence': joint_divergence}
 
             batch_results = {

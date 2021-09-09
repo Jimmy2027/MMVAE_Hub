@@ -121,7 +121,6 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
                                   torch.eye(self.flags.class_dim, device=self.flags.device)). \
             sample((self.K * batch_size,)).reshape((self.K, batch_size, self.flags.class_dim))
 
-        # temp
         transformed_enc_mods = {
             mod_key: self.flow(
                 torch.cat(tuple(self.reparam_with_eps(distr.latents_class, epss[k_idx]).unsqueeze(dim=0) for k_idx in
@@ -129,14 +128,6 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
                           dim=0).reshape((self.K * batch_size, self.flags.class_dim)))[
                 0] for mod_key, distr in
             enc_mods.items()}
-
-        # transformed_enc_mods = {
-        #     mod_key: self.flow(
-        #         torch.cat(tuple(distr.latents_class.reparameterize().unsqueeze(dim=0) for k_idx in
-        #                         range(self.K)),
-        #                   dim=0).reshape((self.K * batch_size, self.flags.class_dim)))[
-        #         0] for mod_key, distr in
-        #     enc_mods.items()}
 
         for s_key in batch_subsets:
             subset_zks = torch.Tensor().to(self.flags.device)
@@ -150,8 +141,6 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
 
             samples = samples
             subset_samples[s_key] = samples
-
-            # subset_embeddings[s_key] = samples.mean(dim=0)
 
         subset_samples = {k: samples.reshape((self.K, batch_size, self.flags.class_dim)) for k, samples in
                           subset_samples.items()}
@@ -185,54 +174,25 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
         klds = {}
         log_probs = {}
         for mod_str, subset_samples in subsets.items():
-            # kl_div = subset_sample * (log(subset_sample) - log(eps))
-            # subset_samples = subset_samples.flatten(start_dim=0, end_dim=1)
-            # kl_div = torch.where(subset_samples.round().type(torch.double) != float(0), (
-            #             subset_samples * torch.log(subset_samples / epss.flatten(start_dim=0, end_dim=1))).type(
-            #     torch.double), float(0)).sum(-1).reshape((self.flags.K, self.flags.batch_size))
-
-            # temp
-            # print((subset_samples == 0).sum())
-            # kl_div = torch.nn.functional.kl_div(subset_samples, subset_samples, reduce=False, log_target=True).mean(-1)
-            # kl_div = torch.nn.functional.kl_div(epss, subset_samples, reduce=False, log_target=True).mean(-1)
             epss = torch.where(epss.abs() <= 0.001, torch.tensor(0.01, device=self.flags.device), epss)
-            # print(subset_samples.max(), subset_samples.min(), subset_samples.abs().min())
-            interm1 = (subset_samples / epss).abs() + 1e-4
-            print('interm1: ', interm1.min(), interm1.max())
-            interm2 = torch.log(interm1)
-            print('interm2: ', interm2.min(), interm2.max())
-            kl_div = (subset_samples * interm2).mean(-1)
-            print('kl_div: ', kl_div.min(), kl_div.max())
-            # kl_div = torch.nn.functional.kl_div(subset_samples, subset_samples, reduce=False, log_target=True).mean(-1)
-            # kl_div = torch.nn.functional.kl_div(epss, subset_samples, reduction='batchmean', log_target=True).mean(-1)
-            # print('kl_div', kl_div.max(),kl_div.min() )
-            # temp
-            # assert kl_div.max() <= 10e5
-            # kl_div = torch.where(kl_div >= 10e5, torch.tensor(10.0, device=self.flags.device), kl_div)
+            kl_div = (subset_samples * torch.log((subset_samples / epss).abs() + 1e-4)).mean(-1)
 
-            # kl_div = torch.nn.functional.kl_div(epss, epss, reduce=False, log_target=True).sum(-1)
             lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
                      for out_mod_str, px_z in forward_results.rec_mods[mod_str].items()]
 
             lpx_z = torch.stack(lpx_z).sum(0)
-            # temp
+
             loss = lpx_z + self.flags.beta * kl_div
-            # loss = lpx_z + 0 * kl_div
-            # print(loss)
-            # loss = lpx_z + (self.flags.beta * kl_div) if self.flags.beta else lpx_z
+
             losses.append(loss)
             log_probs[mod_str] = lpx_z.mean()
-            try:
-                klds[mod_str] = self.flags.beta * log_mean_exp(kl_div).sum()
-            except:
-                klds[mod_str] = kl_div
 
-        # print('losses', losses)
+            klds[mod_str] = self.flags.beta * log_mean_exp(kl_div).sum()
+
         total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
-        # print(total_loss)
-        # print(total_loss)
-        # joint_div average of all subset divs
+
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+
         # normalize with the number of samples
         joint_div = joint_div.mean()
         return total_loss, joint_div, log_probs, klds
