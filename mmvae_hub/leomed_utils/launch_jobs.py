@@ -24,12 +24,12 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
 
     if which_dataset == 'polymnist':
         python_file = mmvae_hub_dir / 'polymnist/main_polymnist.py'
-        mem = 550 * params['num_mods']
+        mem = 600 * params['num_mods']
         if params['method'] == 'mogfm' or params['method'].startswith('iw'):
             num_hours = int(np.round((params['end_epoch'] * 10) / 60 * 0.5 * params['num_mods'])) or 1
         else:
             # 1 epochs needs approx. 2 minutes
-            num_hours = int(np.round((params['end_epoch'] * 2) / 60 * 0.5 * params['num_mods'])) or 1
+            num_hours = int(np.round((params['end_epoch'] * 2) / 60 * params['num_mods'])) or 1
         # 100 epochs take about 5G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
     elif which_dataset == 'mimic':
