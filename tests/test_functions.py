@@ -9,7 +9,7 @@ from mmvae_hub.utils.dataclasses.Dataclasses import *
 from tests.utils import set_me_up
 
 DATASET = 'polymnist'
-@pytest.mark.tox
+# @pytest.mark.tox
 def test_fuse_modalities_1():
     """
     With 3 experts and a batch size of 1, the mixture selection should select one of the experts randomly.
@@ -33,7 +33,7 @@ def test_fuse_modalities_1():
         assert torch.all(joint_zk == Tensor([[1., 1., 1.]]))
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 def test_fuse_modalities_2():
     """
     With 3 experts and a batch size of 3, the mixture selection should select each of the experts one time.
@@ -60,7 +60,7 @@ def test_fuse_modalities_2():
                                  [2., 2., 2.]]))
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 def test_fuse_modalities_3():
     """
     test that during the mixture selection, the batches don't get mixed up.
@@ -98,7 +98,7 @@ def test_fuse_modalities_3():
                                  [2., 2., 2.]]))
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 def test_fuse_modalities_4():
     """
     With 3 experts and a batch size of 3, the mixture selection should select each of the experts one time.
