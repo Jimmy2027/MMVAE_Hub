@@ -46,4 +46,4 @@ if __name__ == '__main__':
     config = json2dict(Path(get_config_path(dataset='mnistsvhntext')))
     download_zip_from_url(
         url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADM7Cs_QReijyo2kF8xzWqua/trained_classifiers/trained_clfs_mst?dl=1',
-        dest_folder=Path(config['dir_clf']))
+        dest_folder=Path(config['dir_clf']).expanduser())

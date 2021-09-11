@@ -266,4 +266,4 @@ if __name__ == '__main__':
     config = json2dict(Path(get_config_path(dataset='mnistsvhntext')))
     download_zip_from_url(
         url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADMhr3EluBXJyZnV1_lYntTa/data_mnistsvhntext.zip?dl=1',
-        dest_folder=Path(config['dir_data']))
+        dest_folder=Path(config['dir_data']).expanduser())
