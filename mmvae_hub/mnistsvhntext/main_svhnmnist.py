@@ -1,46 +1,34 @@
-import sys
-import os
 import json
+import os
 
-import torch
+from norby.utils import maybe_norby
 
-from run_epochs import run_epochs
-
-from mmvae_hub.utils.setup.filehandling import create_dir_structure
-from mmvae_hub.utils.setup.filehandling import create_dir_structure_testing
-from mmvae_hub.mnistsvhntext.flags import parser
+from mmvae_hub import log
+from mmvae_hub.leomed_utils.boilerplate import compress_experiment_run_dir
 from mmvae_hub.mnistsvhntext.experiment import MNISTSVHNText
+from mmvae_hub.mnistsvhntext.mnistsvhntextTrainer import mnistsvhnTrainer
+from mmvae_hub.mnistsvhntext.flags import mnistsvhntextFlagsSetup, parser
+from mmvae_hub.utils.setup.flags_utils import get_config_path
+
+DATASET = 'mnistsvhntext'
 
 if __name__ == '__main__':
-    FLAGS = parser.parse_args()
-    use_cuda = torch.cuda.is_available();
-    FLAGS.device = torch.device('cuda' if use_cuda else 'cpu');
 
-    if FLAGS.method == 'poe':
-        FLAGS.modality_poe=True;
-    elif FLAGS.method == 'moe':
-        FLAGS.modality_moe=True;
-    elif FLAGS.method == 'jsd':
-        FLAGS.modality_jsd=True;
-    elif FLAGS.method == 'joint_elbo':
-        FLAGS.joint_elbo=True;
-    else:
-        print('method implemented...exit!')
-        sys.exit();
-    print(FLAGS.modality_poe)
-    print(FLAGS.modality_moe)
-    print(FLAGS.modality_jsd)
-    print(FLAGS.joint_elbo)
+    flags = parser.parse_args()
+    flags_setup = mnistsvhntextFlagsSetup(get_config_path(dataset=DATASET, flags=flags))
+    flags = flags_setup.setup(flags, additional_args={'dataset': DATASET})
 
-    FLAGS.alpha_modalities = [FLAGS.div_weight_uniform_content, FLAGS.div_weight_m1_content,
-                              FLAGS.div_weight_m2_content, FLAGS.div_weight_m3_content]
+    with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
+                     f'Experiment {flags.experiment_uid} finished.'):
 
-    FLAGS = create_dir_structure(FLAGS)
-    alphabet_path = os.path.join(os.getcwd(), 'alphabet.json');
-    with open(alphabet_path) as alphabet_file:
-        alphabet = str(''.join(json.load(alphabet_file)))
-    mst = MNISTSVHNText(FLAGS, alphabet);
-    create_dir_structure_testing(mst);
-    mst.set_optimizer();
 
-    run_epochs(mst);
+        mst = MNISTSVHNText(flags)
+
+        mst.set_optimizer()
+        trainer = mnistsvhnTrainer(mst)
+        trainer.run_epochs()
+
+    log.info('Done.')
+    # move zipped experiment_dir_run in TMPDIR to experiment_dir
+    if flags.leomed:
+        compress_experiment_run_dir(flags)

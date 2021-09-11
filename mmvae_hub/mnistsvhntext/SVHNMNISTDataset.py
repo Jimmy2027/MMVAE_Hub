@@ -1,22 +1,18 @@
+from pathlib import Path
 
-import sys
-import random
-
-import torch
-import torch.utils.data as data
-
-import warnings
-from PIL import Image
+from modun.download_utils import download_zip_from_url
+import gzip
 import os
 import os.path
-import gzip
+import sys
+import warnings
+
 import numpy as np
 import torch
-import codecs
+import torch.utils.data as data
+from PIL import Image
 
-from mmvae_hub.utils.text import one_hot_encode
 from mmvae_hub.utils.text import create_text_from_label_mnist
-from mmvae_hub.utils.text import char2Index
 
 digit_text_german = ['null', 'eins', 'zwei', 'drei', 'vier', 'fuenf', 'sechs', 'sieben', 'acht', 'neun'];
 digit_text_english = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
@@ -118,7 +114,7 @@ class SVHNMNIST(VisionDataset):
         warnings.warn("test_data has been renamed data")
         return self.data_mnist
 
-    def __init__(self, flags,  alphabet, train=True, transform=None, target_transform=None):
+    def __init__(self, flags, alphabet, train=True, transform=None, target_transform=None):
         super(SVHNMNIST, self).__init__(flags.dir_data)
         self.flags = flags;
         self.dataset = 'MNIST_SVHN';
@@ -130,14 +126,17 @@ class SVHNMNIST(VisionDataset):
         self.train = train  # training set or test set
         self.alphabet = alphabet;
 
-        self.dir_svhn = os.path.join(self.root, self.dataset_svhn);
+        self.dir_svhn = os.path.join(self.root, self.dataset_svhn)
+        self.dir_mnist = os.path.join(self.root, self.dataset_mnist)
         print(self.dir_svhn)
 
         if not self._check_exists_mnist():
-            raise RuntimeError('Dataset MNIST not found.')
-        if not self._check_exists_svhn():
-            raise RuntimeError('Dataset SVHN not found.')
-
+            download_zip_from_url(
+                url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADMhr3EluBXJyZnV1_lYntTa/data_mnistsvhntext.zip?dl=1',
+                dest_folder=Path(self.dir_mnist).parent.parent)
+            assert self._check_exists_mnist(), 'Dataset MNIST not found.'
+        # if not self._check_exists_svhn():
+        #     raise RuntimeError('Dataset SVHN not found.')
 
         if self.train:
             id_file_svhn = self.training_file_svhn_idx;
@@ -239,10 +238,8 @@ class SVHNMNIST(VisionDataset):
         return {_class: i for i, _class in enumerate(self.classes)}
 
     def _check_exists_mnist(self):
-        return (os.path.exists(os.path.join(self.processed_folder,
-                                            self.training_file_mnist)) and
-                os.path.exists(os.path.join(self.processed_folder,
-                                            self.test_file_mnist)))
+        return (Path(self.processed_folder) / self.training_file_mnist).exists() and (
+                    Path(self.processed_folder) / self.test_file_mnist).exists()
 
     def _check_exists_svhn(self):
         return (os.path.exists(os.path.join(self.dir_svhn,
