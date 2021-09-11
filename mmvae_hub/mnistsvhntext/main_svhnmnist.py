@@ -1,13 +1,10 @@
-import json
-import os
-
 from norby.utils import maybe_norby
 
 from mmvae_hub import log
 from mmvae_hub.leomed_utils.boilerplate import compress_experiment_run_dir
 from mmvae_hub.mnistsvhntext.experiment import MNISTSVHNText
-from mmvae_hub.mnistsvhntext.mnistsvhntextTrainer import mnistsvhnTrainer
 from mmvae_hub.mnistsvhntext.flags import mnistsvhntextFlagsSetup, parser
+from mmvae_hub.mnistsvhntext.mnistsvhntextTrainer import mnistsvhnTrainer
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 DATASET = 'mnistsvhntext'
@@ -20,7 +17,6 @@ if __name__ == '__main__':
 
     with maybe_norby(flags.norby, f'Starting Experiment {flags.experiment_uid}.',
                      f'Experiment {flags.experiment_uid} finished.'):
-
 
         mst = MNISTSVHNText(flags)
 

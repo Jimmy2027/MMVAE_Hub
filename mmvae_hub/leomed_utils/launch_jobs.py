@@ -32,6 +32,7 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
             num_hours = int(np.round((params['end_epoch'] * 2) / 60 * params['num_mods'])) or 1
         # 100 epochs take about 5G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
+
     elif which_dataset == 'mimic':
         python_file = mmvae_hub_dir / 'mimic/main_mimic.py'
         # 1 epochs needs approx. 8 minutes
@@ -39,6 +40,18 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         mem = 2500
         # 100 epochs take about 10G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 10) / n_cores))
+
+    elif which_dataset == 'mnistsvhntext':
+        python_file = mmvae_hub_dir / 'mimic/main_mimic.py'
+
+        mem = 700 * params['num_mods']
+        if params['method'] == 'mogfm' or params['method'].startswith('iw'):
+            num_hours = int(np.round((params['end_epoch'] * 10) / 60 * 0.5 * params['num_mods'])) or 1
+        else:
+            # 1 epochs needs approx. 2 minutes
+            num_hours = int(np.round((params['end_epoch'] * 2) / 60 * params['num_mods'])) or 1
+        # 100 epochs take about 5G of space
+        scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
 
     command = f'bsub -n {n_cores} -W {num_hours}:00 -R "rusage[mem={mem},ngpus_excl_p={params["n_gpus"]},scratch={scratch_space}]" ' \
               f'-R "select[gpu_mtotal0>={params["gpu_mem"] * params["n_gpus"]}]" ' \

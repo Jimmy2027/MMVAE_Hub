@@ -6,7 +6,7 @@ from mmvae_hub.base.BaseFlags import parser as parser
 
 # DATASET NAME
 
-parser.add_argument('--exp_str_prefix', type=str, default='MST', help="prefix of the experiment directory.")
+parser.add_argument('--exp_str_prefix', type=str, default='mnistsvhntext', help="prefix of the experiment directory.")
 # DATA DEPENDENT
 # to be set by experiments themselves
 parser.add_argument('--style_m1_dim', type=int, default=0, help="dimension of varying factor latent space")
