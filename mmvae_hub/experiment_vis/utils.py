@@ -319,11 +319,11 @@ def plot_betas(logs_dict: dict) -> None:
     plt.show()
 
 
-def save_cond_gen(_id: str, save_path: Path, with_title: bool = True):
+def save_cond_gen(save_path: Path, experiment_dir: Path = None, _id: str = None, with_title: bool = True):
     """
     Save examples of the cond gen to save_path.
     """
-    exp = load_experiment(_id=_id)
+    exp = load_experiment(_id=_id, experiment_dir=experiment_dir)
     exp.set_eval_mode()
     model = exp.mm_vae
     subsets = exp.subsets
