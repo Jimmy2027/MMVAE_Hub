@@ -209,7 +209,7 @@ def log_joint_estimate(flags, n_samples, likelihoods, targets, styles, content, 
                                    d_shape[-1])
         lhood = likelihoods[key]
         batch_d = torch.nn.functional.one_hot(batch_d.to(torch.int64),
-                                              num_classes=flags.vocab_size) if key == 'text' else batch_d
+                                              num_classes=flags.vocab_size) if key == 'mimic_text' else batch_d
         log_p_x_given_z_2d = lhood.log_prob(batch_d).view(batch_size * n_samples, -1).sum(dim=1)
         log_px_zs[k] = log_p_x_given_z_2d
 
