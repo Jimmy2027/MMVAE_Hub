@@ -2,7 +2,7 @@
   "dir_data": "/mnt/data/hendrik/polymnist",
   "dir_clf": "/mnt/data/hendrik/polymnist/trained_classifiers",
   "dir_experiment": "/mnt/data/hendrik/mmvae_hub/experiments",
-  "method": "joint_elbo",
+  "method": "mopoe",
   "norby": true,
   "use_db": true,
   "dataloader_workers": 16,
