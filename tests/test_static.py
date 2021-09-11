@@ -11,7 +11,7 @@ from mmvae_hub.utils.utils import json2dict, write_to_jsonfile
 from tests.utils import set_me_up
 
 
-@pytest.mark.tox
+# @pytest.mark.tox
 @pytest.mark.parametrize("method", ['moe', 'joint_elbo', 'poe', 'planar_mixture', 'pfom'])
 def test_static_results_1mod(method: str, update_static_results=False):
     """
