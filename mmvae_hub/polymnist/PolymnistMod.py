@@ -21,10 +21,6 @@ class PolymnistMod(ModalityIMG):
         self.encoder = EncoderImg(flags).to(flags.device)
         self.decoder = DecoderImg(flags).to(flags.device)
 
-        self.pz = dist.Laplace  # prior
-        self.px_z = dist.Laplace  # likelihood
-        self.qz_x = dist.Laplace  # posterior
-
         self.likelihood = get_likelihood(self.likelihood_name)
         self.rec_weight = 1.0
         # self.transform = transforms.Compose([transforms.ToTensor()])
