@@ -94,13 +94,14 @@ iwmogfm = {
     'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [2., 2.5],
-    "beta_warmup": [0],
+    "max_beta": [5, 10, 20],
+    "beta_warmup": [50],
     "num_mods": [3],
     "end_epoch": [150],
     "calc_nll": [False],
     "K": [10],
     "eval_freq": [10],
+    "num_gfm_flows": [3],
     'gpu_mem': [10000],
 }
 
