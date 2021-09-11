@@ -42,7 +42,7 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 10) / n_cores))
 
     elif which_dataset == 'mnistsvhntext':
-        python_file = mmvae_hub_dir / 'mimic/main_svhnmnist.py'
+        python_file = mmvae_hub_dir / 'mnistsvhntext/main_svhnmnist.py'
 
         mem = 700 * params['num_mods']
         if params['method'] == 'mogfm' or params['method'].startswith('iw'):
