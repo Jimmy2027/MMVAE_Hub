@@ -35,6 +35,16 @@ sp_mopoe = {
     "end_epoch": [300],
 }
 
+sp_mopoe_mnistsvhntext = {
+    'n_gpus': [1],
+    'method': ['mopoe'],
+    'max_beta': [2.],
+    'class_dim': [1280],
+    "beta_warmup": [50],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [300],
+}
+
 sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
