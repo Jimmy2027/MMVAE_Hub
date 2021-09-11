@@ -33,7 +33,7 @@ search_spaces_1 = {
     "end_epoch": [150],
     "calc_nll": [False],
     "K": [10],
-    "eval_freq": [10],
+    "eval_freq": [1],
 }
 
 search_spaces_2 = {

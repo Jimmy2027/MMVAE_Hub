@@ -19,7 +19,7 @@ from mmvae_hub.utils.utils import dict_to_device
 class PolymnistExperiment(BaseExperiment):
     def __init__(self, flags):
         super(PolymnistExperiment, self).__init__(flags)
-        self.flags = flags
+
         self.labels = ['digit']
         # self.name = flags.name
         self.dataset_name = 'polymnist'
