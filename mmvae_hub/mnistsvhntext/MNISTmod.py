@@ -1,6 +1,10 @@
 import os
+from pathlib import Path
 
 import torch
+from mmvae_hub.utils.setup.flags_utils import get_config_path
+from modun.file_io import json2dict
+
 from mmvae_hub.mnistsvhntext.networks.ConvNetworkImgClfMNIST import ClfImg
 from modun.download_utils import download_zip_from_url
 
@@ -36,3 +40,10 @@ class MNIST(PolymnistMod):
                            map_location=self.flags.device))
 
             return model_clf.to(self.flags.device)
+
+
+if __name__ == '__main__':
+    config = json2dict(Path(get_config_path(dataset='mnistsvhntext')))
+    download_zip_from_url(
+        url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADM7Cs_QReijyo2kF8xzWqua/trained_classifiers/trained_clfs_mst?dl=1',
+        dest_folder=config['dir_clf'])

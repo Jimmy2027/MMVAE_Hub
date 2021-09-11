@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 from modun.download_utils import download_zip_from_url
 import gzip
 import os
@@ -11,6 +12,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 from PIL import Image
+from modun.file_io import json2dict
 
 from mmvae_hub.utils.text import create_text_from_label_mnist
 
@@ -239,7 +241,7 @@ class SVHNMNIST(VisionDataset):
 
     def _check_exists_mnist(self):
         return (Path(self.processed_folder) / self.training_file_mnist).exists() and (
-                    Path(self.processed_folder) / self.test_file_mnist).exists()
+                Path(self.processed_folder) / self.test_file_mnist).exists()
 
     def _check_exists_svhn(self):
         return (os.path.exists(os.path.join(self.dir_svhn,
@@ -258,3 +260,10 @@ class SVHNMNIST(VisionDataset):
 
     def extra_repr(self):
         return "Split: {}".format("Train" if self.train is True else "Test")
+
+
+if __name__ == '__main__':
+    config = json2dict(Path(get_config_path(dataset='mnistsvhntext')))
+    download_zip_from_url(
+        url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADMhr3EluBXJyZnV1_lYntTa/data_mnistsvhntext.zip?dl=1',
+        dest_folder=Path(config['dir_data']))
