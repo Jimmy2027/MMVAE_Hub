@@ -8,7 +8,7 @@ from mmvae_hub.networks.utils.mixture_component_selection import mixture_compone
 from mmvae_hub.utils.dataclasses.Dataclasses import *
 from tests.utils import set_me_up
 
-
+DATASET = 'polymnist'
 @pytest.mark.tox
 def test_fuse_modalities_1():
     """
@@ -20,7 +20,7 @@ def test_fuse_modalities_1():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False})
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -44,7 +44,7 @@ def test_fuse_modalities_2():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False})
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -80,7 +80,7 @@ def test_fuse_modalities_3():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False})
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -109,7 +109,7 @@ def test_fuse_modalities_4():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='moe',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False})
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
 
         model: MOEMMVae = mst.mm_vae
 
