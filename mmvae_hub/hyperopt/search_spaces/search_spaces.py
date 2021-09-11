@@ -24,16 +24,27 @@ sp_pgfm = {
     "coupling_dim": [32],
 }
 
+sp_mopoe = {
+    'n_gpus': [1],
+    'method': ['mopoe'],
+    'max_beta': [1.],
+    'class_dim': [1280],
+    "beta_warmup": [50],
+    "num_mods": [3],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [300],
+}
+
 sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [512],
+    'class_dim': [1280],
     "min_beta": [0],
-    "max_beta": [2.5],
+    "max_beta": [1.],
     "beta_warmup": [50],
-    "num_gfm_flows": [1, 3, 6],
-    "coupling_dim": [640],
+    "num_gfm_flows": [1],
+    "coupling_dim": [128],
     "num_mods": [3],
     "end_epoch": [300],
 }
@@ -125,17 +136,6 @@ sp_gfm = {
     # "initial_learning_rate": [9e-05],
     "end_epoch": [150],
     "coupling_dim": [512],
-}
-
-sp_mopoe = {
-    'n_gpus': [1],
-    'method': ['mopoe'],
-    'max_beta': [2.5],
-    'class_dim': [512],
-    "beta_warmup": [0],
-    "num_mods": [3],
-    "initial_learning_rate": [0.0005],
-    "end_epoch": [300],
 }
 
 sp_joint_elbo_mimic = {
