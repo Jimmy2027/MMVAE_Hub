@@ -2,7 +2,6 @@ language: python
 cache: pip
 python: "3.9"
 install:
-  - pip install git+https://github.com/VLL-HD/FrEIA.git
   - pip install tox
 script:
   - tox
