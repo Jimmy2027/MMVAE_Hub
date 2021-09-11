@@ -73,7 +73,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
                                        num_imp_samples,
                                        gen[mod.name],
                                        torch.nn.functional.one_hot(batch[mod.name].to(torch.int64),
-                                                                   num_classes=flags.vocab_size) if mod.name == 'text' else
+                                                                   num_classes=flags.vocab_size) if mod.name == 'mimic_text' else
                                        batch[mod.name],
                                        style_mod,
                                        l_lin_rep_content)

@@ -25,7 +25,7 @@ def train_clf_lr_all_subsets(exp):
 
     training_steps = exp.flags.steps_per_training_epoch
 
-    all_labels, data_train = get_lr_training_data(args, exp, mm_vae, subsets, train_loader, training_steps)
+    all_labels, data_train = get_lr_training_data(args, exp, mm_vae, subsets, train_loader, exp.flags.num_training_samples_lr)
 
     # get random labels such that it contains both classes
     # labels, rand_ind_train = get_random_labels(all_labels.shape[0], n_train_samples, all_labels)
@@ -48,18 +48,20 @@ def train_clf_lr_all_subsets(exp):
     return lr_results_q0, lr_results_zk
 
 
-def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, training_steps):
+def get_lr_training_data(args, exp, mm_vae, subsets: List[str], train_loader, num_training_samples_lr):
     """
     Get the latent embedding as the training data for the linear classifiers.
     """
     data_train = None
     all_labels = torch.Tensor()
-    log.info(f"Creating {training_steps} batches of the latent representations for the classifier.")
+    log.info(f"Creating {num_training_samples_lr} batches of the latent representations for the classifier.")
     for it, (batch_d, batch_l) in tqdm(enumerate(train_loader), total=len(train_loader),
                                        postfix='creating_train_lr'):
         """
         Constructs the training set (labels and inferred subsets) for the classifier training.
         """
+        if it >= 1000 and it >= num_training_samples_lr:
+            break
         batch_d = {k: v.to(exp.flags.device) for k, v in batch_d.items()}
         _, joint_latent = mm_vae.module.inference(batch_d) if args.distributed else mm_vae.inference(batch_d)
         joint_latent: Union[JointLatents, JointLatentsFoEM, JointLatentsFoJ, JointLatentsFoS]

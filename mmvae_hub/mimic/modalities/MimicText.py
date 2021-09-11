@@ -19,7 +19,7 @@ from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
 
 class MimicText(BaseModality):
     def __init__(self, flags, labels: Iterable[str], rec_weight, plot_img_size, wordidx2word):
-        super().__init__(flags, name='text')
+        super().__init__(flags, name='mimic_text')
         self.labels = labels
         self.likelihood_name = 'categorical'
         self.len_sequence = flags.len_sequence
