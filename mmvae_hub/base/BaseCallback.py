@@ -19,7 +19,9 @@ class BaseCallback:
 
         # set beta_warmup coefficient
         self.beta = min(
-            [max([self.flags.min_beta, (epoch * 1.) / max([self.flags.beta_warmup, 1.])]), self.flags.max_beta])
+            [max([self.flags.min_beta,
+                  (epoch * (self.flags.max_beta - self.flags.min_beta)) / max([self.flags.beta_warmup, 1.])]),
+             self.flags.max_beta])
         log.info(f'beta = {self.beta}')
 
         self.maybe_send_to_db(train_results=train_results, test_results=test_results, epoch=epoch, beta=self.beta)
