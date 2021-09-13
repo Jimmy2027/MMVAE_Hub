@@ -88,7 +88,7 @@ if __name__ == '__main__':
     method = 'mopgfm'
     flags = parser.parse_args()
 
-    study_name = f'hyperopt-{method}-coupling_dim-nbrflows'
+    study_name = f'hyperopt-{method}'
 
     # storage_sqlite = optuna.storages.RDBStorage("sqlite:///hyperopt.db", heartbeat_interval=1)
     # study = optuna.create_study(direction="maximize", storage=storage_sqlite,
