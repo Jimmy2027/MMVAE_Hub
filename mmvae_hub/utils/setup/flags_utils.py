@@ -158,7 +158,7 @@ class BaseFlagsSetup:
         If flags_path is None, flags will be loaded from the db using the _id.
         """
         defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0),
-                    ('vocab_size', 2900)]
+                    ('vocab_size', 2900), ('nbr_coupling_block_layers', 0)]
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict or flags_path is None:
