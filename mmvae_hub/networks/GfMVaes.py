@@ -96,7 +96,8 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         iwMMVAE.__init__(self, flags)
         self.mm_div = GfMMMDiv(flags=flags, K=self.K)
-        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim,
+                               nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
 
     def reparam_with_eps(self, distr: Distr, eps: Tensor):
         """Apply the reparameterization trick on distr with given epsilon"""
@@ -519,8 +520,10 @@ class PGfMVAE(BaseMMVAE):
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = PGfMMMDiv()
-        self.flow_mus = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim, nbr_coupling_block_layers= flags.nbr_coupling_block_layers)
-        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim, nbr_coupling_block_layers= flags.nbr_coupling_block_layers)
+        self.flow_mus = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim,
+                                   nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
+        self.flow_logvars = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim,
+                                       nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatents:
