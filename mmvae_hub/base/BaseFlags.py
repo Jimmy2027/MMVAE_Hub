@@ -127,6 +127,8 @@ parser.add_argument('--coupling_dim', type=int, default=512, help="Dimensions of
 # Generalized f-Means
 parser.add_argument('--num_gfm_flows', type=int, default=4,
                     help="Number of flow layers that are used to implement the GfM function.")
+parser.add_argument('--nbr_coupling_block_layers', type=int, default=2,
+                    help="Number of layers used in a coupling block, additional to the input and output layer.")
 
 # importance sampling
 parser.add_argument('--K', type=int, default=10,

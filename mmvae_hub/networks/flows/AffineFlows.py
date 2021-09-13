@@ -11,8 +11,9 @@ from mmvae_hub.utils.dataclasses.Dataclasses import PlanarFlowParams
 class AffineFlow(nn.Module):
     """Affine coupling Flow"""
 
-    def __init__(self, class_dim, num_flows, coupling_dim):
+    def __init__(self, class_dim, num_flows, coupling_dim, nbr_coupling_block_layers:int):
         super().__init__()
+        self.nbr_coupling_block_layers = nbr_coupling_block_layers
         self.num_flows = num_flows
         self.coupling_dim = coupling_dim
         if num_flows > 0:
@@ -36,5 +37,8 @@ class AffineFlow(nn.Module):
         return PlanarFlowParams(**{k: None for k in ['u', 'w', 'b']})
 
     def subnet_fc(self, dims_in, dims_out):
-        return nn.Sequential(nn.Linear(dims_in, self.coupling_dim), nn.ReLU(),
-                             nn.Linear(self.coupling_dim, dims_out))
+        block = [nn.Linear(dims_in, self.coupling_dim), nn.ReLU()]
+        for _ in range(self.nbr_coupling_block_layers):
+            block.extend([nn.Linear(self.coupling_dim, self.coupling_dim), nn.ReLU()])
+        block.append(nn.Linear(self.coupling_dim, dims_out))
+        return nn.Sequential(*block)
