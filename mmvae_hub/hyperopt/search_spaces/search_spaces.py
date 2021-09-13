@@ -49,14 +49,15 @@ sp_mopgfm = {
     'n_gpus': [1],
     'method': ['mopgfm'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [1280],
+    'class_dim': [1280, 640],
     "min_beta": [0],
-    "max_beta": [1.],
+    "max_beta": [1., 2., 4],
     "beta_warmup": [50],
-    "num_gfm_flows": [1],
-    "coupling_dim": [128],
+    "num_gfm_flows": [1, 3, 10],
+    "coupling_dim": [128, 512, 640],
+    "nbr_coupling_block_layers": [0, 2, 4, 6],
     "num_mods": [3],
-    "end_epoch": [300],
+    "end_epoch": [500],
 }
 
 iwmoe = {
