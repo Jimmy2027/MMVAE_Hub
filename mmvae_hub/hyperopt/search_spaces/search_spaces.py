@@ -92,17 +92,17 @@ iwmopoe = {
 iwmogfm = {
     'method': ['iwmogfm'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [640],
+    'class_dim': [128],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [5, 10, 20],
-    "beta_warmup": [50],
+    "max_beta": [2, 5],
+    "beta_warmup": [0],
     "num_mods": [3],
     "end_epoch": [150],
     "calc_nll": [False],
-    "K": [10],
+    "K": [10, 50],
     "eval_freq": [10],
-    "num_gfm_flows": [3],
+    "num_gfm_flows": [1],
     'gpu_mem': [10000],
 }
 
