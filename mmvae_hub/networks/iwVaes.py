@@ -100,10 +100,11 @@ class iwMoE(iwMMVAE, MOEMMVae):
         log_probs = {}
         for mod_str, enc_mod in forward_results.enc_mods.items():
             subset = subsets[mod_str]
+            # sum(-1) is the sum over the class dim
             lpz = distr.Laplace(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
                                 scale=torch.ones(1, self.flags.class_dim, device=self.flags.device)).log_prob(
                 subset.zs).sum(-1)
-
+            # take the log mean exp over the modalities
             lqz_x = log_mean_exp(
                 torch.stack(
                     [subsets[mod].qz_x_tilde.log_prob(subset.zs).sum(-1) for mod in forward_results.enc_mods]))
@@ -111,7 +112,9 @@ class iwMoE(iwMMVAE, MOEMMVae):
             lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
                      for out_mod_str, px_z in forward_results.rec_mods[mod_str].items()]
 
+            # sum over modalities
             lpx_z = torch.stack(lpx_z).sum(0)
+
             kl_div = lpz - lqz_x
 
             loss = lpx_z + kl_div
