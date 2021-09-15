@@ -201,6 +201,7 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
         klds = {}
         log_probs = {}
         for mod_str, subset in subsets.items():
+            # sum over last dim
             lpz = distr.Laplace(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
                                 scale=torch.ones(1, self.flags.class_dim, device=self.flags.device)).log_prob(
                 subset.zs).sum(-1)
