@@ -175,18 +175,18 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
         klds = {}
         log_probs = {}
         for sub_str, subset_samples in subsets.items():
-            subset_samples = torch.where(subset_samples.abs() <= 1e-4, torch.tensor(1e-4, device=self.flags.device),
-                                         subset_samples)
+            epss = torch.where(epss.abs() <= 1e-4, torch.tensor(1e-4, device=self.flags.device), epss)
             # take mean over class dim
-            kl_div = (subset_samples * torch.log((epss / subset_samples).abs() + 1e-4)).mean(-1)
+            kl_div = (subset_samples * torch.log((subset_samples / epss).abs() + 1e-4)).sum(-1)
 
             lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
                      for out_mod_str, px_z in forward_results.rec_mods[sub_str].items()]
 
             # sum over #mods in subset
             lpx_z = torch.stack(lpx_z).sum(0)
-            # loss = -(lpx_z + lpz - lqz_x)
-            loss = lpx_z + self.flags.beta * kl_div
+
+            # loss = -(lpx_z - (lqz_x - lpz))
+            loss = lpx_z - self.flags.beta * kl_div
 
             losses.append(loss)
             log_probs[sub_str] = lpx_z.mean()
