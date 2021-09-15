@@ -101,7 +101,7 @@ iwmogfm = {
     "num_mods": [3],
     "end_epoch": [150],
     "calc_nll": [False],
-    "K": [10, 20, 50],
+    "K": [10],
     "eval_freq": [10],
     "num_gfm_flows": [1],
     'gpu_mem': [10000],
