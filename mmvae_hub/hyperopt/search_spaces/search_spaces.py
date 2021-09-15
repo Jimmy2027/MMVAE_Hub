@@ -53,12 +53,12 @@ sp_mopgfm = {
     "min_beta": [0],
     "max_beta": [1.],
     "beta_warmup": [50],
-    "num_gfm_flows": [5],
+    "num_gfm_flows": [1],
     "coupling_dim": [64],
-    "nbr_coupling_block_layers": [10],
+    "nbr_coupling_block_layers": [0, 5, 10, 20],
     "num_mods": [3],
-    "end_epoch": [500],
-    "eval_freq": [100]
+    "end_epoch": [150],
+    "eval_freq": [10]
 }
 
 iwmoe = {
