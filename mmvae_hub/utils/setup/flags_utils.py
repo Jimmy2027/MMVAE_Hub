@@ -150,6 +150,23 @@ class BaseFlagsSetup:
 
         return flags
 
+    @staticmethod
+    def get_defaults(flags, is_dict: bool):
+        """Add default values if they are not set in the flags for backwards compat."""
+        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0),
+                    ('vocab_size', 2900), ('nbr_coupling_block_layers', 0)]
+
+        if is_dict:
+            for k, v in defaults:
+                if k not in flags:
+                    flags[k] = v
+        else:
+            for k, v in defaults:
+                if not hasattr(flags, k):
+                    setattr(flags, k, v)
+
+        return flags
+
     def load_old_flags(self, flags_path: Path = None, _id: str = None, is_dict: bool = False, add_args: dict = None):
         """
         Load flags from old experiments, either from a directory or from the db.
@@ -157,8 +174,7 @@ class BaseFlagsSetup:
 
         If flags_path is None, flags will be loaded from the db using the _id.
         """
-        defaults = [('weighted_mixture', False), ('amortized_flow', False), ('coupling_dim', 512), ('beta_warmup', 0),
-                    ('vocab_size', 2900), ('nbr_coupling_block_layers', 0)]
+
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
 
         if is_dict or flags_path is None:
@@ -172,9 +188,7 @@ class BaseFlagsSetup:
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, True)
 
             # get defaults from newer parameters that might not be defined in old flags
-            for k, v in defaults:
-                if k not in flags:
-                    flags[k] = v
+            flags = self.get_defaults(flags,is_dict = True)
 
             if add_args is not None:
                 for k, v in add_args.items():
@@ -196,10 +210,7 @@ class BaseFlagsSetup:
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, False)
 
             # get defaults from newer parameters that might not be defined in old flags
-            for k, v in defaults:
-                if not hasattr(flags, k):
-                    setattr(flags, k, v)
-
+            flags = self.get_defaults(flags, is_dict=False)
             if add_args is not None:
                 for k, v in add_args.items():
                     setattr(flags, k, v)

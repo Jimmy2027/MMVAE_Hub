@@ -479,16 +479,17 @@ def make_experiments_dataframe(experiments):
             last_epoch_results = exp['epoch_results'][last_epoch]['test_results']
 
             if last_epoch_results:
+                # for backwards compatibility:
+                last_epoch_results, flags = bw_compat_epoch_results(last_epoch_results, method, exp['flags'])
+                flags = BaseFlagsSetup.get_defaults(flags, is_dict=True)
                 if 'gfm' in method and 'num_gfm_flows' in exp['flags']:
-                    exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_gfm_flows']}"
+                    flags['method'] = f"{flags['method']}_{flags['num_gfm_flows']}_{flags['nbr_coupling_block_layers']}"
                 elif 'gfm' in method or method not in [
                     'joint_elbo',
                     'poe',
                     'moe',
                 ]:
-                    exp['flags']['method'] = f"{exp['flags']['method']}_{exp['flags']['num_flows']}"
-                # for backwards compatibility:
-                last_epoch_results, flags = bw_compat_epoch_results(last_epoch_results, method, exp['flags'])
+                    flags['method'] = f"{flags['method']}_{flags['num_flows']}"
 
                 # if lr_eval and gen_eval, add results to df.
                 if (last_epoch_results['lr_eval_q0'] or last_epoch_results['lr_eval_zk']) \
@@ -581,14 +582,14 @@ if __name__ == '__main__':
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/Mimic_mopgfm_2021_08_05_10_24_13_857815'), _id = experiment_uid)
-    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    # experiment_dict = experiments_database.get_experiment_dict()
+    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    experiment_dict = experiments_database.get_experiment_dict()
     # plot_basic_batch_logs('train', experiment_dict)
     # plot_basic_batch_logs('test', experiment_dict)
     # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
-    # df = make_experiments_dataframe(experiments_database.connect())
+    df = make_experiments_dataframe(experiments_database.connect())
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['polymnist_iwmopoe_2021_08_23_16_40_35_951706']:
-        upload_notebook_to_db(id)
+    # for id in ['polymnist_iwmopoe_2021_08_23_16_40_35_951706']:
+    #     upload_notebook_to_db(id)
