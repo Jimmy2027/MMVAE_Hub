@@ -174,22 +174,27 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
         losses = []
         klds = {}
         log_probs = {}
-        for mod_str, subset_samples in subsets.items():
-            epss = torch.where(epss.abs() <= 0.001, torch.tensor(0.01, device=self.flags.device), epss)
+        for sub_str, subset_samples in subsets.items():
+            subset_samples = torch.where(subset_samples.abs() <= 1e-4, torch.tensor(1e-4, device=self.flags.device), subset_samples)
+            # take mean over class dim
             kl_div = (subset_samples * torch.log((subset_samples / epss).abs() + 1e-4)).mean(-1)
 
             lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
-                     for out_mod_str, px_z in forward_results.rec_mods[mod_str].items()]
+                     for out_mod_str, px_z in forward_results.rec_mods[sub_str].items()]
 
+            #sum over #mods in subset
             lpx_z = torch.stack(lpx_z).sum(0)
-
+            # loss = -(lpx_z + lpz - lqz_x)
             loss = lpx_z + self.flags.beta * kl_div
 
             losses.append(loss)
-            log_probs[mod_str] = lpx_z.mean()
+            log_probs[sub_str] = lpx_z.mean()
 
-            klds[mod_str] = self.flags.beta * log_mean_exp(kl_div).sum()
+            klds[sub_str] = self.flags.beta * log_mean_exp(kl_div).sum()
 
+        # concat over k samples (get k*number of subsets) as last dim
+        # take log_mean_exp over batch size
+        # sum over k*number of subsets
         total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
 
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
