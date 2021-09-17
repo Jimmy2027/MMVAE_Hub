@@ -55,9 +55,9 @@ sp_mopgfm = {
     "beta_warmup": [50],
     "num_gfm_flows": [1],
     "coupling_dim": [64],
-    "nbr_coupling_block_layers": [0, 5, 10, 20],
+    "nbr_coupling_block_layers": [1, 5],
     "num_mods": [3],
-    "end_epoch": [150],
+    "end_epoch": [1000],
     "eval_freq": [10]
 }
 

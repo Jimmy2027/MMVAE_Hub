@@ -26,14 +26,14 @@ search_spaces_1 = {
     "min_beta": [0],
     "dataloader_workers": [16],
     "max_beta": [2.0],
-    "beta_warmup": [50],
+    "beta_warmup": [0],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
     "num_mods": [3],
     "end_epoch": [150],
     "calc_nll": [False],
-    "K": [10],
-    "eval_freq": [1],
+    "K": [1],
+    "eval_freq": [10],
 }
 
 search_spaces_2 = {
