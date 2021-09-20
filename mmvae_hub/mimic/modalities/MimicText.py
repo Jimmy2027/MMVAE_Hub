@@ -19,7 +19,7 @@ from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
 
 class MimicText(BaseModality):
     def __init__(self, flags, labels: Iterable[str], rec_weight, plot_img_size, wordidx2word):
-        super().__init__(flags, name='mimic_text')
+        super().__init__(flags, name='text')
         self.labels = labels
         self.likelihood_name = 'categorical'
         self.len_sequence = flags.len_sequence
@@ -123,6 +123,10 @@ class MimicText(BaseModality):
         else:
             return transforms.ToTensor()(pil_img.resize((imgsize[1], imgsize[2]),
                                                         Image.ANTIALIAS).convert('L'))
+
+    def batch_text_to_onehot(self, batch_text, vocab_size: int):
+        return torch.nn.functional.one_hot(batch_text.to(torch.int64),
+                                           num_classes=vocab_size)
 
 
 class TextClf(nn.Module):

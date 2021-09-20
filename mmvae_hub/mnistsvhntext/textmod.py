@@ -87,3 +87,7 @@ class Text(BaseModality):
     def get_font(self):
         font_path = Path(__file__).parent.parent / 'modalities/text/FreeSerif.ttf'
         return ImageFont.truetype(str(font_path), 38)
+
+    def batch_text_to_onehot(self, batch_text, vocab_size: int):
+        """In the mnistsvhntext dataset the text is already in one hot format"""
+        return batch_text

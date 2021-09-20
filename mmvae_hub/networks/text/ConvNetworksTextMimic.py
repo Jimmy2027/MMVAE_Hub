@@ -25,10 +25,10 @@ class EncoderText(nn.Module):
         h_text = self.feature_extractor(x_text)
         if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
             mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_text)
-            return mu_style, logvar_style, mu_content, logvar_content, h_text
+            return mu_style, logvar_style, mu_content, logvar_content
         else:
             mu_content, logvar_content = self.feature_compressor(h_text)
-            return None, None, mu_content, logvar_content, h_text
+            return None, None, mu_content, logvar_content
 
 
 class DecoderText(nn.Module):

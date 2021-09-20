@@ -23,10 +23,10 @@ def test_run_epochs_polymnist(method: str):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
         calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm', 'planar_vae',
-                                       'sylvester_vae_noflow', 'iwmogfm'] else True
+                                       'sylvester_vae_noflow', 'iwmogfm', 'iwmogfm2'] else True
         # calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
-
+                                                                                    "K": 5
                                                                                     # 'num_mods': 1
                                                                                     # 'num_flows': 1
                                                                                     })
@@ -34,6 +34,8 @@ def test_run_epochs_polymnist(method: str):
         test_results = trainer.run_epochs()
 
 
+@pytest.mark.tox
+@pytest.mark.parametrize("method", ['mopoe'])
 def test_run_epochs_mimic(method: str):
     """
     Test if the main training loop runs.
@@ -60,9 +62,7 @@ def test_run_epochs_mnistsvhntext(method: str):
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
         calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
-        mst = set_me_up(tmpdirname, dataset='mnistsvhntext', method=method, attributes={'calc_nll': True,
-                                                                                        'use_clf': False,
-                                                                                        # 'calc_prd': True
+        mst = set_me_up(tmpdirname, dataset='mnistsvhntext', method=method, attributes={'calc_nll': True
                                                                                         })
         trainer = mnistsvhnTrainer(mst)
         test_results = trainer.run_epochs()
@@ -99,10 +99,10 @@ if __name__ == '__main__':
 
     start_time = time()
     # test_run_epochs_polymnist(method='afom')
-    # test_run_epochs_polymnist(method='pfom')
-    # test_run_epochs_polymnist(method='gfm')
-    # test_run_epochs_polymnist(method='gfmop')
-    test_run_epochs_polymnist(method='mopoe')
+    # test_run_epochs_polymnist(method='mopoe')
+    test_run_epochs_mimic(method='mopoe')
+    # test_run_epochs_polymnist(method='iwmogfm')
+    # test_run_epochs_polymnist(method='mogfm')
     # test_run_epochs_mnistsvhntext(method='mopoe')
     # test_run_epochs_polymnist(method='iwmopgfm')
     # test_run_epochs_polymnist(method='mopgfm')

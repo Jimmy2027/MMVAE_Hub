@@ -30,10 +30,10 @@ class EncoderImg(nn.Module):
         h_img = self.feature_extractor(x_img)
         if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
             mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_img)
-            return mu_style, logvar_style, mu_content, logvar_content, h_img
+            return mu_style, logvar_style, mu_content, logvar_content
         else:
             mu_content, logvar_content = self.feature_compressor(h_img)
-            return None, None, mu_content, logvar_content, h_img
+            return None, None, mu_content, logvar_content
 
 
 class DecoderImg(nn.Module):

@@ -155,7 +155,7 @@ def log_marginal_estimate(flags, n_samples, likelihood, image, style, content, d
     return torch.mean(log_p)
 
 
-def log_joint_estimate(flags, n_samples, likelihoods, targets, styles, content, dynamic_prior=None):
+def log_joint_estimate(mods, flags, n_samples, likelihoods, targets, styles, content, dynamic_prior=None):
     r"""Estimate log p(x,y).
     @param recon_image: torch.Tensor (batch size x # samples x 784)
                         reconstructed means on bernoulli
@@ -208,8 +208,7 @@ def log_joint_estimate(flags, n_samples, likelihoods, targets, styles, content, 
             batch_d = batch_d.view(batch_size * n_samples, d_shape[-3], d_shape[-2],
                                    d_shape[-1])
         lhood = likelihoods[key]
-        batch_d = torch.nn.functional.one_hot(batch_d.to(torch.int64),
-                                              num_classes=flags.vocab_size) if key == 'mimic_text' else batch_d
+        batch_d = mods[key].batch_text_to_onehot(batch_d, flags.vocab_size) if key == 'text' else batch_d
         log_p_x_given_z_2d = lhood.log_prob(batch_d).view(batch_size * n_samples, -1).sum(dim=1)
         log_px_zs[k] = log_p_x_given_z_2d
 

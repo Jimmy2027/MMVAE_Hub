@@ -297,7 +297,7 @@ class BaseMMVAE(ABC, nn.Module):
 
     def batch_to_device(self, batch):
         """Send the batch to device as Variable."""
-        return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
+        return {k: v.to(self.flags.device) for k, v in batch.items()}
 
     def save_networks(self, epoch: int):
         dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
