@@ -206,9 +206,11 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
                                 scale=torch.ones(1, self.flags.class_dim, device=self.flags.device)).log_prob(
                 subset.zs).sum(-1)
 
-            lqz_x = log_mean_exp(
-                torch.stack(
-                    [subset_.qz_x_tilde.log_prob(subset_.zs).sum(-1) for _, subset_ in subsets.items()]))
+            # lqz_x = log_mean_exp(
+            #     torch.stack(
+            #         [subset_.qz_x_tilde.log_prob(subset_.zs).sum(-1) for _, subset_ in subsets.items()]))
+
+            lqz_x = subset.qz_x_tilde.log_prob(subset.zs).sum(-1)
 
             lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
                      for out_mod_str, px_z in forward_results.rec_mods[mod_str].items()]

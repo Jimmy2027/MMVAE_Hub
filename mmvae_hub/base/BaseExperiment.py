@@ -12,8 +12,8 @@ from torch import optim, Tensor
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
-from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, MoGfMVAE_old, \
-    iwMoGfMVAE, iwmopgfm
+from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, \
+    iwMoGfMVAE, iwmopgfm, iwMoGfMVAE2
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
@@ -102,8 +102,6 @@ class BaseExperiment(ABC):
                 model = MoFoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'bmogfm':
             model = BMoGfMVAE(self, self.flags, self.modalities, self.subsets)
-        elif self.flags.method == 'mogfm_old':
-            model = MoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm':
             model = iwMoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmoe':
@@ -112,6 +110,8 @@ class BaseExperiment(ABC):
             model = iwMoPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmopgfm':
             model = iwmopgfm(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm2':
+            model = iwMoGfMVAE2(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

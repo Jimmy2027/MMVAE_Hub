@@ -5,6 +5,7 @@ from mmvae_hub.evaluation.divergence_measures.kl_div import calc_entropy_gauss, 
 from mmvae_hub.evaluation.divergence_measures.kl_div import calc_kl_divergence, calc_kl_divergence_flow
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.dataclasses.gfmDataclasses import JointLatentsMoGfM
 from mmvae_hub.utils.utils import reweight_weights
 
 
