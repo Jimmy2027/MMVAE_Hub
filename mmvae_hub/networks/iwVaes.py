@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
 from mmvae_hub.utils.dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
-
+import torch.distributions as distr
 
 def log_mean_exp(value, dim=0, keepdim=False):
     return torch.logsumexp(value, dim, keepdim=keepdim) - math.log(value.size(dim))
