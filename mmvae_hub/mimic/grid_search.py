@@ -6,20 +6,19 @@ from mmvae_hub.mimic.experiment import MimicExperiment
 from mmvae_hub.mimic.flags import MimicFlagsSetup
 from mmvae_hub.mimic.flags import parser
 from mmvae_hub.utils.setup.flags_utils import get_config_path
-search_spaces = {
-    # 'method': ['pfom'],
-    'method': ['fomfop'],
-    # 'method': ['joint_elbo'],
-    'class_dim': [256],
-    "beta": [1],
-    "num_flows": [5],
-    "num_mods": [3],
-    "end_epoch": [1],
 
+sp_mopoe_mimic = {
+    'method': ['iwmogfm'],
+    'beta': [2.],
+    'class_dim': [1280],
+    # "num_mods": [1],
+    # "num_flows": [5],
+    "initial_learning_rate": [5e-04],
+    "end_epoch": [150],
+    # "coupling_dim": [512],
     "weighted_mixture": [False],
     "amortized_flow": [False]
 }
-
 
 search_spaces_1 = {
     'mods': ['F_L_T'],
@@ -38,7 +37,7 @@ search_spaces_1 = {
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_1]:
+    for grid in [sp_mopoe_mimic]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

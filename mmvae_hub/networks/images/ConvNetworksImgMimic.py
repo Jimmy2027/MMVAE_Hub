@@ -51,5 +51,5 @@ class DecoderImg(nn.Module):
         img_feat_hat = self.feature_generator(z)
         img_feat_hat = img_feat_hat.view(img_feat_hat.size(0), img_feat_hat.size(1), 1, 1)
         img_hat = self.img_generator(img_feat_hat)
-        assert img_hat.mean()
+
         return img_hat, torch.tensor(0.75).to(z.device)

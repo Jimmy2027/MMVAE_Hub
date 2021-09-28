@@ -14,7 +14,7 @@ def get_missing_mod_scores_gen_eval(results: dict):
             split2 = split1[0].split('_')
             in_mods = split2[1:]
 
-            if out_mod not in in_mods or key == 'random':
+            if out_mod not in in_mods or key.startswith('random'):
                 yield score
 
 

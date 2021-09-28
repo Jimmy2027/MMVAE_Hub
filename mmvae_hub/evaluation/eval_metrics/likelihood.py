@@ -40,8 +40,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     c = {'mu': l_content_rep['mu'].view(n_total_samples, -1),
          'logvar': l_content_rep['logvar'].view(n_total_samples, -1),
          'z': l_content_rep['z'].view(n_total_samples, -1)}
-    l_lin_rep = {'content': c,
-                 'style': {}}
+    l_lin_rep = {'content': c, 'style': {}}
     for m_key in (l_style_rep.keys()):
         if flags.factorized_representation:
             s = {'mu': l_style_rep[mod.name]['mu'].view(n_total_samples, -1),
@@ -72,7 +71,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,
                                        gen[mod.name],
-                                       mod.batch_text_to_onehot(batch[mod.name], flags.vocab_size) if mod.name == 'text' else batch[mod.name],
+                                       mod.batch_text_to_onehot(batch[mod.name]) if mod.name == 'text' else batch[mod.name],
                                        style_mod,
                                        l_lin_rep_content)
         ll[mod.name] = ll_mod

@@ -135,12 +135,13 @@ def text_beta_warmup():
     """Verify the beta warmup function."""
     min_beta = 0
     max_beta = 10
+    beta_start_epoch = 50
     beta_warmup = 50
     epochs = [ep for ep in range(150)]
     betas = [
         min(
             [
-                max([min_beta, (epoch * (max_beta - min_beta)) / max([beta_warmup, 1.0])]),
+                max([min_beta, ((epoch - beta_start_epoch) * (max_beta - min_beta)) / max([beta_warmup, 1.0])]),
                 max_beta,
             ]
         )

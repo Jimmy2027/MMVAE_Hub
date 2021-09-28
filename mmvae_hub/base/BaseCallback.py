@@ -20,7 +20,8 @@ class BaseCallback:
         # set beta_warmup coefficient
         self.beta = min(
             [max([self.flags.min_beta,
-                  (epoch * (self.flags.max_beta - self.flags.min_beta)) / max([self.flags.beta_warmup, 1.])]),
+                  ((epoch - self.flags.beta_start_epoch)
+                   * (self.flags.max_beta - self.flags.min_beta)) / max([self.flags.beta_warmup, 1.])]),
              self.flags.max_beta])
         log.info(f'beta = {self.beta}')
 

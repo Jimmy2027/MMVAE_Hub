@@ -230,6 +230,7 @@ def json2dict(json_path: Path) -> dict:
 
 
 def dict2pyobject(d: dict, name: str = 'mystruct') -> namedtuple:
+    """Convert dict to an immutable object."""
     MyStruct = namedtuple(name, ' '.join(d))
     return MyStruct(**d)
 

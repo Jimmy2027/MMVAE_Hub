@@ -7,12 +7,12 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from modun.download_utils import download_zip_from_url
+from torch.distributions import OneHotCategorical
 from torchvision import transforms
 
 from mmvae_hub.mnistsvhntext.networks.ConvNetworkTextClf import ClfText
 from mmvae_hub.mnistsvhntext.networks.ConvNetworksTextMNIST import EncoderText, DecoderText
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.modalities.utils import get_likelihood
 from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
 from mmvae_hub.utils.text import tensor_to_text
 
@@ -22,8 +22,7 @@ class Text(BaseModality):
         super().__init__(flags, name='text')
         self.alphabet = alphabet
         self.rec_weight = 1.
-        self.likelihood_name = 'categorical'
-        self.likelihood = get_likelihood(self.likelihood_name)
+        self.px_z = OneHotCategorical
         self.font = self.get_font()
 
         self.len_sequence = flags.len_sequence
@@ -61,7 +60,7 @@ class Text(BaseModality):
             return model_clf.to(self.flags.device)
 
     def calc_likelihood(self, style_embeddings, class_embeddings):
-        return self.likelihood(*self.decoder(style_embeddings, class_embeddings), validate_args=False)
+        return self.px_z(*self.decoder(style_embeddings, class_embeddings), validate_args=False)
 
     def text_to_pil(self, t, imgsize, alphabet, font, w=128, h=128, linewidth=8):
         blank_img = torch.ones([imgsize[0], w, h]);

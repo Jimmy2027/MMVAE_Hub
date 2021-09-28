@@ -13,7 +13,7 @@ from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
 from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, \
-    iwMoGfMVAE, iwmopgfm, iwMoGfMVAE2
+    iwMoGfMVAE, iwmopgfm, iwMoGfMVAE2, iwMoGfMVAE3, iwMoGfMVAE_amortized, iwMoGfMVAE_old
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
@@ -112,6 +112,14 @@ class BaseExperiment(ABC):
             model = iwmopgfm(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm2':
             model = iwMoGfMVAE2(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm3':
+            model = iwMoGfMVAE3(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm_amortized':
+            model = iwMoGfMVAE_amortized(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm_old':
+            model = iwMoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm2_':
+            model = iwMoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

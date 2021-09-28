@@ -4,9 +4,11 @@ import torch.nn.functional as F
 # from mmvae_hub.networks.GfMVaes import MopGfM
 #
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
+from mmvae_hub.networks.utils.utils import get_distr
 from mmvae_hub.utils.dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
 import torch.distributions as distr
+
 
 def log_mean_exp(value, dim=0, keepdim=False):
     return torch.logsumexp(value, dim, keepdim=keepdim) - math.log(value.size(dim))
@@ -30,11 +32,26 @@ class iwMMVAE():
         cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
         return self.generate_from_latents(cond_mod_in)
 
+    def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
+        """Decoder outputs each reconstructed modality as a dict."""
+        rec_mods = {}
+        for subset_str, subset in joint_latents.subsets.items():
+            subset_samples = subset.zs.reshape((self.K * self.flags.batch_size, self.flags.class_dim))
+            rec_mods[subset_str] = {
+                out_mod_str: dec_mod.calc_likelihood(
+                    None, class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
+                )
+                for out_mod_str, dec_mod in self.modalities.items()
+            }
+        return rec_mods
+
 
 class iwMoE(iwMMVAE, MOEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         MOEMMVae.__init__(self, exp, flags, modalities, subsets)
         iwMMVAE.__init__(self, flags)
+        self.prior = get_distr(flags.prior)(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
+                                            scale=torch.ones(1, self.flags.class_dim, device=self.flags.device))
 
     def forward(self, input_batch: dict) -> iwForwardResults:
         enc_mods, joint_latents = self.inference(input_batch)
@@ -78,20 +95,6 @@ class iwMoE(iwMMVAE, MOEMMVae):
 
         return enc_mods
 
-    def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
-        """Decoder outputs each reconstructed modality as a dict."""
-        rec_mods = {}
-        for in_mod_str, enc_mod in enc_mods.items():
-            rec_mods[in_mod_str] = {}
-            for out_mod_str, dec_mod in self.modalities.items():
-                mu, logvar = dec_mod.decoder(None,
-                                             joint_latents.subsets[in_mod_str].zs.reshape(
-                                                 (self.K * self.flags.batch_size, self.flags.class_dim)))
-                rec_mods[in_mod_str][out_mod_str] = distr.Laplace(
-                    loc=mu.reshape((self.K, self.flags.batch_size, *mu.shape[1:])), scale=logvar)
-
-        return rec_mods
-
     def calculate_loss(self, forward_results: iwForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
         subsets = forward_results.joint_latents.subsets
@@ -101,8 +104,7 @@ class iwMoE(iwMMVAE, MOEMMVae):
         for mod_str, enc_mod in forward_results.enc_mods.items():
             subset = subsets[mod_str]
             # sum(-1) is the sum over the class dim
-            lpz = distr.Laplace(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
-                                scale=torch.ones(1, self.flags.class_dim, device=self.flags.device)).log_prob(
+            lpz = self.prior.log_prob(
                 subset.zs).sum(-1)
             # take the log mean exp over the modalities
             lqz_x = log_mean_exp(
@@ -135,7 +137,8 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
     def __init__(self, exp, flags, modalities, subsets):
         MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
         iwMMVAE.__init__(self, flags)
-
+        self.prior = get_distr(flags.prior)(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
+                                            scale=torch.ones(1, self.flags.class_dim, device=self.flags.device))
         self.K = flags.K
 
     def forward(self, input_batch: dict) -> iwForwardResults:
@@ -180,20 +183,6 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
 
         return enc_mods
 
-    def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
-        """Decoder outputs each reconstructed modality as a dict."""
-        rec_mods = {}
-        for subset_str, subset in joint_latents.subsets.items():
-            rec_mods[subset_str] = {}
-            for out_mod_str, dec_mod in self.modalities.items():
-                mu, logvar = dec_mod.decoder(None,
-                                             subset.zs.reshape(
-                                                 (self.K * self.flags.batch_size, self.flags.class_dim)))
-                rec_mods[subset_str][out_mod_str] = distr.Laplace(
-                    loc=mu.reshape((self.K, self.flags.batch_size, *mu.shape[1:])), scale=logvar)
-
-        return rec_mods
-
     def calculate_loss(self, forward_results: iwForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
         subsets = forward_results.joint_latents.subsets
@@ -202,9 +191,7 @@ class iwMoPoE(iwMMVAE, MoPoEMMVae):
         log_probs = {}
         for mod_str, subset in subsets.items():
             # sum over last dim
-            lpz = distr.Laplace(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
-                                scale=torch.ones(1, self.flags.class_dim, device=self.flags.device)).log_prob(
-                subset.zs).sum(-1)
+            lpz = self.prior.log_prob(subset.zs).sum(-1)
 
             # lqz_x = log_mean_exp(
             #     torch.stack(

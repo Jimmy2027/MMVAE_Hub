@@ -175,7 +175,8 @@ class BaseFlagsSetup:
         If flags_path is None, flags will be loaded from the db using the _id.
         """
 
-        add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu')}
+        add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
+                               'prior': 'normal'}
 
         if is_dict or flags_path is None:
             if flags_path is None:
@@ -188,7 +189,7 @@ class BaseFlagsSetup:
             flags = self.set_paths_with_config(json2dict(self.config_path), flags, True)
 
             # get defaults from newer parameters that might not be defined in old flags
-            flags = self.get_defaults(flags,is_dict = True)
+            flags = self.get_defaults(flags, is_dict=True)
 
             if add_args is not None:
                 for k, v in add_args.items():

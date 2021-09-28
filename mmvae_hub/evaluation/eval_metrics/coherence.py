@@ -229,7 +229,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     return batch_labels, rand_coherences, cond_gen_classified
 
 
-def flatten_cond_gen_values(gen_eval: dict):
+def flatten_cond_gen_values(gen_eval: dict) -> dict:
     """
     Converts the coherence evaluation results into a flattened dict
     """

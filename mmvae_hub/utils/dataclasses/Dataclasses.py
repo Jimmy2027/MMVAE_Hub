@@ -345,7 +345,7 @@ class BaseBatchResults:
     klds: Mapping[str, float]
     log_probs: dict
     joint_divergence: dict
-    latents: Mapping[str, BaseEncMod]
+    # latents: Mapping[str, BaseEncMod]
     # joint_latents: Mapping[str, Tensor]
 
 

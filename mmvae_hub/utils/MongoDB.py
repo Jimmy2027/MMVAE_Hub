@@ -8,11 +8,11 @@ from pathlib import Path
 
 import gridfs
 import torch
+from mmvae_hub.networks import BaseMMVae
 from pymongo import MongoClient
 
 from mmvae_hub import log
-from mmvae_hub.networks import BaseMMVae
-from mmvae_hub.utils.utils import json2dict, unpack_zipfile
+from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2json
 
 
 class MongoDatabase:

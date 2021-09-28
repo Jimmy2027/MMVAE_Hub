@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 import torch
 
@@ -11,6 +12,8 @@ class BaseModality(ABC):
 
         self.encoder = None
         self.decoder = None
+
+        self.px_z = None
 
     @abstractmethod
     def save_data(self, d, fn, args):
@@ -31,3 +34,9 @@ class BaseModality(ABC):
         """
         log_prob = out_dist.log_prob(target).sum()
         return log_prob / norm_value
+
+    def calc_likelihood(self, style_embeddings, class_embeddings, unflatten: Tuple = None):
+        if unflatten:
+            mu, scale = self.decoder(None, class_embeddings)
+            return self.px_z(loc=mu.unflatten(0, unflatten), scale=scale)
+        return self.px_z(*self.decoder(style_embeddings, class_embeddings), validate_args=False)

@@ -12,20 +12,22 @@ import numpy as np
 import pandas as pd
 from IPython.display import display, HTML
 from matplotlib import pyplot as plt
+from modun.file_io import dict2json
+from nbconvert import HTMLExporter, PDFExporter
+from nbconvert.preprocessors import ExecutePreprocessor
+from pandas import DataFrame
+
 from mmvae_hub import log
 from mmvae_hub.mimic.experiment import MimicExperiment
+from mmvae_hub.mnistsvhntext.experiment import MNISTSVHNText
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowVAE, FoMoP
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
-from mmvae_hub.utils.dataclasses.Dataclasses import ReparamLatent
 from mmvae_hub.utils.MongoDB import MongoDatabase
+from mmvae_hub.utils.dataclasses.Dataclasses import ReparamLatent
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
-from mmvae_hub.utils.utils import dict2json
-from nbconvert import HTMLExporter, PDFExporter
-from nbconvert.preprocessors import ExecutePreprocessor
-from pandas import DataFrame
 
 FLOW_METHODS = ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'mofop', 'planar_vae', 'mofogfm']
 
@@ -262,14 +264,23 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
     for epoch, epoch_values in logs_dict['epoch_results'].items():
         if epoch_values['test_results'] and epoch_values['test_results']['gen_eval']:
             for k, v in epoch_values['test_results']['gen_eval'].items():
-                k = k.removeprefix('digit_')
-                num_input_mods = len(k.split('__')[0].split('_'))
-                if num_input_mods not in gen_eval_logs:
-                    gen_eval_logs[num_input_mods] = {k: [v]}
-                elif k not in gen_eval_logs[num_input_mods]:
-                    gen_eval_logs[num_input_mods][k] = [v]
+                if k == 'random' and isinstance(v, dict):
+                    for key, value in v.items():
+                        if 'random' not in gen_eval_logs:
+                            gen_eval_logs['random'] = {key: [value]}
+                        elif key not in gen_eval_logs['random']:
+                            gen_eval_logs['random'][key] = [value]
+                        else:
+                            gen_eval_logs['random'][key].append(value)
                 else:
-                    gen_eval_logs[num_input_mods][k].append(v)
+                    k = k.removeprefix('digit_')
+                    num_input_mods = len(k.split('__')[0].split('_'))
+                    if num_input_mods not in gen_eval_logs:
+                        gen_eval_logs[num_input_mods] = {k: [v]}
+                    elif k not in gen_eval_logs[num_input_mods]:
+                        gen_eval_logs[num_input_mods][k] = [v]
+                    else:
+                        gen_eval_logs[num_input_mods][k].append(v)
 
     for num_input_mods, v in gen_eval_logs.items():
         plt.figure(figsize=(10, 5))
@@ -509,9 +520,14 @@ def make_experiments_dataframe(experiments):
                     scores_gen = []
                     # get gen_eval results
                     for key, val in last_epoch_results['gen_eval'].items():
-                        key = key.replace('digit_', '')
-                        results_dict[f'gen_eval_{key}'] = val
-                        scores_gen.append(val)
+                        if key == 'random' and isinstance(val, dict):
+                            for k, v in val.items():
+                                results_dict[f'random_{k}'] = val
+                                scores_gen.append(v)
+                        else:
+                            key = key.replace('digit_', '')
+                            results_dict[f'gen_eval_{key}'] = val
+                            scores_gen.append(val)
 
                     scores_prd = []
                     # get prd scores
@@ -526,7 +542,9 @@ def make_experiments_dataframe(experiments):
                     results_dict['score_lr_zk'] = score_lr_zk
                     results_dict['score_lr'] = results_dict['score_lr_zk'] if method in ['planar_mixture', 'pfom'] \
                         else results_dict['score_lr_q0']
+
                     results_dict['score_gen'] = np.mean(scores_gen)
+
                     results_dict['score_prd'] = np.mean(scores_prd)
 
                     results_dict['score'] = (score_lr / 0.75) + (results_dict['score_gen'] / 0.55) + (
@@ -542,29 +560,15 @@ def make_experiments_dataframe(experiments):
     return df
 
 
-def get_experiment(flags):
-    """
-    Get experiments class from dir_data flag.
-    """
-    if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
-        return PolymnistExperiment(flags)
-    elif Path(flags.dir_data).name.startswith('mimic') or Path(flags.dir_data).name == 'scratch' or Path(
-            flags.dir_data).name == 'leomed_klugh':
-        return MimicExperiment(flags)
-    elif flags.dataset == 'toy':
-        return PolymnistExperiment(flags)
-    else:
-        raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')
-
-
 def display_df(df: DataFrame) -> None:
     display(HTML(df.to_html()))
 
 
-def compare_methods(df, methods: list, df_selectors: dict):
+def compare_methods(df, methods: list, df_selectors: dict, show_cols=list):
     methods_selection = functools.reduce(operator.or_, (df['method'].str.startswith(method) for method in methods))
     df_selection = functools.reduce(operator.and_, (df[k] == v for k, v in df_selectors.items()))
-    display_df(df.loc[(methods_selection) & (df_selection)])
+    display_df(df.loc[(methods_selection) & (df_selection)][[*show_cols]].sort_values(
+        by=['score'], ascending=False))
 
 
 def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
@@ -577,19 +581,74 @@ def display_base_params(df, methods: list, show_cols: list, num_flows: int = 5):
         by=['score'], ascending=False))
 
 
+def get_exp_dir(_id: str, dest_dir: Path) -> None:
+    dest_dir.mkdir()
+    experiments_database = MongoDatabase(training=False, _id=_id)
+    experiments = experiments_database.connect()
+    exp = experiments.find_one({'_id': _id})
+    dict2json(d=exp['flags'], out_path=dest_dir / 'flags.json')
+
+    # get epoch results
+    epoch_results_dir = (dest_dir / 'epoch_results')
+    epoch_results_dir.mkdir()
+    for epoch, epoch_res_dict in exp['epoch_results'].items():
+        dict2json(epoch_results_dir / (str(epoch) + '.json'), epoch_res_dict)
+
+    # get last checkpoints
+    checkpoint_dir = dest_dir / 'checkpoints'
+    checkpoint_dir.mkdir()
+    exp['flags']['dir_checkpoints'] = checkpoint_dir
+    experiment = load_experiment_from_db(_id=_id, add_args={'dir_checkpoints': checkpoint_dir})
+
+    experiment.mm_vae.save_networks(max([int(elem) for elem in exp['epoch_results']]))
+
+
+def load_experiment_from_db(_id: str, add_args=None):
+    """Load experiment with flags and trained model from old experiment."""
+
+    dataset = _id.split('_')[0].lower()
+    flags_setup = BaseFlagsSetup(get_config_path(dataset=dataset))
+    flags = flags_setup.load_old_flags(_id=_id, add_args={'save_figure': False, **add_args})
+    exp = get_experiment(flags)
+
+    # load networks from database
+    exp.mm_vae = exp.experiments_database.load_networks_from_db(exp.mm_vae)
+
+    return exp
+
+
+def get_experiment(flags):
+    """
+    Get experiments class from dir_data flag.
+    """
+    if Path(flags.dir_data).name in ['PolyMNIST', 'polymnist']:
+        return PolymnistExperiment(flags)
+    elif Path(flags.dir_data).name.startswith('mimic') or Path(flags.dir_data).name == 'scratch' or Path(
+            flags.dir_data).name == 'leomed_klugh':
+        return MimicExperiment(flags)
+    elif flags.dataset == 'mnistsvhntext':
+        return MNISTSVHNText(flags)
+    elif flags.dataset == 'toy':
+        return PolymnistExperiment(flags)
+    else:
+        raise RuntimeError(f'No experiment for {Path(flags.dir_data).name} implemented.')
+
+
 if __name__ == '__main__':
-    experiment_uid = 'polymnist_iwmoe_2021_08_20_22_57_45_366346'
+    experiment_uid = 'polymnist_iwmogfm_2021_09_26_12_17_16_682022'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
-    # show_generated_figs(experiment_dir = Path('/mnt/data/hendrik/mmvae_hub/experiments/Mimic_mopgfm_2021_08_05_10_24_13_857815'), _id = experiment_uid)
-    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    experiment_dict = experiments_database.get_experiment_dict()
+    # show_generated_figs(_id=experiment_uid)
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiment_dict = experiments_database.get_experiment_dict()
+    # plot_basic_batch_logs(phase='train', logs_dict=experiment_dict)
     # plot_basic_batch_logs('train', experiment_dict)
     # plot_basic_batch_logs('test', experiment_dict)
     # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
-    df = make_experiments_dataframe(experiments_database.connect())
+    # df = make_experiments_dataframe(experiments_database.connect())
+    # plot_coherence_accuracy(experiment_dict)
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'polymnist_pgfm_2021_07_09_21_52_29_311887']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    # for id in ['polymnist_iwmopoe_2021_08_23_16_40_35_951706']:
-    #     upload_notebook_to_db(id)
+    for id in ['polymnist_iwmogfm_2021_09_26_13_53_43_584251']:
+        upload_notebook_to_db(id)

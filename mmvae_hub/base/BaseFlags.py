@@ -105,6 +105,8 @@ parser.add_argument('--feature_extractor_img', type=str, default='resnet', help=
 
 # LOSS TERM WEIGHTS
 parser.add_argument('--beta', type=float, default=0, help="default weight of sum of weighted divergence terms")
+parser.add_argument('--prior', type=str, default='laplace', help="prior used to compute the KL divergence.")
+parser.add_argument('--qz_x', type=str, default='laplace', help="distribution used for the uni modal posteriors.")
 parser.add_argument('--beta_style', type=float, default=1.0,
                     help="default weight of sum of weighted style divergence terms")
 parser.add_argument('--beta_content', type=float, default=1.0,
@@ -113,10 +115,9 @@ parser.add_argument('--beta_content', type=float, default=1.0,
 # kl annealing
 parser.add_argument('--beta_warmup', type=int, default=100, metavar='N',
                     help='number of epochs for warm-up. Set to 0 to turn warmup off.')
-parser.add_argument('--max_beta', type=float, default=1., metavar='MB',
-                    help='max beta for warm-up')
-parser.add_argument('--min_beta', type=float, default=0.0, metavar='MB',
-                    help='min beta for warm-up')
+parser.add_argument('--max_beta', type=float, default=1., help='max beta for warm-up')
+parser.add_argument('--min_beta', type=float, default=0.0, help='min beta for warm-up')
+parser.add_argument('--beta_start_epoch', type=float, default=0.0, help='epoch at which beta starts increasing')
 
 # FLOWS
 parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")

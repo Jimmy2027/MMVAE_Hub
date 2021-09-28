@@ -65,18 +65,18 @@ class BaseTBLogger:
             for name, fig in ps.items():
                 self.writer.add_image(p_key + '_' + name, fig, epoch, dataformats="HWC")
 
-    def add_basic_logs(self, name, joint_divergence, latents, loss, log_probs, klds):
+    def add_basic_logs(self, name, joint_divergence, loss, log_probs, klds):
         self.writer.add_scalars('%s/Loss' % name,
                                 {'loss': loss},
                                 self.step)
         self.write_log_probs(name, log_probs)
         self.write_klds(name, klds)
         self.write_group_div(name, joint_divergence)
-        self.write_latent_distr(name, enc_mods=latents)
+        # self.write_latent_distr(name, enc_mods=latents)
 
-    def write_training_logs(self, joint_divergence, latents, total_loss, log_probs, klds):
-        self.add_basic_logs(self.training_prefix, joint_divergence, latents, total_loss, log_probs,
+    def write_training_logs(self, joint_divergence, total_loss, log_probs, klds):
+        self.add_basic_logs(self.training_prefix, joint_divergence, total_loss, log_probs,
                             klds)
 
-    def write_testing_logs(self, joint_divergence, latents, total_loss, log_probs, klds):
-        self.add_basic_logs(self.testing_prefix, joint_divergence, latents, total_loss, log_probs, klds)
+    def write_testing_logs(self, joint_divergence, total_loss, log_probs, klds):
+        self.add_basic_logs(self.testing_prefix, joint_divergence, total_loss, log_probs, klds)

@@ -3,12 +3,10 @@ from pathlib import Path
 
 import torch
 import torchvision.transforms as transforms
-from modun.download_utils import download_zip_from_url
-
 from mmvae_hub.mimic.classifiers.train_img_clfs import LM
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
-from mmvae_hub.modalities.utils import get_likelihood
 from mmvae_hub.networks.images.ConvNetworksImgMimic import EncoderImg, DecoderImg
+from modun.download_utils import download_zip_from_url
 
 
 class LM_(LM):
@@ -25,15 +23,13 @@ class MimicImg(ModalityIMG):
     def __init__(self, data_size, flags, name, labels, rec_weight, plot_img_size):
         super().__init__(data_size, flags, name)
         self.labels = labels
-        self.likelihood_name = 'laplace'
+
         self.labels = labels
         self.gen_quality_eval = True
         self.file_suffix = '.png'
 
         self.encoder = EncoderImg(self.flags, self.flags.style_pa_dim).to(flags.device)
         self.decoder = DecoderImg(self.flags, self.flags.style_pa_dim).to(flags.device)
-
-        self.likelihood = get_likelihood(self.likelihood_name)
 
         self.rec_weight = rec_weight
 

@@ -159,7 +159,7 @@ class BaseMMVAE(ABC, nn.Module):
         for mod_str, mod in self.modalities.items():
             style_m = latents.style[mod_str]
             content = latents.content
-            cond_gen_m = mod.likelihood(*mod.decoder(style_m, content))
+            cond_gen_m = mod.px_z(*mod.decoder(style_m, content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
 

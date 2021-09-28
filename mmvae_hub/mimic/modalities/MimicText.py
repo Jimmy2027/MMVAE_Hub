@@ -1,6 +1,6 @@
 import textwrap
 from pathlib import Path
-from typing import Iterable, List, Union
+from typing import Iterable, List, Union, Tuple
 
 import numpy as np
 import torch
@@ -8,11 +8,11 @@ from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from torch import nn
+from torch.distributions import OneHotCategorical
 from torchvision import transforms
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast
 
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.modalities.utils import get_likelihood
 from mmvae_hub.networks.text.ConvNetworksTextMimic import EncoderText, DecoderText
 from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
 
@@ -21,7 +21,7 @@ class MimicText(BaseModality):
     def __init__(self, flags, labels: Iterable[str], rec_weight, plot_img_size, wordidx2word):
         super().__init__(flags, name='text')
         self.labels = labels
-        self.likelihood_name = 'categorical'
+
         self.len_sequence = flags.len_sequence
         self.data_size = torch.Size((flags.vocab_size, self.len_sequence))
         self.font = ImageFont.truetype(str(Path(__file__).parent.parent / 'FreeSerif.ttf'), 20)
@@ -31,13 +31,15 @@ class MimicText(BaseModality):
         self.encoder = EncoderText(self.flags, self.flags.style_text_dim).to(flags.device)
         self.decoder = DecoderText(self.flags, self.flags.style_text_dim).to(flags.device)
 
-        self.likelihood: torch.distributions = get_likelihood(self.likelihood_name)
+        self.px_z = OneHotCategorical
         self.rec_weight = rec_weight
         self.plot_img_size = plot_img_size
 
         self.wordidx2word = wordidx2word
 
         self.clf = self.get_clf()
+
+        self.vocab_size = flags.vocab_size
 
     def save_data(self, d, fn, args):
         write_samples_text_to_file(self.tensor_to_text(gen_t=d.unsqueeze(0)), fn)
@@ -54,13 +56,20 @@ class MimicText(BaseModality):
             clf = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased',
                                                                       num_labels=len(self.labels)).to(
                 self.flags.device)
-            text_clf_path = Path(
-                __file__).parent.parent / f'classifiers/state_dicts/text_clf.pth'
+            text_clf_path = Path(__file__).parent.parent / 'classifiers/state_dicts/text_clf.pth'
             clf.load_state_dict(torch.load(text_clf_path, map_location=self.flags.device))
             return TextClf(self, clf).to(self.flags.device)
 
-    def calc_likelihood(self, style_embeddings, class_embeddings):
-        return self.likelihood(logits=self.decoder(style_embeddings, class_embeddings)[0], validate_args=False)
+    def calc_likelihood(self, style_embeddings, class_embeddings, unflatten: Tuple = None):
+        "Calculate px_z"
+        if unflatten:
+            logits = self.decoder(style_embeddings, class_embeddings)[0]
+            return self.px_z(logits=logits.unflatten(0, unflatten), validate_args=False)
+
+        return self.px_z(logits=self.decoder(style_embeddings, class_embeddings)[0], validate_args=False)
+
+    def log_likelihood(self, px_z, batch_sample):
+        return px_z.log_prob(self.batch_text_to_onehot(batch_sample))
 
     def seq2text(self, seq: Iterable[int]) -> List[str]:
         """
@@ -124,9 +133,9 @@ class MimicText(BaseModality):
             return transforms.ToTensor()(pil_img.resize((imgsize[1], imgsize[2]),
                                                         Image.ANTIALIAS).convert('L'))
 
-    def batch_text_to_onehot(self, batch_text, vocab_size: int):
+    def batch_text_to_onehot(self, batch_text):
         return torch.nn.functional.one_hot(batch_text.to(torch.int64),
-                                           num_classes=vocab_size)
+                                           num_classes=self.vocab_size)
 
 
 class TextClf(nn.Module):
