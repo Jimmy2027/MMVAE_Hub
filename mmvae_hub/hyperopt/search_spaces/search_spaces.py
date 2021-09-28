@@ -282,7 +282,7 @@ sp_mogfm_ = {
 
 sp_joint_elbo_article = {
     'n_gpus': [1],
-    'method': ['joint_elbo'],
+    'method': ['mopoe'],
     'max_beta': [0.],
     "beta_warmup": [0],
     'class_dim': [512],
