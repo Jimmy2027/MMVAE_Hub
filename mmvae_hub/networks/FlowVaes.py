@@ -10,7 +10,7 @@ from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.flows.AffineFlows import AffineFlow
 from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 from mmvae_hub.utils.utils import split_int_to_bins
 

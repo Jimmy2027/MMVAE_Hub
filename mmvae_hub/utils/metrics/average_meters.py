@@ -7,7 +7,7 @@ import numpy as np
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowOfEncModsVAE, FlowOfSubsetsVAE, FoMFoP, FoMoP
 from mmvae_hub.networks.GfMVaes import GfMVAE
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 
 
 class AverageMeter(object):

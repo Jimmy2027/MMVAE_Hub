@@ -25,7 +25,7 @@ from mmvae_hub.networks.BaseMMVae import BaseMMVAE
 from mmvae_hub.networks.FlowVaes import FlowVAE, FoMoP
 from mmvae_hub.polymnist.experiment import PolymnistExperiment
 from mmvae_hub.utils.MongoDB import MongoDatabase
-from mmvae_hub.utils.dataclasses.Dataclasses import ReparamLatent
+from mmvae_hub.utils.Dataclasses.Dataclasses import ReparamLatent
 from mmvae_hub.utils.plotting.plotting import generate_plots
 from mmvae_hub.utils.setup.flags_utils import BaseFlagsSetup, get_config_path
 
@@ -638,7 +638,7 @@ if __name__ == '__main__':
     experiment_uid = 'polymnist_iwmogfm_2021_09_26_12_17_16_682022'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
-    # show_generated_figs(_id=experiment_uid)
+    show_generated_figs(_id=experiment_uid)
     # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
     # experiment_dict = experiments_database.get_experiment_dict()
     # plot_basic_batch_logs(phase='train', logs_dict=experiment_dict)

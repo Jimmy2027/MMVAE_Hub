@@ -6,7 +6,7 @@ import torch.nn as nn
 from mmvae_hub.sylvester_flows.models import flows
 from mmvae_hub.sylvester_flows.models.layers import GatedConv2d, GatedConvTranspose2d
 from mmvae_hub.sylvester_flows.optimization.loss import multinomial_loss_function
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 
 
 class VAE(nn.Module):

@@ -13,7 +13,7 @@ import torch.distributed as dist
 from torch import device as Device
 
 from mmvae_hub import log
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 
 
 # Print iterations progress

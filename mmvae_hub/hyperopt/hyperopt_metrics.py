@@ -1,7 +1,7 @@
 import numpy as np
 
 from mmvae_hub import log
-from mmvae_hub.utils.dataclasses.Dataclasses import BaseTestResults
+from mmvae_hub.utils.Dataclasses.Dataclasses import BaseTestResults
 
 
 def get_missing_mod_scores_gen_eval(results: dict):

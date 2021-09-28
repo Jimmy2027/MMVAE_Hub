@@ -1,5 +1,5 @@
-from mmvae_hub.utils.dataclasses.Dataclasses import *
-from mmvae_hub.utils.dataclasses.Dataclasses import JointEmbeddingFoEM, BaseEncMod, Distr, JointLatentsFoS
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import JointEmbeddingFoEM, BaseEncMod, Distr, JointLatentsFoS
 
 
 @dataclass

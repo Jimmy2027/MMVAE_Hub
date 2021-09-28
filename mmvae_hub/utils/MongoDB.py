@@ -8,11 +8,11 @@ from pathlib import Path
 
 import gridfs
 import torch
-from mmvae_hub.networks import BaseMMVae
 from pymongo import MongoClient
 
 from mmvae_hub import log
-from mmvae_hub.utils.utils import json2dict, unpack_zipfile, dict2json
+from mmvae_hub.networks import BaseMMVae
+from mmvae_hub.utils.utils import json2dict, unpack_zipfile
 
 
 class MongoDatabase:
@@ -197,11 +197,11 @@ class MongoDatabase:
 
 
 if __name__ == '__main__':
-    id = 'Mimic_joint_elbo_2021_07_08_08_06_16_433301'
-    db = MongoDatabase(_id=id)
-    db.get_tensorboardlogs(Path('/Users/Hendrik/Desktop/temp'))
-    # out_dir = Path('/Users/Hendrik/Desktop/tensorboard_logs') / id
-    # out_dir.mkdir(parents=True, exist_ok=True)
-    #
+    id = 'polymnist_iwmogfm2__2021_09_28_11_26_27_056960'
     # db = MongoDatabase(_id=id)
-    # db.get_tensorboardlogs(dest_dir=out_dir)
+    # db.get_tensorboardlogs(Path('/Users/Hendrik/Desktop/temp'))
+    out_dir = Path('/Users/Hendrik/Desktop/tensorboard_logs') / id
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    db = MongoDatabase(_id=id)
+    db.get_tensorboardlogs(dest_dir=out_dir)

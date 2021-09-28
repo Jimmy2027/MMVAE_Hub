@@ -103,7 +103,7 @@ if __name__ == '__main__':
     from time import time
 
     start_time = time()
-    # test_run_epochs_mimic(method='iwmopgfm')
+    # test_run_epochs_mimic(method='mopoe')
     test_run_epochs_polymnist(method='iwmogfm_amortized')
     # test_run_epochs_polymnist(method='iwmogfm2')
     # test_run_epochs_polymnist(method='iwmogfm')

@@ -155,6 +155,12 @@ class TextClf(nn.Module):
         x_ = [' '.join(sent) for sent in self.text_mod.tensor_to_text(x)]
 
         item = {key: torch.tensor(val).to(x.device) for key, val in
-                self.tokenizer(x_, return_tensors="pt", padding=True, truncation=True,
-                               max_length=256).items()}
+                self.tokenizer(x_, return_tensors="pt", padding=True, truncation=True, max_length=256).items()}
         return self.clf(**item).logits
+
+
+if __name__ == '__main__':
+    clf = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased',
+                                                              num_labels=3)
+    text_clf_path = Path(__file__).parent.parent / 'classifiers/state_dicts/text_clf.pth'
+    clf.load_state_dict(torch.load(text_clf_path))

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 #
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
 from mmvae_hub.networks.utils.utils import get_distr
-from mmvae_hub.utils.dataclasses.iwdataclasses import *
+from mmvae_hub.utils.Dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
 import torch.distributions as distr
 

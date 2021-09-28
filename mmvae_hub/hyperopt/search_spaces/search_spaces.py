@@ -111,18 +111,36 @@ iwmopoe = {
 }
 
 iwmogfm = {
-    'method': ['iwmogfm_amortized'],
+    'method': ['iwmogfm_multiloss'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [640],
+    "min_beta": [0],
+    "dataloader_workers": [16],
+    "max_beta": [0., 0.1, 1.],
+    "beta_warmup": [0],
+    "beta_start_epoch": [30],
+    "num_mods": [3],
+    "end_epoch": [100],
+    "calc_nll": [False],
+    "K": [1],
+    "eval_freq": [10],
+    'gpu_mem': [10000],
+}
+
+iwmogfm2 = {
+    # 'method': ['iwmogfm2', 'iwmogfm2_'],
+    'method': ['iwmogfm2_'],
     "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [16],
     "max_beta": [0],
     "beta_warmup": [0],
-    "beta_start_epoch": [50],
+    "beta_start_epoch": [10000],
     "num_mods": [3],
     "end_epoch": [100],
     "calc_nll": [False],
-    "K": [3],
+    "K": [5],
     "eval_freq": [10],
     'gpu_mem': [10000],
 }
@@ -210,16 +228,15 @@ mopgfm_mimic = {
 iwmogfm_mimic = {
     'method': ['iwmogfm'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [128],
+    'class_dim': [512],
     "min_beta": [0],
-    "dataloader_workers": [16],
     "max_beta": [0],
     "beta_warmup": [0],
-    "end_epoch": [150],
+    "end_epoch": [100],
     "calc_nll": [False],
-    "K": [5],
-    "eval_freq": [10],
-    "num_gfm_flows": [2],
+    "K": [1],
+    "eval_freq": [50],
+    "num_gfm_flows": [0],
     'gpu_mem': [10000],
 }
 

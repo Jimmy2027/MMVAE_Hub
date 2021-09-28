@@ -2,11 +2,11 @@ from typing import Tuple
 
 from torch.distributions import Distribution
 
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from dataclasses import dataclass
 from torch import Tensor
 
-from mmvae_hub.utils.dataclasses.gfmDataclasses import JointLatentsGfM
+from mmvae_hub.utils.Dataclasses.gfmDataclasses import JointLatentsGfM
 
 
 @dataclass

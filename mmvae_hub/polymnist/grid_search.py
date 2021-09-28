@@ -47,15 +47,15 @@ search_spaces_2 = {
     'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [8],
-    "max_beta": [0.1],
-    "beta_start_epoch": [50],
+    "max_beta": [0.0001],
+    "beta_start_epoch": [30],
     "beta_warmup": [50],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
     "num_mods": [3],
     "end_epoch": [100],
     "calc_nll": [False],
-    "K": [1],
+    "K": [5],
     "eval_freq": [20],
 }
 
@@ -102,7 +102,7 @@ search_space_sylvester = {
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_3]:
+    for grid in [search_spaces_2]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

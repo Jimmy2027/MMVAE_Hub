@@ -3,7 +3,7 @@ import os
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.plotting import plot
 
 

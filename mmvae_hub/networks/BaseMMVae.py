@@ -11,7 +11,7 @@ from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection as moe
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import *
 
 
