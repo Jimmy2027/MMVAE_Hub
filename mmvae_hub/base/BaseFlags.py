@@ -87,6 +87,8 @@ parser.add_argument('--num_samples_fid', type=int, default=10000,
                     help="number of samples the calculation of fid is based on")
 parser.add_argument('--num_training_samples_lr', type=int, default=1000,
                     help="number of training samples to train the lr clf")
+parser.add_argument('--checkpoint_freq', type=int, default=50,
+                    help="number of training samples to train the lr clf")
 
 # multimodal
 parser.add_argument('--method', type=str, default='poe', help='choose method for training the model')
@@ -107,7 +109,7 @@ parser.add_argument('--feature_extractor_img', type=str, default='resnet', help=
 parser.add_argument('--beta', type=float, default=0, help="default weight of sum of weighted divergence terms")
 parser.add_argument('--prior', type=str, default='laplace', help="prior used to compute the KL divergence.")
 parser.add_argument('--qz_x', type=str, default='laplace', help="distribution used for the uni modal posteriors.")
-parser.add_argument('--beta_style', type=float, default=1.0,
+parser.add_argument('--beta_style', type=float, default=0,
                     help="default weight of sum of weighted style divergence terms")
 parser.add_argument('--beta_content', type=float, default=1.0,
                     help="default weight of sum of weighted content divergence terms")

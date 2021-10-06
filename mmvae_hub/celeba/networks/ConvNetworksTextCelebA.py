@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
+from mmvae_hub.networks.utils.FeatureCompressor import LinearFeatureCompressor
 
 from mmvae_hub.celeba.networks.FeatureExtractorText import FeatureExtractorText
-from mmvae_hub.celeba.networks.FeatureCompressor import LinearFeatureCompressor
 from mmvae_hub.celeba.networks.DataGeneratorText import DataGeneratorText
 
 
@@ -17,9 +17,12 @@ class EncoderText(nn.Module):
 
     def forward(self, x_text):
         h_text = self.feature_extractor(x_text)
-        mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_text)
-
-        return mu_style, logvar_style, mu_content, logvar_content
+        if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
+            mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_text)
+            return mu_style, logvar_style, mu_content, logvar_content
+        else:
+            mu_content, logvar_content = self.feature_compressor(h_text)
+            return None, None, mu_content, logvar_content
 
 
 class DecoderText(nn.Module):

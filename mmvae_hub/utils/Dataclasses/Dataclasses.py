@@ -331,6 +331,34 @@ class JointLatentsMoFoP(JointLatentsFoS):
 
         return lr_data
 
+    def get_latent_samples(self, subset_key: str, n_imp_samples, mod_names=None, style=None, model=None):
+        """Sample n_imp_samples from the latents."""
+        l_c = self.subsets[subset_key].q0
+        l_s = style
+        l_c_m_rep = l_c.mu.unsqueeze(0).repeat(n_imp_samples, 1, 1)
+        l_c_lv_rep = l_c.logvar.unsqueeze(0).repeat(n_imp_samples, 1, 1)
+        c_emb = Distr(l_c_m_rep, l_c_lv_rep).reparameterize()
+
+        orig_shape = c_emb.shape
+        c_emb_k = model.flow(c_emb.reshape(orig_shape[0]*orig_shape[1], -1))[0].reshape(orig_shape)
+
+        styles = {}
+        c = {'mu': l_c_m_rep, 'logvar': l_c_lv_rep, 'z': c_emb}
+
+        if style is not None:
+            for k, key in enumerate(l_s.keys()):
+                l_s_mod = l_s[key]
+                l_s_m_rep = l_s_mod[0].unsqueeze(0).repeat(n_imp_samples, 1, 1)
+                l_s_lv_rep = l_s_mod[1].unsqueeze(0).repeat(n_imp_samples, 1, 1)
+                s_emb = Distr(l_s_m_rep, l_s_lv_rep).reparameterize()
+                s = {'mu': l_s_m_rep, 'logvar': l_s_lv_rep, 'z': s_emb}
+                styles[key] = s
+        else:
+            for k, key in enumerate(mod_names):
+                styles[key] = None
+
+        return {'content': c, 'style': styles}
+
 
 @dataclass
 class BaseForwardResults:

@@ -9,6 +9,7 @@ from torch.distributions.distribution import Distribution
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
+from mmvae_hub.evaluation.utils import dataset_to_metric
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection as moe
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.Dataclasses.Dataclasses import *
@@ -52,8 +53,7 @@ class BaseMMVAE(ABC, nn.Module):
                 enc_mods[mod_str] = {}
 
                 style_mu, style_logvar, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
-                assert class_mu.mean() is not None
-                assert class_logvar.mean() is not None
+
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
 
@@ -90,10 +90,15 @@ class BaseMMVAE(ABC, nn.Module):
                                                        )
 
         log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
+
         beta_style = self.flags.beta_style
 
         if self.flags.factorized_representation:
-            klds_style = calc_klds_style(self.exp, forward_results.joint_latents.enc_mods)
+
+            klds_style = {k: self.mm_div.calc_kl_divergence(v.latents_style.mu, v.latents_style.logvar,
+                                                            norm_value=self.flags.batch_size) for k, v
+                          in forward_results.enc_mods.items()}
+
             kld_style = calc_style_kld(self.exp, klds_style)
         else:
             kld_style = 0.0
@@ -315,14 +320,16 @@ class BaseMMVAE(ABC, nn.Module):
                 state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
 
     @staticmethod
-    def calculate_lr_eval_scores(epoch_results: dict):
+    def calculate_lr_eval_scores(epoch_results: dict, dataset: str):
         results_dict = {}
         scores = []
         scores_lr_q0 = []
         scores_lr_zk = []
 
+        metric = dataset_to_metric(dataset)
+
         for key, val in epoch_results['lr_eval_q0'].items():
-            results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
-            scores_lr_q0.append(val['accuracy'])
-            scores.append(val['accuracy'])
+            results_dict[f'lr_eval_q0_{key}'] = val[metric]
+            scores_lr_q0.append(val[metric])
+            scores.append(val[metric])
         return np.mean(scores), np.mean(scores_lr_q0), np.mean(scores_lr_zk)

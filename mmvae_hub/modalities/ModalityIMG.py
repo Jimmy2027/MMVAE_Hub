@@ -27,5 +27,3 @@ class ModalityIMG(BaseModality):
             d = transform(d.cpu())
         return d.repeat(1, 1, 1, 1)
 
-    def log_likelihood(self, px_z, batch_sample):
-        return px_z.log_prob(batch_sample)

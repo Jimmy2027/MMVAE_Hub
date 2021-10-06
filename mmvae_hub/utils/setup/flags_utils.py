@@ -96,7 +96,7 @@ class BaseFlagsSetup:
         flags.dir_fid = Path(flags.dir_fid).expanduser() if flags.dir_fid else flags.dir_experiment / 'fid'
         flags.dir_clf = Path(flags.dir_clf).expanduser() if flags.use_clf else None
 
-        assert flags.dir_data.exists() or flags.dataset == 'toy', f'data path: "{flags.dir_data}" not found.'
+        assert flags.dir_data.exists() or flags.dataset == 'toy', f'data path: "{flags.dir_data}" not found in {list(flags.dir_data.parent.iterdir())}.'
         return flags
 
     def setup_test(self, flags, tmpdirname: str):
@@ -127,6 +127,18 @@ class BaseFlagsSetup:
 
             assert out_dir.exists(), f'Data dir {out_dir} does not exist.'
 
+        # unzip celeba dataset to tmpdir
+        elif flags.dataset == 'celeba':
+            celeba_zip_path = Path(flags.dir_data).expanduser()
+            out_dir = tmpdir
+
+            log.info(f'Extracting data from {celeba_zip_path} to {out_dir}.')
+            unpack_zipfile(celeba_zip_path, out_dir)
+
+            flags.dir_data = out_dir / 'CelebA'
+
+            assert out_dir.exists(), f'Data dir {out_dir} does not exist in {list(out_dir.parent.iterdir())}.'
+
         flags.dir_fid = tmpdir / 'fid'
 
         flags.dir_experiment = tmpdir
@@ -141,12 +153,12 @@ class BaseFlagsSetup:
         Since the attributes of the flag object cannot be set, the input "flags" needs to be a dict.
         """
 
-        for key in config:
-            if key in ['dir_experiment', 'dir_clf', 'dir_data']:
+        for key, value in config.items():
+            if key in ['dir_experiment', 'dir_clf', 'dir_data', 'inception_state_dict']:
                 if is_dict:
                     flags[key] = Path(config[key]).expanduser()
                 else:
-                    setattr(flags, key, Path(config[key]).expanduser())
+                    setattr(flags, key, Path(value).expanduser())
 
         return flags
 
@@ -176,7 +188,7 @@ class BaseFlagsSetup:
         """
 
         add_args = add_args | {'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-                               'prior': 'normal'}
+                               'prior': 'normal', 'qz_x': 'normal'}
 
         if is_dict or flags_path is None:
             if flags_path is None:

@@ -166,8 +166,8 @@ class iwMoGfMVAE_old(iwMMVAE, BaseMMVAE):
         return self.generate_from_latents(cond_mod_in)
 
 
-class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
-    """Importance Weighted Mixture of Generalized f-Means VAE"""
+class BaseiwMoGfMVAE(iwMMVAE, BaseMMVAE):
+    """Base class for the Importance Weighted Mixture of Generalized f-Means VAE methods"""
 
     def __init__(self, exp, flags, modalities, subsets):
         BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
@@ -177,6 +177,20 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
                                nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
         self.prior = Normal(torch.zeros((self.flags.batch_size, self.flags.class_dim), device=self.flags.device),
                             torch.ones((self.flags.batch_size, self.flags.class_dim), device=self.flags.device))
+        self.qz_x = get_distr(flags.qz_x)  # posterior
+
+    def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
+        """Decoder outputs each reconstructed modality as a dict."""
+        rec_mods = {}
+        for subset_str, subset in joint_latents.subsets.items():
+            subset_samples = subset[0].reshape((self.K * self.flags.batch_size, self.flags.class_dim))
+            rec_mods[subset_str] = {
+                out_mod_str: dec_mod.calc_likelihood(
+                    None, class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
+                )
+                for out_mod_str, dec_mod in self.modalities.items()
+            }
+        return rec_mods
 
     def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, BaseEncMod]:
         enc_mods = {}
@@ -190,6 +204,36 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
 
         return enc_mods
+
+    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
+        """
+        Generate samples conditioned with input samples for a given subset.
+
+        subset_key str: The key indicating which subset is used for the generation.
+        """
+
+        # infer latents from batch
+        enc_mods, joint_latents = self.inference(input_samples)
+
+        subset_embedding = joint_latents.subsets[subset_key][0].mean(dim=0)
+        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
+        return self.generate_from_latents(cond_mod_in)
+
+    def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent) -> Mapping[str, Distribution]:
+        cond_gen = {}
+        for mod_str, mod in self.modalities.items():
+            style_m = latents.style[mod_str]
+            content = latents.content
+            cond_gen_m = mod.px_z(*mod.decoder(style_m, content))
+            cond_gen[mod_str] = cond_gen_m
+        return cond_gen
+
+
+class iwMoGfMVAE(BaseiwMoGfMVAE):
+    """Importance Weighted Mixture of Generalized f-Means VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
 
     def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
                         batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
@@ -259,8 +303,8 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
             lpx_z = torch.stack(lpx_z).sum(0)
 
             # loss = -(lpx_z - (lqz_x - lpz))
-            loss = lpx_z - kl_div
-            # loss = lpx_z
+            # loss = lpx_z - kl_div
+            loss = lpx_z
 
             # print('loss: ', loss.mean())
             losses.append(loss)
@@ -279,83 +323,6 @@ class iwMoGfMVAE(iwMMVAE, BaseMMVAE):
         # normalize with the number of samples
         joint_div = joint_div.mean()
         return total_loss, joint_div, log_probs, klds
-
-    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
-        """
-        Generate samples conditioned with input samples for a given subset.
-
-        subset_key str: The key indicating which subset is used for the generation.
-        """
-
-        # infer latents from batch
-        enc_mods, joint_latents = self.inference(input_samples)
-
-        subset_embedding = joint_latents.subsets[subset_key].mean(dim=0)
-        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
-        return self.generate_from_latents(cond_mod_in)
-
-
-class BaseiwMoGfMVAE(iwMMVAE, BaseMMVAE):
-    """Base class for the Importance Weighted Mixture of Generalized f-Means VAE methods"""
-
-    def __init__(self, exp, flags, modalities, subsets):
-        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-        iwMMVAE.__init__(self, flags)
-        self.mm_div = GfMMMDiv(flags=flags, K=self.K)
-        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim,
-                               nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
-        self.prior = Normal(torch.zeros((self.flags.batch_size, self.flags.class_dim), device=self.flags.device),
-                            torch.ones((self.flags.batch_size, self.flags.class_dim), device=self.flags.device))
-        self.qz_x = get_distr(flags.qz_x)  # posterior
-
-    def decode(self, enc_mods: Mapping[str, BaseEncMod], joint_latents: iwJointLatents) -> dict:
-        """Decoder outputs each reconstructed modality as a dict."""
-        rec_mods = {}
-        for subset_str, subset in joint_latents.subsets.items():
-            subset_samples = subset[0].reshape((self.K * self.flags.batch_size, self.flags.class_dim))
-            rec_mods[subset_str] = {
-                out_mod_str: dec_mod.calc_likelihood(
-                    None, class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
-                )
-                for out_mod_str, dec_mod in self.modalities.items()
-            }
-        return rec_mods
-
-    def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, BaseEncMod]:
-        enc_mods = {}
-        for mod_str, mod in self.modalities.items():
-            if mod_str in input_batch:
-                enc_mods[mod_str] = {}
-
-                _, _, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
-
-                latents_class = Normal(class_mu, F.softmax(class_logvar, dim=-1) * class_logvar.size(-1) + 1e-6)
-                enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
-
-        return enc_mods
-
-    def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
-        """
-        Generate samples conditioned with input samples for a given subset.
-
-        subset_key str: The key indicating which subset is used for the generation.
-        """
-
-        # infer latents from batch
-        enc_mods, joint_latents = self.inference(input_samples)
-
-        subset_embedding = joint_latents.subsets[subset_key][0].mean(dim=0)
-        cond_mod_in = ReparamLatent(content=subset_embedding, style=style)
-        return self.generate_from_latents(cond_mod_in)
-
-    def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent) -> Mapping[str, Distribution]:
-        cond_gen = {}
-        for mod_str, mod in self.modalities.items():
-            style_m = latents.style[mod_str]
-            content = latents.content
-            cond_gen_m = mod.px_z(*mod.decoder(style_m, content))
-            cond_gen[mod_str] = cond_gen_m
-        return cond_gen
 
 
 class iwMoGfMVAE2(BaseiwMoGfMVAE):
@@ -396,14 +363,18 @@ class iwMoGfMVAE2(BaseiwMoGfMVAE):
 
             else:
                 # sum of random variables
-                z_Gf = torch.stack([transformed_enc_mods[mod.name][0] for mod in self.subsets[s_key]]).mean(dim=0)
+                subset_tf_enc_mods = torch.stack([transformed_enc_mods[mod.name][0] for mod in self.subsets[s_key]])
+                z_Gf = subset_tf_enc_mods.mean(dim=0)
 
                 # calculate inverse flow
                 zss, log_det_J = self.flow.rev(z_Gf)
-                z_Gf = z_Gf.reshape(self.K, -1, self.flags.class_dim)
 
-                # approximate the subset posterior with a gaussian
-                srv_proxies[s_key] = Normal(z_Gf.mean(0), z_Gf.std(0))
+                # approximate the sum of random variables with a gaussian
+                z_Gf = z_Gf.reshape(self.K, -1, self.flags.class_dim)
+                subset_tf_enc_mods = subset_tf_enc_mods.reshape(subset_tf_enc_mods.shape[0], self.K, -1,
+                                                                self.flags.class_dim)
+                # take the average mean over the K samples and average std
+                srv_proxies[s_key] = Normal(z_Gf.mean(0), subset_tf_enc_mods.std(0).mean(0))
 
                 subset_samples[s_key] = (zss.reshape((self.K, batch_size, self.flags.class_dim)),
                                          log_det_J.reshape((self.K, batch_size)))
@@ -432,6 +403,112 @@ class iwMoGfMVAE2(BaseiwMoGfMVAE):
             # print('z_Gf: ', z_Gf.mean())
 
             lqz_x = Gf.log_prob(z_Gf).sum(-1) + subset_samples[1]
+            # print('lqz_x: ', lqz_x.mean())
+            lpz = self.prior.log_prob(subset_samples[0]).sum(-1)
+
+            d_kl = lqz_x - lpz
+
+            lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
+                     for out_mod_str, px_z in forward_results.rec_mods[sub_str].items()]
+
+            # sum over #mods in subset
+            lpx_z = torch.stack(lpx_z).sum(0)
+
+            # loss = -(lpx_z - (lqz_x - lpz))
+            if self.flags.beta == 0:
+                loss = lpx_z
+            else:
+                loss = lpx_z - self.flags.beta * d_kl
+            # print('loss: ', loss.mean())
+            losses.append(loss)
+            log_probs[sub_str] = lpx_z.mean()
+            klds[sub_str] = d_kl.mean()
+
+        # concat over k samples (get k*number of subsets) as last dim
+        # take log_mean_exp over batch size
+        # log_mean_exp over k, then sum over number of subsets
+        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
+        # print('total loss: ', total_loss)
+
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+
+        # normalize with the number of samples
+        joint_div = joint_div.mean()
+        return total_loss, joint_div, log_probs, klds
+
+
+class iwMoGfMVAE4(BaseiwMoGfMVAE):
+    """Importance Weighted Mixture of Generalized f-Means VAE where the joint distribution is assumed to be gaussian with inferred mean ind std."""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsiwMoGfM2:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+
+        # batch_size is not always equal to flags.batch_size
+        batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.loc.shape[0]
+
+        # M*k samples from the unimodal posteriors
+        zmss = {mod_key: enc_mod.latents_class.rsample((self.K,)) for mod_key, enc_mod in enc_mods.items()}
+        # transformed enc mods
+        transformed_enc_mods = {mod_key: self.flow(zms.reshape(self.K * batch_size, self.flags.class_dim)) for
+                                mod_key, zms in zmss.items()}
+
+        subset_samples = {}
+        # approximations of the distributions of the sum of random variables (srv)
+        srv_proxies = {}
+        z_Gfs = {}
+        z_joint = torch.Tensor().to(self.flags.device)
+        for s_key in batch_subsets:
+
+            if len(self.subsets[s_key]) == 1:
+                # subset samples are tuples: (samples, log_det_J)
+                subset_samples[s_key] = (zmss[s_key], 0)
+                srv_proxies[s_key] = enc_mods[s_key].latents_class
+                z_Gf = zmss[s_key]
+                z_joint = torch.cat([z_joint, zmss[s_key]])
+
+            else:
+                # sum of random variables
+                z_Gf = torch.stack([transformed_enc_mods[mod.name][0] for mod in self.subsets[s_key]]).mean(dim=0)
+
+                # calculate inverse flow
+                zss, log_det_J = self.flow.rev(z_Gf)
+
+                # approximate the sum of random variables with a gaussian
+                z_Gf = z_Gf.reshape(self.K, -1, self.flags.class_dim)
+                srv_proxies[s_key] = Normal(z_Gf.mean(0), z_Gf.std(0))
+
+                subset_samples[s_key] = (zss.reshape((self.K, batch_size, self.flags.class_dim)),
+                                         log_det_J.reshape((self.K, batch_size)))
+                z_joint = torch.cat([z_joint, subset_samples[s_key][0]])
+
+            z_Gfs[s_key] = z_Gf
+
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+
+        return JointLatentsiwMoGfM2(joint_embedding=joint_embedding,
+                                    z_Gfs=z_Gfs,
+                                    subsets=subset_samples, subset_samples=subset_samples,
+                                    enc_mods=enc_mods, srv_proxies=srv_proxies)
+
+    def calculate_loss(self, forward_results, batch_d: dict) -> tuple[float, float, dict, Mapping[str, float]]:
+        subsets = forward_results.joint_latents.subsets
+        enc_mods = forward_results.enc_mods
+        losses = []
+        klds = {}
+        log_probs = {}
+
+        for sub_str, subset_samples in subsets.items():
+            subset_posterior = Normal(loc=subset_samples[0].mean(0), scale=subset_samples[0].std(0),
+                                      validate_args=False)
+
+            lqz_x = subset_posterior.log_prob(subset_samples[0]).sum(-1) + subset_samples[1]
             # print('lqz_x: ', lqz_x.mean())
             lpz = self.prior.log_prob(subset_samples[0]).sum(-1)
 
@@ -590,7 +667,7 @@ class iwMoGfMVAE_amortized(BaseiwMoGfMVAE):
         # concat over k samples (get k*number of subsets) as last dim
         # take log_mean_exp over batch size
         # log_mean_exp over k, then sum over number of subsets
-        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum() + interm_loss.sum()
+        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum() + 2.0 * interm_loss.sum()
         # print('total loss: ', total_loss)
 
         joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
@@ -708,7 +785,132 @@ class iwMoGfMVAE_multiloss(BaseiwMoGfMVAE):
             else:
                 loss = lpx_z - self.flags.beta * d_kl
 
-            loss = lpx_z
+            # print('loss: ', loss.mean())
+            losses.append(loss)
+            log_probs[sub_str] = lpx_z.mean()
+            klds[sub_str] = d_kl.mean()
+
+        # concat over k samples (get k*number of subsets) as last dim
+        # take log_mean_exp over batch size
+        # log_mean_exp over k, then sum over number of subsets
+        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum() + 2.0 * interm_loss.sum()
+        # print('total loss: ', total_loss)
+
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+
+        # normalize with the number of samples
+        joint_div = joint_div.mean()
+        return total_loss, joint_div, log_probs, klds
+
+
+class iwMoGfMVAE_multiloss_(BaseiwMoGfMVAE):
+    """Importance Weighted Mixture of Generalized f-Means VAE with an additional loss function that pushes the transformed enc mods to be a std normal distr"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        super().__init__(exp, flags, modalities, subsets)
+
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsiwMoGfMVAE_amortized:
+        """
+        Create a subspace for all the combinations of the encoded modalities by combining them.
+        """
+        batch_subsets = subsets_from_batchmods(batch_mods)
+
+        # batch_size is not always equal to flags.batch_size
+        batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.loc.shape[0]
+
+        # M*k samples from the unimodal posteriors
+        zmss = {mod_key: enc_mod.latents_class.rsample((self.K,)) for mod_key, enc_mod in enc_mods.items()}
+        # transformed enc mods
+        transformed_enc_mods = {mod_key: self.flow(zms.reshape(self.K * batch_size, self.flags.class_dim))
+                                for mod_key, zms in zmss.items()}
+
+        subset_samples = {}
+        z_joint = torch.Tensor().to(self.flags.device)
+        for s_key in batch_subsets:
+
+            if len(self.subsets[s_key]) == 1:
+                # subset samples are tuples: (samples, log_det_J)
+                subset_samples[s_key] = (zmss[s_key], 0)
+                z_joint = torch.cat([z_joint, zmss[s_key]])
+
+            else:
+                # sum of random variables
+                z_Gf = torch.stack([transformed_enc_mods[mod.name][0] for mod in self.subsets[s_key]]).mean(dim=0)
+
+                # calculate inverse flow
+                zss, log_det_J = self.flow.rev(z_Gf)
+
+                subset_samples[s_key] = (zss.reshape((self.K, batch_size, self.flags.class_dim)),
+                                         log_det_J.reshape((self.K, batch_size)))
+
+        # reshape the transformed_enc_mods
+        transformed_enc_mods = {
+            k: (
+                samples[0].reshape((self.K, batch_size, self.flags.class_dim)),
+                samples[1].reshape((self.K, batch_size)))
+            for
+            k, samples in
+            transformed_enc_mods.items()}
+
+        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
+
+        return JointLatentsiwMoGfMVAE_amortized(joint_embedding=joint_embedding,
+                                                transformed_enc_mods=transformed_enc_mods,
+                                                subsets=subset_samples, subset_samples=subset_samples,
+                                                enc_mods=enc_mods, zmss=zmss, priors_tf_enc_mods=None)
+
+    def calculate_loss(self, forward_results, batch_d: dict) -> tuple[float, float, dict, Mapping[str, float]]:
+        subsets = forward_results.joint_latents.subsets
+        enc_mods = forward_results.enc_mods
+        transformed_enc_mods = forward_results.joint_latents.transformed_enc_mods
+        zmss = forward_results.joint_latents.zmss
+        losses = []
+        klds = {}
+        log_probs = {}
+
+        # minimize divergence between f(zm) and amortized prior
+        interm_loss = torch.stack([(
+                enc_mods[key].latents_class.log_prob(zmss[key]).sum(-1)
+                - self.prior.log_prob(transformed_enc_mods[key][0]).sum(-1)
+                - transformed_enc_mods[key][1]
+        ) for key in enc_mods]).sum(0)
+
+        for sub_str, subset_samples in subsets.items():
+            # subset size is the number of modalities included in the subset
+            subset_size = len(self.subsets[sub_str])
+
+            if subset_size == 1:
+                Gf = enc_mods[sub_str].latents_class
+                z_Gf = zmss[sub_str]
+
+            else:
+                # distribution of sum of random variables inside f-mean
+                Gf = Normal(torch.zeros(self.flags.batch_size, self.flags.class_dim, device=self.flags.device),
+                            torch.tensor(1 / subset_size).sqrt() * torch.ones(self.flags.batch_size,
+                                                                              self.flags.class_dim,
+                                                                              device=self.flags.device)
+                            )
+                z_Gf = torch.stack([transformed_enc_mods[mod.name][0] for mod in self.subsets[sub_str]]).mean(dim=0)
+
+            # print('z_Gf: ', z_Gf.mean())
+            lqz_x = Gf.log_prob(z_Gf).sum(-1) + subset_samples[1]
+            # print('lqz_x: ', lqz_x.mean())
+
+            lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
+                     for out_mod_str, px_z in forward_results.rec_mods[sub_str].items()]
+
+            # sum over #mods in subset
+            lpx_z = torch.stack(lpx_z).sum(0)
+            lpz = self.prior.log_prob(subset_samples[0]).sum(-1)
+
+            d_kl = lpz - lqz_x
+            # loss = -(lpx_z - (lqz_x - lpz))
+            if self.flags.beta == 0:
+                loss = lpx_z
+            else:
+                loss = lpx_z - self.flags.beta * d_kl
+
             # print('loss: ', loss.mean())
             losses.append(loss)
             log_probs[sub_str] = lpx_z.mean()
@@ -865,99 +1067,12 @@ class iwMoGfMVAE3(iwMMVAE, BaseMMVAE):
         return cond_gen
 
 
-class MoGfMVAE(BaseMMVAE):
+class MoGfMVAE(iwMoGfMVAE):
     """Mixture of Generalized f-Means VAE"""
 
     def __init__(self, exp, flags, modalities, subsets):
-        BaseMMVAE.__init__(self, exp, flags, modalities, subsets)
-
-        self.flow = AffineFlow(flags.class_dim, flags.num_gfm_flows, coupling_dim=flags.coupling_dim,
-                               nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
-
-    def reparam_with_eps(self, distr: Distr, eps: Tensor):
-        """Apply the reparameterization trick on distr with given epsilon"""
-        std = distr.logvar.mul(0.5).exp_()
-        # print(std.max())
-        return eps.mul(std).add_(distr.mu)
-
-    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
-                        batch_mods: typing.Iterable[str]) -> JointLatentsGfM:
-        """
-        Create a subspace for all the combinations of the encoded modalities by combining them.
-        """
-        batch_subsets = subsets_from_batchmods(batch_mods)
-
-        subset_samples = {}
-
-        # batch_size is not always equal to flags.batch_size
-        batch_size = enc_mods[[mod_str for mod_str in enc_mods][0]].latents_class.mu.shape[0]
-
-        # sample bs samples from prior
-        epss = MultivariateNormal(torch.zeros(self.flags.class_dim, device=self.flags.device),
-                                  torch.eye(self.flags.class_dim, device=self.flags.device)). \
-            sample((batch_size,)).reshape((batch_size, self.flags.class_dim))
-
-        transformed_enc_mods = {
-            mod_key: self.flow(self.reparam_with_eps(distr.latents_class, epss))[
-                0] for mod_key, distr in
-            enc_mods.items()}
-
-        for s_key in batch_subsets:
-            # calculate inverse flow
-            z = self.flow.rev(
-                torch.cat([transformed_enc_mods[mod.name].unsqueeze(dim=0) for mod in self.subsets[s_key]], dim=0).mean(
-                    dim=0))[0]
-
-            subset_samples[s_key] = z
-
-        z_joint = mixture_component_selection_embedding(subset_embeds=subset_samples, s_key='all', flags=self.flags)
-        joint_embedding = JointEmbeddingFoEM(embedding=z_joint, mod_strs=[k for k in batch_subsets])
-
-        return JointLatentsMoGfM(joint_embedding=joint_embedding,
-                                 subsets=subset_samples,
-                                 subset_samples=subset_samples, enc_mods=enc_mods, epss=epss)
-
-    def calculate_loss(self, forward_results, batch_d: dict) -> tuple[
-        float, float, dict, Mapping[str, float]]:
-        subsets = forward_results.joint_latents.subsets
-        epss = forward_results.joint_latents.epss
-        losses = []
-        klds = {}
-        log_probs = {}
-
-        # enc_mods_distr = {k: MultivariateNormal(enc_mod.latents_class.mu, enc_mod.latents_class.logvar.exp()) for
-        #                   k, enc_mod in
-        #                   forward_results.enc_mods.items()}
-        # take one zs from each uni modal post., from this get a zs, compute likelihood of zs for each of the unimodal post, aggregate over this.
-
-        for sub_str, subset_samples in subsets.items():
-            log_probs = torch.cat(
-                [log_normal_diag(subset_samples, mean=enc_mod.latents_class.mu, log_var=enc_mod.latents_class.logvar,
-                                 reduce=False).unsqueeze(0)
-                 for _, enc_mod in forward_results.enc_mods.items()]).mean(0)
-
-            kl_div = log_probs.exp() * (log_probs - log_normal_standard(epss, reduce=False))
-
-            log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
-
-            # loss = -(lpx_z - (lqz_x - lpz))
-            loss = lpx_z - self.flags.beta * kl_div
-
-            losses.append(loss)
-            log_probs[sub_str] = lpx_z.mean()
-
-            klds[sub_str] = self.flags.beta * log_mean_exp(kl_div).sum()
-
-        # concat over k samples (get k*number of subsets) as last dim
-        # take log_mean_exp over batch size
-        # sum over k*number of subsets
-        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
-
-        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
-
-        # normalize with the number of samples
-        joint_div = joint_div.mean()
-        return total_loss, joint_div, log_probs, klds
+        iwMoGfMVAE.__init__(self, exp, flags, modalities, subsets)
+        self.K = 1
 
 
 class MoFoGfMVAE(BaseMMVAE):

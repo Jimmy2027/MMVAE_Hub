@@ -121,9 +121,11 @@ class MoFoPoE(FlowOfSubsetsVAE, MoPoEMMVae):
         FlowOfSubsetsVAE.__init__(self)
         MoPoEMMVae.__init__(self, exp, flags, modalities, subsets)
         self.mm_div = MoFoPDiv()
-        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim)
+        self.flow = AffineFlow(flags.class_dim, flags.num_flows, coupling_dim=flags.coupling_dim,
+                               nbr_coupling_block_layers=flags.nbr_coupling_block_layers)
 
-    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod], batch_mods: typing.Iterable[str]) -> JointLatentsMoFoP:
+    def fuse_modalities(self, enc_mods: Mapping[str, BaseEncMod],
+                        batch_mods: typing.Iterable[str]) -> JointLatentsMoFoP:
         """
         Create a subspace for all the combinations of the encoded modalities by combining them.
         A joint latent space is then created by fusing all subspaces.

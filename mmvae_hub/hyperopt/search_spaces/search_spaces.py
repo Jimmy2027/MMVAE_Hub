@@ -10,17 +10,17 @@ pfom_optuna_sp = {
     "amortized_flow": [False]
 }
 
-sp_pgfm = {
+sp_sylvester = {
     'n_gpus': [1],
-    'method': ['pgfm'],
+    'method': ['sylvester_vae_noflow'],
     'min_beta': [0],
-    'max_beta': [1.7520493158062553],
+    'max_beta': [1.],
     "beta_warmup": [50],
     'class_dim': [640],
-    # "num_mods": [3],
+    "num_mods": [3],
     "num_gfm_flows": [3],
-    "initial_learning_rate": [7.928188645921211e-05],
-    "end_epoch": [1000],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [100],
     "coupling_dim": [32],
 }
 
@@ -111,12 +111,12 @@ iwmopoe = {
 }
 
 iwmogfm = {
-    'method': ['iwmogfm_multiloss'],
+    'method': ['iwmogfm_multiloss', 'iwmogfm_multiloss_'],
     "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [0., 0.1, 1.],
+    "max_beta": [1., 2., 5.],
     "beta_warmup": [0],
     "beta_start_epoch": [30],
     "num_mods": [3],
@@ -129,16 +129,16 @@ iwmogfm = {
 
 iwmogfm2 = {
     # 'method': ['iwmogfm2', 'iwmogfm2_'],
-    'method': ['iwmogfm2_'],
+    'method': ['iwmogfm2'],
     "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [0],
-    "beta_warmup": [0],
-    "beta_start_epoch": [10000],
+    "max_beta": [0.001, 1.],
+    "beta_warmup": [50],
+    "beta_start_epoch": [10],
     "num_mods": [3],
-    "end_epoch": [100],
+    "end_epoch": [500],
     "calc_nll": [False],
     "K": [5],
     "eval_freq": [10],
@@ -236,7 +236,7 @@ iwmogfm_mimic = {
     "calc_nll": [False],
     "K": [1],
     "eval_freq": [50],
-    "num_gfm_flows": [0],
+    "num_gfm_flows": [1],
     'gpu_mem': [10000],
 }
 
@@ -257,12 +257,14 @@ sp_pgfm_mimic = {
 sp_mofop = {
     'n_gpus': [1],
     'method': ['mofop'],
-    'max_beta': [2.5],
+    'max_beta': [1.],
+    "beta_warmup": [50],
     'class_dim': [512],
-    "num_mods": [1, 2],
-    "initial_learning_rate": [0.001],
-    "end_epoch": [100],
-    "num_flows": [5],
+    "num_mods": [3],
+    "initial_learning_rate": [0.0005],
+    "nbr_coupling_block_layers": [4],
+    "end_epoch": [300],
+    "num_flows": [4, 10],
     "calc_nll": [False]
 }
 
@@ -299,11 +301,24 @@ sp_mogfm_ = {
 
 sp_joint_elbo_article = {
     'n_gpus': [1],
-    'method': ['mopoe'],
-    'max_beta': [0.],
+    'method': ['mopgfm'],
+    'max_beta': [1.],
     "beta_warmup": [0],
     'class_dim': [512],
-    "num_mods": [3],
+    # "num_mods": [3],
     "initial_learning_rate": [0.001],
-    "end_epoch": [150],
+    "end_epoch": [500],
+    'gpu_mem': [12000]
+}
+
+poe_args = {
+    'method': ['poe'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
+    "min_beta": [0],
+    "max_beta": [2.5],
+    "beta_warmup": [0],
+    "num_mods": [1, 2, 3, 4, 5],
+    "end_epoch": [500],
+    "eval_freq": [100],
 }

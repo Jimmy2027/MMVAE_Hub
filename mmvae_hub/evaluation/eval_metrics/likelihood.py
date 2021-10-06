@@ -31,6 +31,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
         style = None
 
     mod_names = mods.keys()
+    # sample from the subset posterior
     l = latents.get_latent_samples(subset_key=subset_key, n_imp_samples=num_imp_samples, mod_names=mod_names,
                                    style=style, model=model)
 
@@ -71,7 +72,9 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,
                                        gen[mod.name],
-                                       mod.batch_text_to_onehot(batch[mod.name]) if mod.name == 'text' else batch[mod.name],
+                                       mod.batch_text_to_onehot(batch[mod.name], mod.num_features)
+                                       if mod.name == 'text'
+                                       else batch[mod.name],
                                        style_mod,
                                        l_lin_rep_content)
         ll[mod.name] = ll_mod

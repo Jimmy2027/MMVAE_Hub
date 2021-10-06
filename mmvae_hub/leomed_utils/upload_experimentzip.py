@@ -102,8 +102,8 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
-    # upload_one(Path('/Users/Hendrik/Desktop/polymnist_iwmopoe_2021_08_30_11_10_58_920798.zip'))
-    #
+
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
         # upload_all('/mnt/data/hendrik/mmvae_hub/experiments')
         upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+

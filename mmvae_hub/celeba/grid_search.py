@@ -79,24 +79,23 @@ search_spaces_3 = {
 
 sp_joint_elbo_article = {
     'n_gpus': [1],
-    'method': ['mopgfm'],
-    'max_beta': [1.],
+    'method': ['mopoe'],
+    'max_beta': [2.],
     "beta_warmup": [0],
-    'class_dim': [512],
+    'class_dim': [1280],
     "initial_learning_rate": [0.0005],
     "end_epoch": [100],
-    "eval_freq": [100],
-}
+    "eval_freq": [10],
+    # "K":[5]
+    # "factorized_representation": [True],
+    # "beta": [5.],
+    # "beta_style": [2.0],
+    # "beta_content": [1.0],
+    # "beta_m1_style": [1.0],
+    # "beta_m2_style": [5.0],
+    # "style_img_dim": [32],
+    # "style_text_dim": [32],
 
-search_space_sylvester = {
-    'method': ['planar_vae'],
-    'max_beta': [1.],
-    'class_dim': [64],
-    "num_mods": [1],
-    "num_flows": [5],
-    "initial_learning_rate": [0.000005],
-    "end_epoch": [50],
-    "calc_nll": [False]
 }
 
 if __name__ == '__main__':

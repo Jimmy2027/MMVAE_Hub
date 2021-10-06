@@ -93,6 +93,15 @@ class BaseTrainer:
             # backprop
             self.exp.optimizer.zero_grad()
             total_loss.backward()
+            for _, mod in model.modalities.items():
+                for name, param in mod.encoder.named_parameters():
+                    if param.requires_grad:
+                        try:
+                            if torch.any(torch.isnan(param.grad.mean())):
+                                print(name, param.grad.mean())
+
+                        except AttributeError:
+                            print(name, ': NONE gradient')
             # temp
             for _, mod in model.modalities.items():
                 # torch.nn.utils.clip_grad_norm_(mod.encoder.parameters(), 5)
@@ -100,7 +109,14 @@ class BaseTrainer:
                 #     for p in mod.encoder.parameters():
                 #         torch.nan_to_num_(p, nan=0,posinf=0, neginf=0)
                 # print(max(p.grad.max() for p in mod.encoder.parameters() if not p.grad is None))
-                assert not sum(p.grad.max().isnan() for p in mod.encoder.parameters() if not p.grad is None)
+                if sum(p.grad.max().isnan() for p in mod.encoder.parameters() if not p.grad is None):
+                    sgfdhf = 0
+
+                assert not sum(
+                    p.grad.max().isnan()
+                    for p in mod.encoder.parameters()
+                    if p.grad is not None
+                )
 
             self.exp.optimizer.step()
 
@@ -156,7 +172,7 @@ class BaseTrainer:
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
             log.info('generating plots')
-            #temp
+            # temp
             # plots = generate_plots(self.exp, epoch)
             # self.tb_logger.write_plots(plots, epoch)
 

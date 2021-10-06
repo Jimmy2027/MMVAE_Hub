@@ -31,7 +31,7 @@ def generate_random_samples_plots(exp, epoch):
     for k, m_key_in in enumerate(mods.keys()):
         mod = mods[m_key_in]
         samples_mod = random_samples[m_key_in]
-        rec = torch.zeros(exp.plot_img_size,
+        rec = torch.zeros(mod.plot_img_size,
                           dtype=torch.float32).repeat(num_samples, 1, 1, 1)
         for l in range(0, num_samples):
             rand_plot = mod.plot_data(samples_mod[l])
@@ -56,7 +56,7 @@ def generate_swapping_plot(exp, epoch):
         mod_in = mods[m_key_in]
         for l, m_key_out in enumerate(mods.keys()):
             mod_out = mods[m_key_out]
-            rec = torch.zeros(exp.plot_img_size,
+            rec = torch.zeros(mod_out.plot_img_size,
                               dtype=torch.float32).repeat(121, 1, 1, 1)
             rec = rec.to(exp.flags.device)
             for i in range(len(samples)):
@@ -107,7 +107,7 @@ def generate_cond_imgs(exp: BaseExperiment, M: int, mods: Mapping[str, BaseModal
             s_in = subset
             for m_key_out in mods:
                 mod_out = mods[m_key_out]
-                rec = torch.zeros(exp.plot_img_size,
+                rec = torch.zeros(mod_out.plot_img_size,
                                   dtype=torch.float32).repeat(nbr_samples_x * nbr_samples_y + M * nbr_samples_x, 1, 1,
                                                               1)
                 for m, sample in enumerate(test_samples):

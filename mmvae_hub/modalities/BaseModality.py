@@ -40,3 +40,6 @@ class BaseModality(ABC):
             mu, scale = self.decoder(None, class_embeddings)
             return self.px_z(loc=mu.unflatten(0, unflatten), scale=scale)
         return self.px_z(*self.decoder(style_embeddings, class_embeddings), validate_args=False)
+
+    def log_likelihood(self, px_z, batch_sample):
+        return px_z.log_prob(batch_sample)

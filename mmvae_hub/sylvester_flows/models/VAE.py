@@ -3,6 +3,8 @@ from __future__ import print_function
 import numpy as np
 import os
 import torch.nn as nn
+from torch.autograd import Variable
+
 from mmvae_hub.sylvester_flows.models import flows
 from mmvae_hub.sylvester_flows.models.layers import GatedConv2d, GatedConvTranspose2d
 from mmvae_hub.sylvester_flows.optimization.loss import multinomial_loss_function

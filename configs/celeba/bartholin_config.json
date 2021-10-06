@@ -4,7 +4,7 @@
   "norby": true,
   "use_db": true,
   "dataloader_workers": 16,
-  "dir_data": "/mnt/data/hendrik/celeba_data",
+  "dir_data": "/mnt/data/hendrik/celeba_data/CelebA",
   "dir_clf": "/mnt/data/hendrik/celeba_data/clfs",
   "dir_fid": "/mnt/data/hendrik/celeba_data/fid",
   "style_dim": 0,

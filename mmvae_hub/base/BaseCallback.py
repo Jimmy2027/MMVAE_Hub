@@ -28,7 +28,7 @@ class BaseCallback:
         self.maybe_send_to_db(train_results=train_results, test_results=test_results, epoch=epoch, beta=self.beta)
 
         # save checkpoints after every 5 epochs
-        if (epoch + 1) % 5 == 0 or (epoch + 1) == self.flags.end_epoch:
+        if (epoch + 1) % self.flags.checkpoint_freq == 0 or (epoch + 1) == self.flags.end_epoch:
             self.exp.mm_vae.save_networks(epoch)
 
         return self.beta

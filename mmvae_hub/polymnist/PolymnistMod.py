@@ -12,7 +12,7 @@ from mmvae_hub.utils.plotting.save_samples import write_samples_img_to_file
 class PolymnistMod(ModalityIMG):
     def __init__(self, flags, name: str):
         super(PolymnistMod, self).__init__(data_size=torch.Size((3, 28, 28)), flags=flags, name=name)
-
+        self.plot_img_size = torch.Size((3, 28, 28))
         self.gen_quality_eval = True
         self.file_suffix = '.png'
         self.encoder = EncoderImg(flags).to(flags.device)

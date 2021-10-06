@@ -42,32 +42,50 @@ search_spaces_1 = {
 }
 
 search_spaces_2 = {
-    'method': ['iwmogfm_amortized'],
+    'method': ['iwmogfm2'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [640],
+    'class_dim': [1280],
     "min_beta": [0],
-    "dataloader_workers": [8],
-    "max_beta": [0.0001],
-    "beta_start_epoch": [30],
+    "dataloader_workers": [16],
+    "max_beta": [0.001, 1., 2.],
+    "beta_start_epoch": [5.],
     "beta_warmup": [50],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
     "num_mods": [3],
-    "end_epoch": [100],
+    "end_epoch": [500],
     "calc_nll": [False],
-    "K": [5],
-    "eval_freq": [20],
+    "K": [2],
+    "eval_freq": [100],
+}
+
+search_spaces_amortized = {
+    'method': ['iwmogfm_amortized'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [1280],
+    "min_beta": [0],
+    "dataloader_workers": [16],
+    "max_beta": [0.00001, 0.001, 0.1],
+    "beta_start_epoch": [5.],
+    "beta_warmup": [50],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "num_mods": [3],
+    "end_epoch": [500],
+    "calc_nll": [False],
+    "K": [2],
+    "eval_freq": [100],
 }
 
 search_spaces_3 = {
-    'method': ['iwmogfm2'],
+    'method': ['iwmogfm4'],
     "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
-    "dataloader_workers": [8],
-    "max_beta": [0.1, 0.0001],
-    "beta_start_epoch": [50],
-    "beta_warmup": [100],
+    "dataloader_workers": [16],
+    "max_beta": [1.],
+    "beta_start_epoch": [0],
+    "beta_warmup": [0],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
     "num_mods": [3],
@@ -79,14 +97,15 @@ search_spaces_3 = {
 
 sp_joint_elbo_article = {
     'n_gpus': [1],
-    'method': ['mopoe'],
+    'method': ['poe'],
     'max_beta': [2.5],
     "beta_warmup": [0],
-    'class_dim': [512],
+    'class_dim': [1280],
     "num_mods": [3],
     "initial_learning_rate": [0.001],
     "end_epoch": [1],
     "eval_freq": [1],
+    "calc_nll": [False],
 }
 
 search_space_sylvester = {
@@ -97,12 +116,12 @@ search_space_sylvester = {
     "num_flows": [5],
     "initial_learning_rate": [0.0005],
     "end_epoch": [50],
-    "calc_nll": [False]
+    "calc_nll": [False],
 }
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_2]:
+    for grid in [search_spaces_amortized]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

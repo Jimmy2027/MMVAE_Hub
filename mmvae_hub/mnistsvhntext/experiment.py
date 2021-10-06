@@ -23,7 +23,7 @@ class MNISTSVHNText(BaseExperiment):
         self.flags = flags
         self.labels = ['digit']
 
-        alphabet_path = Path(__file__).parent / ('alphabet.json')
+        alphabet_path = Path(__file__).parent.parent / ('alphabet.json')
         with open(alphabet_path) as alphabet_file:
             self.alphabet = str(''.join(json.load(alphabet_file)))
         # self.flags.vocab_size = len(self.alphabet)
@@ -32,7 +32,7 @@ class MNISTSVHNText(BaseExperiment):
 
         self.plot_img_size = torch.Size((3, 28, 28))
 
-        # self.flags.num_features = len(self.alphabet)
+        self.flags.num_features = len(self.alphabet)
 
         self.modalities = self.set_modalities()
         self.num_modalities = len(self.modalities.keys())
