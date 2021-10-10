@@ -12,11 +12,12 @@ search_space1 = {
     'class_dim': 640,
     "min_beta": 0,
     "max_beta": 2.0,
-    "beta_warmup": 50,
+    "beta_warmup": 0,
     "num_gfm_flows": 3,
     "num_mods": 3,
-    "end_epoch": 150,
+    "end_epoch": 10,
     "eval_freq": 10,
+    "data_multiplications": 1
 }
 
 if __name__ == '__main__':

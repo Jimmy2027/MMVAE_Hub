@@ -14,7 +14,7 @@ from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoM
     MoFoPoE
 from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, \
     iwMoGfMVAE, iwmopgfm, iwMoGfMVAE2, iwMoGfMVAE3, iwMoGfMVAE_amortized, iwMoGfMVAE_old, iwMoGfMVAE_multiloss, \
-    iwMoGfMVAE_multiloss_, iwMoGfMVAE4
+    iwMoGfMVAE_multiloss_, iwMoGfMVAE4, iwMoGfMVAE2_
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
@@ -126,6 +126,8 @@ class BaseExperiment(ABC):
             model = iwMoGfMVAE_multiloss_(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm4':
             model = iwMoGfMVAE4(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm2_':
+            model = iwMoGfMVAE2_(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

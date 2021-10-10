@@ -93,15 +93,16 @@ class BaseTrainer:
             # backprop
             self.exp.optimizer.zero_grad()
             total_loss.backward()
-            for _, mod in model.modalities.items():
-                for name, param in mod.encoder.named_parameters():
-                    if param.requires_grad:
-                        try:
-                            if torch.any(torch.isnan(param.grad.mean())):
-                                print(name, param.grad.mean())
+            if iteration >= 2:
+                for _, mod in model.modalities.items():
+                    for name, param in mod.encoder.named_parameters():
+                        if param.requires_grad:
+                            try:
+                                if torch.any(torch.isnan(param.grad.mean())):
+                                    print(name, param.grad.mean())
 
-                        except AttributeError:
-                            print(name, ': NONE gradient')
+                            except AttributeError:
+                                print(name, ': NONE gradient')
             # temp
             for _, mod in model.modalities.items():
                 # torch.nn.utils.clip_grad_norm_(mod.encoder.parameters(), 5)

@@ -39,12 +39,23 @@ sp_mopoe_mnistsvhntext = {
     'n_gpus': [1],
     'gpu_mem': [30000],
     'method': ['mopoe'],
-    'max_beta': [2.],
-    'class_dim': [1280],
-    "beta_warmup": [50],
-    "initial_learning_rate": [0.0005],
-    "end_epoch": [300],
-    "data_multiplications": [1]
+    'max_beta': [5.],
+    'class_dim': [20],
+    "beta_warmup": [0],
+    "initial_learning_rate": [0.001],
+    "end_epoch": [150],
+    "data_multiplications": [10]
+}
+sp_mofop_mnistsvhntext = {
+    'n_gpus': [1],
+    'gpu_mem': [30000],
+    'method': ['mofop', 'mopgfm'],
+    'max_beta': [5.],
+    'class_dim': [20, 512],
+    "beta_warmup": [0],
+    "initial_learning_rate": [0.001],
+    "end_epoch": [150],
+    "data_multiplications": [10]
 }
 
 sp_mopgfm = {
@@ -206,23 +217,52 @@ sp_mopoe_mimic = {
     "amortized_flow": [False]
 }
 
+mopoe_celeba = {
+    'n_gpus': [1],
+    'method': ['mopoe'],
+    'max_beta': [2.],
+    "beta_warmup": [0],
+    'class_dim': [64],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [100],
+    "eval_freq": [10],
+    "use_clf": [True],
+    "batch_size": [256]
+}
+
+mopgfm_celeba = {
+    'n_gpus': [1],
+    'method': ['mopgfm', 'mofop'],
+    'max_beta': [2.],
+    "beta_warmup": [50],
+    'class_dim': [64],
+    "initial_learning_rate": [0.0005],
+    "end_epoch": [100],
+    "eval_freq": [50],
+    "use_clf": [True],
+    "batch_size": [256],
+    "coupling_dim": [64],
+    "nbr_coupling_block_layers": [8],
+    "num_gfm_flows": [11],
+}
+
 mopgfm_mimic = {
     'method': ['mopgfm'],
     "initial_learning_rate": [0.0005],
     # 'class_dim': [640, 1280],
-    'class_dim': [640],
+    'class_dim': [64],
     "min_beta": [0],
     "dataloader_workers": [16],
     # "max_beta": [1.0, 2.5],
-    "max_beta": [1.0],
+    "max_beta": [1.5],
     "beta_warmup": [50],
     "coupling_dim": [64],
-    "nbr_coupling_block_layers": [4],
-    "end_epoch": [100],
+    "nbr_coupling_block_layers": [5],
+    "end_epoch": [200],
     "calc_nll": [False],
-    "eval_freq": [10],
-    "num_gfm_flows": [2],
-    "K": [1]
+    "eval_freq": [100],
+    "num_gfm_flows": [1],
+
 }
 
 iwmogfm_mimic = {

@@ -31,6 +31,8 @@ class CelebaText(BaseModality):
         self.alphabet = alphabet
 
         self.num_features = len(self.alphabet)
+        # will be set with the set_rec_weights method from the celebaExperiment
+        self.rec_weight = None
 
         self.len_sequence = len_sequence
         self.data_size = torch.Size([len_sequence])
@@ -62,6 +64,8 @@ class CelebaText(BaseModality):
         if self.flags.use_clf:
             img_clf_path = self.flags.dir_clf / 'clf_celeba_text.pth'
             if not img_clf_path.exists():
+                print(
+                    f'text clf not found under {img_clf_path}. Parent folder contains: {list(img_clf_path.parent.iterdir())}')
                 download_from_url(
                     url='https://www.dropbox.com/sh/lx8669lyok9ois6/AACaBy1YNNq3ebh149k_EXrca/trained_classifiers/trained_clfs_celeba/clf_m2?dl=1',
                     dest_path=img_clf_path, verbose=True)
@@ -75,7 +79,7 @@ class CelebaText(BaseModality):
         if unflatten:
             return self.px_z(self.decoder(None, class_embeddings)[0].unflatten(0, unflatten))
 
-        text_hat = self.decoder(style_embeddings, class_embeddings)[0]
+        text_hat = self.decoder(None, class_embeddings)[0]
         # ok = self.px_z.arg_constraints["probs"].check(text_hat)
         # bad_elements = text_hat[~ok]
         # print(bad_elements)
@@ -111,10 +115,10 @@ if __name__ == '__main__':
 
     config = json2dict(get_config_path(dataset='celeba'))
 
-    img_clf_path = Path(config['dir_clf']) / 'clf_celeba_img.pth'
-
+    img_clf_path = Path(config['dir_clf']).expanduser() / 'clf_celeba_text.pth'
+    img_clf_path.parent.mkdir(exist_ok=True, parents=True)
     if not img_clf_path.exists():
+        print(f'text clf not found under {img_clf_path}. Parent folder contains: {list(img_clf_path.parent.iterdir())}')
         download_from_url(
             url='https://www.dropbox.com/sh/lx8669lyok9ois6/AACaBy1YNNq3ebh149k_EXrca/trained_classifiers/trained_clfs_celeba/clf_m2?dl=1',
             dest_path=img_clf_path, verbose=True)
-    print("Done.")

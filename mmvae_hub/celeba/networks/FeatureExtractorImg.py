@@ -3,6 +3,8 @@ import torch.nn as nn
 from mmvae_hub.celeba.networks.ResidualBlocks import ResidualBlock2dConv
 
 
+
+
 def make_res_block_feature_extractor(in_channels, out_channels, kernelsize, stride, padding, dilation, a_val=2.0, b_val=0.3):
     downsample = None;
     if (stride != 2) or (in_channels != out_channels):

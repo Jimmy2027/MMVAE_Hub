@@ -82,10 +82,12 @@ sp_joint_elbo_article = {
     'method': ['mopoe'],
     'max_beta': [2.],
     "beta_warmup": [0],
-    'class_dim': [1280],
+    'class_dim': [64],
     "initial_learning_rate": [0.0005],
     "end_epoch": [100],
     "eval_freq": [10],
+    "use_clf": [False],
+    "batch_size": [256]
     # "K":[5]
     # "factorized_representation": [True],
     # "beta": [5.],

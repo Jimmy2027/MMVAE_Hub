@@ -56,8 +56,8 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         if params['method'] == 'mogfm' or params['method'].startswith('iw'):
             num_hours = int(np.round((params['end_epoch'] * 10) / 60)) or 1
         else:
-            # 1 epochs needs approx. 2 minutes
-            num_hours = int(np.round((params['end_epoch'] * 2) / 60)) or 1
+            # 1 epochs needs approx. 10 minutes
+            num_hours = int(np.round((params['end_epoch'] * 10) / 60)) or 1
         # 100 epochs take about 5G of space
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
 

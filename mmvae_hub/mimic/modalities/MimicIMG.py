@@ -28,8 +28,8 @@ class MimicImg(ModalityIMG):
         self.gen_quality_eval = True
         self.file_suffix = '.png'
 
-        self.encoder = EncoderImg(self.flags, self.flags.style_pa_dim).to(flags.device)
-        self.decoder = DecoderImg(self.flags, self.flags.style_pa_dim).to(flags.device)
+        self.encoder = EncoderImg(self.flags).to(flags.device)
+        self.decoder = DecoderImg(self.flags).to(flags.device)
 
         self.rec_weight = rec_weight
 

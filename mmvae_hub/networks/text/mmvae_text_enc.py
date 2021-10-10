@@ -48,12 +48,14 @@ class FeatureExtractorText(nn.Module):
         self.resblock_6 = make_res_block_enc_feat_ext(4 * self.args.DIM_text,
                                                       5 * self.args.DIM_text,
                                                       kernelsize=4, stride=2, padding=1, dilation=1)
-        self.resblock_7 = make_res_block_enc_feat_ext(5 * self.args.DIM_text,
-                                                      5 * self.args.DIM_text,
-                                                      kernelsize=4, stride=2, padding=1, dilation=1)
-        self.resblock_8 = make_res_block_enc_feat_ext(5 * self.args.DIM_text,
-                                                      5 * self.args.DIM_text,
-                                                      kernelsize=4, stride=2, padding=0, dilation=1)
+
+        if self.args.len_sequence > 500:
+            self.resblock_7 = make_res_block_enc_feat_ext(5 * self.args.DIM_text,
+                                                          5 * self.args.DIM_text,
+                                                          kernelsize=4, stride=2, padding=1, dilation=1)
+            self.resblock_8 = make_res_block_enc_feat_ext(5 * self.args.DIM_text,
+                                                          5 * self.args.DIM_text,
+                                                          kernelsize=4, stride=2, padding=0, dilation=1)
 
     def forward(self, x):
         """

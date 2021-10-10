@@ -42,21 +42,21 @@ search_spaces_1 = {
 }
 
 search_spaces_2 = {
-    'method': ['iwmogfm2'],
+    'method': ['iwmogfm2_'],
     "initial_learning_rate": [0.0005],
-    'class_dim': [1280],
+    'class_dim': [640],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [0.001, 1., 2.],
-    "beta_start_epoch": [5.],
+    "max_beta": [0.001],
+    "beta_start_epoch": [30.],
     "beta_warmup": [50],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
-    "num_mods": [3],
+    "num_mods": [1],
     "end_epoch": [500],
     "calc_nll": [False],
     "K": [2],
-    "eval_freq": [100],
+    "eval_freq": [50],
 }
 
 search_spaces_amortized = {
@@ -107,21 +107,21 @@ sp_joint_elbo_article = {
     "eval_freq": [1],
     "calc_nll": [False],
 }
-
 search_space_sylvester = {
-    'method': ['planar_vae'],
+    'method': ['mopoe'],
     'max_beta': [1.],
     'class_dim': [64],
     "num_mods": [1],
     "num_flows": [5],
     "initial_learning_rate": [0.0005],
-    "end_epoch": [50],
+    "end_epoch": [1],
+    "eval_freq": [1],
     "calc_nll": [False],
 }
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_amortized]:
+    for grid in [search_spaces_2]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

@@ -6,5 +6,10 @@
   "inception_state_dict": "~/klugh/mmvae_hub_data/pt_inception-2015-12-05-6726825d.pth",
   "method": "mopoe",
   "norby": false,
-  "use_db": true
+  "use_db": true,
+  "batch_size": 256,
+  "calc_nll": true,
+  "eval_lr": true,
+  "calc_prd": true,
+  "use_clf": true
 }

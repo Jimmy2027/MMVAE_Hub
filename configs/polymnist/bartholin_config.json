@@ -6,7 +6,7 @@
   "method": "mopoe",
   "norby": true,
   "use_db": true,
-  "dataloader_workers": 16,
+  "dataloader_workers": 8,
   "kl_annealing": 0,
   "div_weight_uniform_content": 0.25,
   "num_hidden_layers": 1,

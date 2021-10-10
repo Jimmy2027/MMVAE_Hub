@@ -11,6 +11,7 @@ from torchvision import transforms
 from mmvae_hub.celeba.networks.ConvNetworkImgClfCelebA import ClfImg
 from mmvae_hub.celeba.networks.ConvNetworksImgCelebA import EncoderImg, DecoderImg
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
+# from mmvae_hub.networks.images.ConvNetworksImgMimic import EncoderImg, DecoderImg
 
 
 class CelebaImg(ModalityIMG):
@@ -61,10 +62,10 @@ if __name__ == '__main__':
 
     config = json2dict(get_config_path(dataset='celeba'))
 
-    img_clf_path = Path(config['dir_clf']) / 'clf_celeba_img.pth'
-
+    img_clf_path = Path(config['dir_clf']).expanduser() / 'clf_celeba_img.pth'
+    img_clf_path.parent.mkdir(exist_ok=True, parents=True)
     if not img_clf_path.exists():
+        print(f'img clf not found under {img_clf_path}. Parent folder contains: {list(img_clf_path.parent.iterdir())}')
         download_from_url(
             url='https://www.dropbox.com/sh/lx8669lyok9ois6/AABxwQKXU1no5cM91eStMhfIa/trained_classifiers/trained_clfs_celeba/clf_m1?dl=1',
             dest_path=img_clf_path, verbose=True)
-    print("Done.")

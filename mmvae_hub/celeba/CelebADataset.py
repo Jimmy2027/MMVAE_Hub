@@ -57,7 +57,12 @@ class CelebaDataset(Dataset):
             img = self.transform(img)
         text_str = one_hot_encode(self.args.len_sequence, self.alphabet, self.y[index])
         label = torch.from_numpy((self.labels[index, 1:] > 0).astype(int)).float()
+        # img = torch.rand((self.args.image_channels, 64, 64))
+        # text_str = torch.ones((8, 71))
+        # img = torch.ones((1, 28, 28))
+        # text_str = torch.rand((256, 71))
         sample = {'img': img, 'text': text_str}
+        # sample = {'img': img}
         return sample, label
 
     def __len__(self):

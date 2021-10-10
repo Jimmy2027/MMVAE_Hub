@@ -57,10 +57,6 @@ class BaseMMVAE(ABC, nn.Module):
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
 
-                if style_mu is not None:
-                    latents_style = Distr(mu=style_mu, logvar=style_logvar)
-                    enc_mods[mod_str].latents_style = latents_style
-
         return enc_mods
 
     def decode(self, enc_mods: Mapping[str, EncModPlanarMixture], latents_joint: JointLatents) -> dict:
@@ -69,11 +65,7 @@ class BaseMMVAE(ABC, nn.Module):
         class_embeddings = latents_joint.get_joint_embeddings()
 
         for mod_str, enc_mod in enc_mods.items():
-            if enc_mod.latents_style:
-                latents_style = enc_mod.latents_style
-                style_embeddings = latents_style.reparameterize()
-            else:
-                style_embeddings = None
+            style_embeddings = None
             mod = self.modalities[mod_str]
             rec_mods[mod_str] = mod.calc_likelihood(style_embeddings, class_embeddings)
         return rec_mods
@@ -91,18 +83,7 @@ class BaseMMVAE(ABC, nn.Module):
 
         log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
 
-        beta_style = self.flags.beta_style
-
-        if self.flags.factorized_representation:
-
-            klds_style = {k: self.mm_div.calc_kl_divergence(v.latents_style.mu, v.latents_style.logvar,
-                                                            norm_value=self.flags.batch_size) for k, v
-                          in forward_results.enc_mods.items()}
-
-            kld_style = calc_style_kld(self.exp, klds_style)
-        else:
-            kld_style = 0.0
-        kld_weighted = beta_style * kld_style + self.flags.beta_content * joint_divergence
+        kld_weighted = self.flags.beta_content * joint_divergence
         rec_weight = 1.0
         total_loss = rec_weight * weighted_log_prob + self.flags.beta * kld_weighted
 
@@ -130,9 +111,8 @@ class BaseMMVAE(ABC, nn.Module):
             num_samples = self.flags.batch_size
 
         z_class = self.get_rand_samples_from_joint(num_samples)
-        z_styles = self.get_random_styles(num_samples)
 
-        random_latents = ReparamLatent(content=z_class, style=z_styles)
+        random_latents = ReparamLatent(content=z_class, style=None)
         return self.generate_from_latents(random_latents)
 
     def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
@@ -162,9 +142,8 @@ class BaseMMVAE(ABC, nn.Module):
     def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent) -> Mapping[str, Distribution]:
         cond_gen = {}
         for mod_str, mod in self.modalities.items():
-            style_m = latents.style[mod_str]
             content = latents.content
-            cond_gen_m = mod.px_z(*mod.decoder(style_m, content))
+            cond_gen_m = mod.px_z(*mod.decoder(None, content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
 

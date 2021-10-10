@@ -295,6 +295,8 @@ def plot_coherence_accuracy(logs_dict: dict) -> None:
 
 
 def plot_prd_scores(df):
+    if df.empty:
+        return
     prd_scores = {}
 
     for col in df.columns:
@@ -407,8 +409,9 @@ def load_experiment(experiment_dir: Path = None, flags=None, _id: str = None, ep
     if not flags:
         dataset = _id.split('_')[0].lower()
         flags_setup = BaseFlagsSetup(get_config_path(dataset=dataset))
-        flags_path = experiment_dir / Path('flags.rar')
-        if flags_path.exists():
+        if experiment_dir is not None:
+            flags_path = experiment_dir / Path('flags.rar')
+        if not experiment_dir is None and flags_path.exists():
             flags = flags_setup.load_old_flags(flags_path, add_args={'save_figure': False, **add_args})
         else:
             flags = flags_setup.load_old_flags(_id=_id, add_args={'save_figure': False, **add_args})
@@ -647,20 +650,23 @@ def get_experiment(flags):
 
 
 if __name__ == '__main__':
-    experiment_uid = 'polymnist_mofop_2021_10_04_11_33_41_886746'
+    experiment_uid = 'celeba_mopoe_2021_10_08_16_38_26_205373'
+    # experiment_uid = ' celeba_mopgfm_2021_10_04_20_43_20_518945'
     # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(_id=experiment_uid)
-    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    experiment_dict = experiments_database.get_experiment_dict()
+    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    # experiment_dict = experiments_database.get_experiment_dict()
+    # exp = load_experiment(experiment_dir=None, flags=None, _id=experiment_uid, epoch=2)
     # plot_basic_batch_logs(phase='train', logs_dict=experiment_dict)
     # plot_basic_batch_logs('train', experiment_dict)
     # plot_basic_batch_logs('test', experiment_dict)
     # plot_betas(experiment_dict)
     # plot_lr_accuracy(experiment_dict)
-    df = make_experiments_dataframe(experiments_database.connect())
+
+    # df = make_experiments_dataframe(experiments_database.connect())
     # plot_coherence_accuracy(experiment_dict)
-    plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'celeba_mopgfm_2021_10_04_19_48_03_250347']))
+    # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'celeba_mopgfm_2021_10_04_19_48_03_250347']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    # for id in ['polymnist_iwmogfm_amortized_2021_10_03_16_17_57_606392']:
-    #     upload_notebook_to_db(id)
+    for id in ['celeba_mopgfm_2021_10_04_20_43_20_518945']:
+        upload_notebook_to_db(id)

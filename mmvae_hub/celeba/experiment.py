@@ -4,6 +4,16 @@ from pathlib import Path
 
 import PIL.Image as Image
 import numpy as np
+import torch
+
+from mmvae_hub.celeba.modalities.celebaImg_ import CelebaImg_
+from mmvae_hub.mimic.modalities.MimicIMG import MimicImg
+
+from mmvae_hub.mnistsvhntext.textmod import Text
+
+from mmvae_hub.mnistsvhntext.MNISTmod import MNIST
+
+from mmvae_hub.mimic.modalities.MimicText import MimicText
 from sklearn.metrics import average_precision_score
 from torchvision import transforms
 
@@ -50,6 +60,7 @@ class CelebaExperiment(BaseExperiment):
 
         self.optimizer = None
         self.rec_weights = self.set_rec_weights()
+        self.style_weights = self.set_style_weights()
 
         self.test_samples = self.get_test_samples()
         self.eval_metric = average_precision_score
@@ -58,11 +69,18 @@ class CelebaExperiment(BaseExperiment):
         self.metrics = CelebAMetrics
 
     def set_modalities(self):
-        mod1 = CelebaImg(self.flags)
+        # mod1 = CelebaImg(self.flags)
         mod2 = CelebaText(flags=self.flags,
                           len_sequence=self.flags.len_sequence,
                           alphabet=self.alphabet)
+        # mod1 = MimicImg(flags=self.flags, name='img', labels=self.labels, rec_weight=1.,
+        #                 plot_img_size=torch.Size((3, 64, 64)), data_size=torch.Size((3, 64, 64)))
+        mod1 = CelebaImg_(flags=self.flags, name='img')
+        # mod1 = MNIST(self.flags, 'img')
+        # mod2 = Text(self.flags, self.alphabet)
+
         return {mod1.name: mod1, mod2.name: mod2}
+        # return {mod1.name: mod1}
 
     def get_transform_celeba(self):
         offset_height = (218 - self.flags.crop_size_img) // 2
@@ -85,7 +103,6 @@ class CelebaExperiment(BaseExperiment):
         self.dataset_test = d_eval
 
     def set_rec_weights(self) -> None:
-
         ref_mod_d_size = self.modalities['img'].data_size.numel() / 3
         for k, m_key in enumerate(self.modalities.keys()):
             mod = self.modalities[m_key]
@@ -122,4 +139,4 @@ class CelebaExperiment(BaseExperiment):
         return np.mean(np.array(values))
 
     def set_style_weights(self):
-        return {'img': self.flags.beta_m1_style, 'text': self.flags.beta_m2_style}
+        return {'img': 0, 'text': 0}

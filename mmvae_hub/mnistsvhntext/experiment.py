@@ -23,7 +23,7 @@ class MNISTSVHNText(BaseExperiment):
         self.flags = flags
         self.labels = ['digit']
 
-        alphabet_path = Path(__file__).parent.parent / ('alphabet.json')
+        alphabet_path = Path(__file__).parent.parent / ('modalities/text/alphabet.json')
         with open(alphabet_path) as alphabet_file:
             self.alphabet = str(''.join(json.load(alphabet_file)))
         # self.flags.vocab_size = len(self.alphabet)
@@ -49,10 +49,12 @@ class MNISTSVHNText(BaseExperiment):
         self.paths_fid = self.set_paths_fid()
 
     def set_modalities(self):
+        # temp
         mod1 = MNIST(self.flags, 'mnist')
-        mod2 = SVHN(self.flags, 'svhn')
+        # mod2 = SVHN(self.flags, 'svhn')
         mod3 = Text(self.flags, self.alphabet)
-        return {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3}
+        # return {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3}
+        return {mod1.name: mod1, mod3.name: mod3}
 
     def get_transform_mnist(self):
         transform_mnist = transforms.Compose([transforms.ToTensor(),
