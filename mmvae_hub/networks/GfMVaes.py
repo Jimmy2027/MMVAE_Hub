@@ -185,9 +185,9 @@ class BaseiwMoGfMVAE(iwMMVAE, BaseMMVAE):
         for subset_str, subset in joint_latents.subsets.items():
             subset_samples = subset[0].reshape((self.K * self.flags.batch_size, self.flags.class_dim))
             rec_mods[subset_str] = {
-                out_mod_str: dec_mod.calc_likelihood(
-                    None, class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
-                )
+                out_mod_str: dec_mod.calc_likelihood(class_embeddings=subset_samples,
+                                                     unflatten=(self.K, self.flags.batch_size)
+                                                     )
                 for out_mod_str, dec_mod in self.modalities.items()
             }
         return rec_mods
@@ -222,9 +222,8 @@ class BaseiwMoGfMVAE(iwMMVAE, BaseMMVAE):
     def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent) -> Mapping[str, Distribution]:
         cond_gen = {}
         for mod_str, mod in self.modalities.items():
-            style_m = None
             content = latents.content
-            cond_gen_m = mod.px_z(*mod.decoder(style_m, content))
+            cond_gen_m = mod.px_z(*mod.decoder(content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
 
@@ -777,6 +776,14 @@ class iwMoGfMVAE_amortized(BaseiwMoGfMVAE):
         # normalize with the number of samples
         joint_div = joint_div.mean()
         return total_loss, joint_div, log_probs, klds
+
+
+class MoGfMVAE_amortized(iwMoGfMVAE_amortized):
+    """Amortized Mixture of Generalized f-Means VAE"""
+
+    def __init__(self, exp, flags, modalities, subsets):
+        iwMoGfMVAE_amortized.__init__(self, exp, flags, modalities, subsets)
+        self.K = 1
 
 
 class iwMoGfMVAE_multiloss(BaseiwMoGfMVAE):

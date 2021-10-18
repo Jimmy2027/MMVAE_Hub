@@ -14,7 +14,7 @@ from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoM
     MoFoPoE
 from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, \
     iwMoGfMVAE, iwmopgfm, iwMoGfMVAE2, iwMoGfMVAE3, iwMoGfMVAE_amortized, iwMoGfMVAE_old, iwMoGfMVAE_multiloss, \
-    iwMoGfMVAE_multiloss_, iwMoGfMVAE4, iwMoGfMVAE2_
+    iwMoGfMVAE_multiloss_, iwMoGfMVAE4, iwMoGfMVAE2_, MoGfMVAE_amortized
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
@@ -117,6 +117,8 @@ class BaseExperiment(ABC):
             model = iwMoGfMVAE3(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm_amortized':
             model = iwMoGfMVAE_amortized(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'mogfm_amortized':
+            model = MoGfMVAE_amortized(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm_old':
             model = iwMoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm_multiloss':
