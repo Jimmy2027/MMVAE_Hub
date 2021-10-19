@@ -38,12 +38,97 @@ class iwMMVAE():
         for subset_str, subset in joint_latents.subsets.items():
             subset_samples = subset.zs.reshape((self.K * self.flags.batch_size, self.flags.class_dim))
             rec_mods[subset_str] = {
-                out_mod_str: dec_mod.calc_likelihood(
-                    None, class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
+                out_mod_str: dec_mod.calc_likelihood(class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
                 )
                 for out_mod_str, dec_mod in self.modalities.items()
             }
         return rec_mods
+
+class iwPoE(iwMMVAE, POEMMVae):
+    def __init__(self, exp, flags, modalities, subsets):
+        POEMMVae.__init__(self, exp, flags, modalities, subsets)
+        iwMMVAE.__init__(self, flags)
+        self.prior = get_distr(flags.prior)(loc=torch.zeros(1, self.flags.class_dim, device=self.flags.device),
+                                            scale=torch.ones(1, self.flags.class_dim, device=self.flags.device))
+
+    def forward(self, input_batch: dict) -> iwForwardResults:
+        enc_mods, joint_latents = self.inference(input_batch)
+
+        # reconstruct modalities
+        rec_mods = self.decode(enc_mods, joint_latents)
+
+        return iwForwardResults(enc_mods=enc_mods, joint_latents=joint_latents, rec_mods=rec_mods)
+
+    def inference(self, input_batch) -> tuple[Mapping[str, BaseEncMod], iwJointLatents]:
+        enc_mods, joint_latents = super().inference(input_batch)
+
+        subsets = {}
+        zss = {}
+        for subset_str, subset in joint_latents.subsets.items():
+            qz_x_tilde = distr.Normal(loc=subset.mu, scale=subset.logvar)
+            subsets[subset_str] = iwSubset(qz_x_tilde=qz_x_tilde, zs=qz_x_tilde.rsample(torch.Size([self.K])))
+
+        # find the subset will all modalities to get the joint distr
+        max_subset_size = max(len(subset_str.split('_')) for subset_str in joint_latents.fusion_subsets_keys)
+
+        joint_distr = subsets[[subset_str for subset_str in joint_latents.fusion_subsets_keys if
+                               len(subset_str.split('_')) == max_subset_size][0]]
+
+        joint_latents = iwJointLatents(fusion_subsets_keys=joint_latents.fusion_subsets_keys, subsets=subsets, zss=zss,
+                                       joint_distr=joint_distr)
+
+        return enc_mods, joint_latents
+
+    def encode(self, input_batch: Mapping[str, Tensor]) -> Mapping[str, BaseEncMod]:
+        enc_mods = {}
+        for mod_str, mod in self.modalities.items():
+            if mod_str in input_batch:
+                enc_mods[mod_str] = {}
+
+                _, _, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
+
+                latents_class = Distr(mu=class_mu,
+                                      logvar=F.softmax(class_logvar, dim=-1) * class_logvar.size(-1) + 1e-6)
+                enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
+
+        return enc_mods
+
+    def calculate_loss(self, forward_results: iwForwardResults, batch_d: dict) -> tuple[
+        float, float, dict, Mapping[str, float]]:
+        subsets = forward_results.joint_latents.subsets
+        losses = []
+        klds = {}
+        log_probs = {}
+        for mod_str, enc_mod in forward_results.enc_mods.items():
+            subset = subsets[mod_str]
+            # sum(-1) is the sum over the class dim
+            lpz = self.prior.log_prob(
+                subset.zs).sum(-1)
+            # take the log mean exp over the modalities
+            lqz_x = log_mean_exp(
+                torch.stack(
+                    [subsets[mod].qz_x_tilde.log_prob(subset.zs).sum(-1) for mod in forward_results.enc_mods]))
+
+            lpx_z = [px_z.log_prob(batch_d[out_mod_str]).view(*px_z.batch_shape[:2], -1).sum(-1)
+                     for out_mod_str, px_z in forward_results.rec_mods[mod_str].items()]
+
+            # sum over modalities
+            lpx_z = torch.stack(lpx_z).sum(0)
+
+            kl_div = lpz - lqz_x
+
+            loss = lpx_z + kl_div
+            losses.append(loss)
+            log_probs[mod_str] = lpx_z.mean()
+            klds[mod_str] = log_mean_exp(kl_div).sum()
+
+        total_loss = -log_mean_exp(torch.cat(losses, 1)).sum()
+
+        # joint_div average of all subset divs
+        joint_div = torch.cat(tuple(div.unsqueeze(dim=0) for _, div in klds.items()))
+        # normalize with the number of samples
+        joint_div = joint_div.mean()
+        return total_loss, joint_div, log_probs, klds
 
 
 class iwMoE(iwMMVAE, MOEMMVae):
@@ -67,7 +152,7 @@ class iwMoE(iwMMVAE, MOEMMVae):
         subsets = {}
         zss = {}
         for subset_str, subset in joint_latents.subsets.items():
-            qz_x_tilde = distr.Laplace(loc=subset.mu, scale=subset.logvar)
+            qz_x_tilde = distr.Normal(loc=subset.mu, scale=subset.logvar)
             subsets[subset_str] = iwSubset(qz_x_tilde=qz_x_tilde, zs=qz_x_tilde.rsample(torch.Size([self.K])))
 
         # find the subset will all modalities to get the joint distr
