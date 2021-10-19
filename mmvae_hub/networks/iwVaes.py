@@ -8,7 +8,7 @@ from mmvae_hub.networks.utils.utils import get_distr
 from mmvae_hub.utils.Dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
 import torch.distributions as distr
-
+from mmvae_hub.networks.PoEMMVAE import POEMMVae
 
 def log_mean_exp(value, dim=0, keepdim=False):
     return torch.logsumexp(value, dim, keepdim=keepdim) - math.log(value.size(dim))
