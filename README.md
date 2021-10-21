@@ -18,6 +18,10 @@ path/to/conda/environment/bin/python -m pip install -e .
 ```
 ## Usage
 For each dataset, a config file exists under `configs/{dataset}`. The `local_config.json` is chosen per default (see `utils.setup.flags_utils.get_config_path`).
+Experiments for each dataset (celeba, polymnist, mnistsvhntext, mimic) can be launched with:
+````
+python {dataset}/main_{dataset}.py
+````
 
 ## Working on leomed
 When working on leomed, please set the flag "leomed" to true.
