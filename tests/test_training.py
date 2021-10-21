@@ -14,7 +14,7 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-@pytest.mark.parametrize("method", ['mopoe', 'moe', 'poe', 'mopgfm', 'iwmogfm'])
+@pytest.mark.parametrize("method", ['mopoe', 'moe', 'poe', 'mopgfm', 'iwmogfm2', 'iwmogfm_amortized'])
 # @pytest.mark.parametrize("method", ['joint_elbo'])
 def test_run_epochs_polymnist(method: str):
     """
@@ -127,8 +127,8 @@ if __name__ == '__main__':
 
     start_time = time()
     # test_run_epochs_celeba(method='mopgfm')
-    test_run_epochs_polymnist(method='mopoe')
-    test_run_epochs_polymnist(method='mopoe')
+    test_run_epochs_polymnist(method='iwmogfm_amortized')
+    # test_run_epochs_polymnist(method='mopoe')
     # test_run_epochs_polymnist(method='iwmogfm2')
     # test_run_epochs_polymnist(method='iwmogfm')
     # test_run_epochs_mnistsvhntext(method='mopoe')
