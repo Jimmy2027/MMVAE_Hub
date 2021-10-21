@@ -37,7 +37,7 @@ chardet==4.0.0
     # via aiohttp
 charset-normalizer==2.0.6
     # via requests
-clang==5.0
+clang==11.0
     # via tensorflow
 click==8.0.1
     # via
