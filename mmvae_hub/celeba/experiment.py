@@ -4,17 +4,14 @@ from pathlib import Path
 
 import PIL.Image as Image
 import numpy as np
-import torch
 from sklearn.metrics import average_precision_score
 from torchvision import transforms
 
-from celeba.modalities.celebaImg import CelebaImg
+from mmvae_hub.celeba.modalities.celebaImg import CelebaImg
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.celeba.CelebADataset import CelebaDataset
 from mmvae_hub.celeba.metrics import CelebAMetrics
-from mmvae_hub.celeba.modalities.celebaImg_ import CelebaImg_
 from mmvae_hub.celeba.modalities.celebaText import CelebaText
-from mmvae_hub.mimic.modalities.MimicIMG import MimicImg
 
 LABELS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
           'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair',
