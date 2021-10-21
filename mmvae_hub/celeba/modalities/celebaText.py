@@ -75,11 +75,11 @@ class CelebaText(BaseModality):
 
             return clf.to(self.flags.device)
 
-    def calc_likelihood(self, style_embeddings, class_embeddings, unflatten: Tuple = None):
+    def calc_likelihood(self, class_embeddings, unflatten: Tuple = None):
         if unflatten:
-            return self.px_z(self.decoder(None, class_embeddings)[0].unflatten(0, unflatten))
+            return self.px_z(self.decoder(class_embeddings= class_embeddings)[0].unflatten(0, unflatten))
 
-        text_hat = self.decoder(None, class_embeddings)[0]
+        text_hat = self.decoder(z_content = class_embeddings)[0]
         # ok = self.px_z.arg_constraints["probs"].check(text_hat)
         # bad_elements = text_hat[~ok]
         # print(bad_elements)

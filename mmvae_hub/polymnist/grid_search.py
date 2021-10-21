@@ -46,17 +46,17 @@ search_spaces_2 = {
     "initial_learning_rate": [0.0005],
     'class_dim': [640],
     "min_beta": [0],
-    "dataloader_workers": [16],
+    "dataloader_workers": [12],
     "max_beta": [0.001],
     "beta_start_epoch": [30.],
     "beta_warmup": [50],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
-    "num_mods": [1],
+    "num_mods": [3],
     "end_epoch": [500],
     "calc_nll": [False],
     "K": [2],
-    "eval_freq": [50],
+    "eval_freq": [100],
 }
 
 search_spaces_amortized = {
@@ -65,15 +65,15 @@ search_spaces_amortized = {
     'class_dim': [1280],
     "min_beta": [0],
     "dataloader_workers": [16],
-    "max_beta": [0.00001, 0.001, 0.1],
-    "beta_start_epoch": [5.],
+    "max_beta": [0.],
+    "beta_start_epoch": [0.],
     "beta_warmup": [50],
     # "num_gfm_flows": [3],
     # "coupling_dim": [32],
-    "num_mods": [3],
+    "num_mods": [2],
     "end_epoch": [500],
     "calc_nll": [False],
-    "K": [2],
+    "K": [1],
     "eval_freq": [100],
 }
 
@@ -121,7 +121,7 @@ search_space_sylvester = {
 
 if __name__ == '__main__':
 
-    for grid in [search_spaces_2]:
+    for grid in [search_spaces_amortized]:
         for sp in ParameterGrid(grid):
             # for _ in [1]:
             flags = parser.parse_args()

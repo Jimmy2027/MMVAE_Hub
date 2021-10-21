@@ -16,8 +16,10 @@ cd MMVAE_Hub
 path/to/conda/environment/bin/python -m pip install -e .
 
 ```
+## Usage
+For each dataset, a config file exists under `configs/{dataset}`. The `local_config.json` is chosen per default (see `utils.setup.flags_utils.get_config_path`).
 
-### Working on leomed
+## Working on leomed
 When working on leomed, please set the flag "leomed" to true.
 On leomed, several steps are taken to reduce the number of files:
 - the dataset is stored as zipfile, and will be unzipped in the $TMPDIR during runtime.

@@ -221,10 +221,7 @@ class SVHNMNIST(VisionDataset):
         else:
             target = target_mnist;
 
-        img_mnist = torch.ones((1, 28, 28))
-        text_target = torch.ones((8, 71))
-        # batch = {'mnist': img_mnist, 'svhn': img_svhn, 'text': text_target}
-        batch = {'mnist': img_mnist, 'text': text_target}
+        batch = {'mnist': img_mnist, 'svhn': img_svhn, 'text': text_target}
         return batch, target
 
     def __len__(self):

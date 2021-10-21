@@ -17,7 +17,7 @@ from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMV
     iwMoGfMVAE_multiloss_, iwMoGfMVAE4, iwMoGfMVAE2_, MoGfMVAE_amortized
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
-from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
+from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE, iwPoE
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE, VAE
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -107,6 +107,8 @@ class BaseExperiment(ABC):
             model = iwMoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmoe':
             model = iwMoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwpoe':
+            model = iwPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmopoe':
             model = iwMoPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmopgfm':

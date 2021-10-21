@@ -6,6 +6,26 @@ from mmvae_hub.mnistsvhntext.mnistsvhntextTrainer import mnistsvhnTrainer
 from mmvae_hub.mnistsvhntext.flags import mnistsvhntextFlagsSetup, parser
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
+search_spaces_amortized = {
+    'method': ['iwmogfm_amortized'],
+    "initial_learning_rate": [0.0005],
+    'class_dim': [512],
+    "min_beta": [0],
+    "dataloader_workers": [16],
+    "max_beta": [0.],
+    "beta_start_epoch": [0.],
+    "beta_warmup": [50],
+    # "num_gfm_flows": [3],
+    # "coupling_dim": [32],
+    "coupling_dim": [64],
+    "num_gfm_flows": [3],
+    "nbr_coupling_block_layers": [8],
+    "end_epoch": [150],
+    "calc_nll": [False],
+    "K": [1],
+    "eval_freq": [150],
+}
+
 search_space1 = {
     'method': 'mopoe',
     "initial_learning_rate": 0.0005,
@@ -22,9 +42,9 @@ search_space1 = {
 
 if __name__ == '__main__':
 
-    for grid in [search_space1]:
-        # for sp in ParameterGrid(grid):
-        for sp in [grid]:
+    for grid in [search_spaces_amortized]:
+        for sp in ParameterGrid(grid):
+        # for sp in [grid]:
             # for _ in [1]:
             flags = parser.parse_args()
             flags_setup = mnistsvhntextFlagsSetup(get_config_path(dataset='mnistsvhntext', flags=flags))

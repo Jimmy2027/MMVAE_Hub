@@ -32,7 +32,8 @@ class MNISTSVHNText(BaseExperiment):
 
         self.plot_img_size = torch.Size((3, 28, 28))
 
-        self.flags.num_features = len(self.alphabet)
+        if not hasattr(flags, 'num_features'):
+            self.flags.num_features = len(self.alphabet)
 
         self.modalities = self.set_modalities()
         self.num_modalities = len(self.modalities.keys())
@@ -49,12 +50,10 @@ class MNISTSVHNText(BaseExperiment):
         self.paths_fid = self.set_paths_fid()
 
     def set_modalities(self):
-        # temp
         mod1 = MNIST(self.flags, 'mnist')
-        # mod2 = SVHN(self.flags, 'svhn')
+        mod2 = SVHN(self.flags, 'svhn')
         mod3 = Text(self.flags, self.alphabet)
-        # return {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3}
-        return {mod1.name: mod1, mod3.name: mod3}
+        return {mod1.name: mod1, mod2.name: mod2, mod3.name: mod3}
 
     def get_transform_mnist(self):
         transform_mnist = transforms.Compose([transforms.ToTensor(),

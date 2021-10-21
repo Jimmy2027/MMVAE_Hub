@@ -355,9 +355,13 @@ def save_cond_gen(save_path: Path, experiment_dir: Path = None, _id: str = None,
     # save input images
     for _, mod in mods.items():
         for inp_class in range(len(test_samples)):
-            input_sample = mod.plot_data(test_samples[inp_class][mod.name])
-            input_samples[inp_class][mod.name] = input_sample
-            plt.imshow(input_sample.cpu().moveaxis(0, -1))
+            # input_sample = mod.plot_data(test_samples[inp_class][mod.name])
+            input_samples[inp_class][mod.name] = test_samples[inp_class][mod.name]
+            mod.plot_data_single_img(test_samples[inp_class][mod.name])
+            # plt.imshow(input_sample.cpu().moveaxis(0, -1))
+            # if mod.name == 'text':
+            #     plt.show()
+            #     dsfgdhfj = 0
             plt.axis('off')
             savefig_path = save_path / 'input_samples' / f'{mod.name}_{inp_class}.png'
             savefig_path.parent.mkdir(exist_ok=True, parents=True)
@@ -365,6 +369,7 @@ def save_cond_gen(save_path: Path, experiment_dir: Path = None, _id: str = None,
             if with_title:
                 plt.title(f'{mod.name}', fontsize=30)
             plt.savefig(savefig_path, bbox_inches='tight', pad_inches=0)
+            plt.close()
         # plt.show()
 
     for inp_class in input_samples:
@@ -391,7 +396,8 @@ def save_cond_gen(save_path: Path, experiment_dir: Path = None, _id: str = None,
             cond_gen_samples = model.generate_from_latents(cond_mod_in)
 
             for out_key, out_plot in cond_gen_samples.items():
-                plt.imshow(out_plot.squeeze().detach().cpu().moveaxis(0, -1))
+                # plt.imshow(out_plot.squeeze().detach().cpu().moveaxis(0, -1))
+                mods[out_key].plot_data_single_img(out_plot)
                 plt.axis('off')
                 savefig_path = save_path / f'{s_key}' / f'{out_key}_{inp_class}.png'
                 savefig_path.parent.mkdir(exist_ok=True, parents=True)
@@ -523,7 +529,8 @@ def make_experiments_dataframe(experiments):
                     if method == 'fomop':
                         score_lr, score_lr_q0, score_lr_zk = FoMoP.calculate_lr_eval_scores(last_epoch_results)
                     elif method in FLOW_METHODS:
-                        score_lr, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results)
+                        score_lr, score_lr_q0, score_lr_zk = FlowVAE.calculate_lr_eval_scores(last_epoch_results,
+                                                                                              exp['flags']['dataset'])
                     else:
                         score_lr, score_lr_q0, score_lr_zk = BaseMMVAE.calculate_lr_eval_scores(last_epoch_results,
                                                                                                 exp['flags']['dataset'])
@@ -650,13 +657,13 @@ def get_experiment(flags):
 
 
 if __name__ == '__main__':
-    experiment_uid = 'celeba_mopoe_2021_10_08_16_38_26_205373'
+    # experiment_uid = 'polymnist_mopgfm_2021_10_05_18_08_21_838870'
     # experiment_uid = ' celeba_mopgfm_2021_10_04_20_43_20_518945'
-    # experiment_uid = 'Mimic_mopgfm_2021_08_05_10_24_13_857815'
+    experiment_uid = 'polymnist_iwmoe_2021_10_19_19_59_21_310218'
     # cond_gen(_id=experiment_uid, save_path='')
     # show_generated_figs(_id=experiment_uid)
-    # experiments_database = MongoDatabase(training=False, _id=experiment_uid)
-    # experiment_dict = experiments_database.get_experiment_dict()
+    experiments_database = MongoDatabase(training=False, _id=experiment_uid)
+    experiment_dict = experiments_database.get_experiment_dict()
     # exp = load_experiment(experiment_dir=None, flags=None, _id=experiment_uid, epoch=2)
     # plot_basic_batch_logs(phase='train', logs_dict=experiment_dict)
     # plot_basic_batch_logs('train', experiment_dict)
@@ -665,8 +672,16 @@ if __name__ == '__main__':
     # plot_lr_accuracy(experiment_dict)
 
     # df = make_experiments_dataframe(experiments_database.connect())
+    # df.loc[(df['method'] == 'iwmopoe') & (df['K'] == 3)]
+
     # plot_coherence_accuracy(experiment_dict)
     # plot_prd_scores(pd.DataFrame(df.loc[df['_id'] == 'celeba_mopgfm_2021_10_04_19_48_03_250347']))
     # compare_methods(df, methods=['gfm', 'joint_elbo'], df_selectors={'end_epoch': 99})
-    for id in ['celeba_mopgfm_2021_10_04_20_43_20_518945']:
+    print(experiment_dict['flags']['class_dim'])
+    print(experiment_dict['flags']['max_beta'])
+    print(experiment_dict['flags']['end_epoch'])
+    print(experiment_dict['flags']['num_mods'])
+    print(experiment_dict['flags']['K'])
+    print(experiment_dict['expvis_url'])
+    for id in ['polymnist_mopgfm_2021_10_12_19_26_56_828672']:
         upload_notebook_to_db(id)

@@ -5,24 +5,15 @@ from pathlib import Path
 import PIL.Image as Image
 import numpy as np
 import torch
-
-from mmvae_hub.celeba.modalities.celebaImg_ import CelebaImg_
-from mmvae_hub.mimic.modalities.MimicIMG import MimicImg
-
-from mmvae_hub.mnistsvhntext.textmod import Text
-
-from mmvae_hub.mnistsvhntext.MNISTmod import MNIST
-
-from mmvae_hub.mimic.modalities.MimicText import MimicText
 from sklearn.metrics import average_precision_score
 from torchvision import transforms
 
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.celeba.CelebADataset import CelebaDataset
 from mmvae_hub.celeba.metrics import CelebAMetrics
-from mmvae_hub.celeba.modalities.celebaImg import CelebaImg
+from mmvae_hub.celeba.modalities.celebaImg_ import CelebaImg_
 from mmvae_hub.celeba.modalities.celebaText import CelebaText
-
+from mmvae_hub.mimic.modalities.MimicIMG import MimicImg
 LABELS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
           'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair',
           'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows',
@@ -60,7 +51,6 @@ class CelebaExperiment(BaseExperiment):
 
         self.optimizer = None
         self.rec_weights = self.set_rec_weights()
-        self.style_weights = self.set_style_weights()
 
         self.test_samples = self.get_test_samples()
         self.eval_metric = average_precision_score
@@ -73,9 +63,9 @@ class CelebaExperiment(BaseExperiment):
         mod2 = CelebaText(flags=self.flags,
                           len_sequence=self.flags.len_sequence,
                           alphabet=self.alphabet)
-        # mod1 = MimicImg(flags=self.flags, name='img', labels=self.labels, rec_weight=1.,
-        #                 plot_img_size=torch.Size((3, 64, 64)), data_size=torch.Size((3, 64, 64)))
-        mod1 = CelebaImg_(flags=self.flags, name='img')
+        mod1 = MimicImg(flags=self.flags, name='img', labels=self.labels, rec_weight=1.,
+                        plot_img_size=torch.Size((3, 64, 64)), data_size=torch.Size((3, 64, 64)))
+        # mod1 = CelebaImg_(flags=self.flags, name='img')
         # mod1 = MNIST(self.flags, 'img')
         # mod2 = Text(self.flags, self.alphabet)
 

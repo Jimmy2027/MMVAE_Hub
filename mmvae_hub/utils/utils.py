@@ -236,6 +236,9 @@ def dict2pyobject(d: dict, name: str = 'mystruct') -> namedtuple:
 
 
 def split_int_to_bins(number: int, nbr_bins: int):
+    """
+    Split number into nbr_bins. The bins will be equally sized if possible.
+    """
     values = np.arange(number, dtype=int)
     bins = np.histogram(values, bins=nbr_bins)
     return bins[0]

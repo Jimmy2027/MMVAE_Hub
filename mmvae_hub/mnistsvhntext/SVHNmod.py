@@ -22,7 +22,7 @@ class SVHN(PolymnistMod):
         self.decoder = DecoderSVHN(flags).to(flags.device)
 
     def plot_data(self, d):
-        return self.transform_plot(d.squeeze(0).cpu()).cuda().unsqueeze(0)
+        return self.transform_plot(d.squeeze(0).cpu()).to(self.flags.device).unsqueeze(0)
 
     def get_plot_transform(self):
         transf = transforms.Compose([transforms.ToPILImage(),
@@ -31,7 +31,6 @@ class SVHN(PolymnistMod):
                                      transforms.ToTensor()])
         return transf
 
-
     def get_clf(self):
         if self.flags.use_clf:
             dir_clf = self.flags.dir_clf
@@ -39,7 +38,7 @@ class SVHN(PolymnistMod):
                 download_zip_from_url(
                     url='https://www.dropbox.com/sh/lx8669lyok9ois6/AADM7Cs_QReijyo2kF8xzWqua/trained_classifiers/trained_clfs_mst?dl=1',
                     dest_folder=dir_clf)
-            model_clf =  ClfImgSVHN()
+            model_clf = ClfImgSVHN()
             model_clf.load_state_dict(
                 torch.load(os.path.join(self.flags.dir_clf, f"clf_m2"),
                            map_location=self.flags.device))

@@ -13,7 +13,7 @@ from mmvae_hub.networks.flows.PlanarFlow import PlanarFlow
 from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods, mixture_component_selection_embedding
 from mmvae_hub.utils.utils import split_int_to_bins
-
+from mmvae_hub.evaluation.utils import dataset_to_metric
 
 class FlowVAE:
     """Class of methods where a flow is applied on the latent distributions."""
@@ -22,11 +22,13 @@ class FlowVAE:
         pass
 
     @staticmethod
-    def calculate_lr_eval_scores(epoch_results: dict):
+    def calculate_lr_eval_scores(epoch_results: dict, dataset:str):
         results_dict = {}
         scores = []
         scores_lr_q0 = []
         scores_lr_zk = []
+
+        metric = dataset_to_metric(dataset)
 
         # get lr_eval results
         # methods where the lr should be evaluated in zk: 'planar_mixture', 'pfom', 'pope', 'fomfop'
@@ -34,16 +36,16 @@ class FlowVAE:
         # for fomop, all subset should be evaluated in q0 but the joint should be evaluated in zk.
         if epoch_results['lr_eval_q0'] is not None:
             for key, val in epoch_results['lr_eval_q0'].items():
-                val = val['accuracy']
+                val = val[metric]
                 if val:
                     results_dict[f'lr_eval_q0_{key}'] = val
                     scores_lr_q0.append(val)
 
         if epoch_results['lr_eval_zk'] is not None:
             for key, val in epoch_results['lr_eval_zk'].items():
-                results_dict[f'lr_eval_zk_{key}'] = val['accuracy']
-                scores.append(val['accuracy'])
-                scores_lr_zk.append(val['accuracy'])
+                results_dict[f'lr_eval_zk_{key}'] = val[metric]
+                scores.append(val[metric])
+                scores_lr_zk.append(val[metric])
 
         return np.mean(scores), scores_lr_q0 if scores_lr_q0 is None else np.mean(
             scores_lr_q0), scores_lr_zk if scores_lr_zk is None else np.mean(scores_lr_zk)

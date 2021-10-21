@@ -1,6 +1,7 @@
 import os
 import textwrap
 from pathlib import Path
+from typing import Tuple
 
 import torch
 from PIL import Image
@@ -61,8 +62,11 @@ class Text(BaseModality):
 
             return model_clf.to(self.flags.device)
 
-    def calc_likelihood(self, style_embeddings, class_embeddings):
-        return self.px_z(*self.decoder(style_embeddings, class_embeddings), validate_args=False)
+    def calc_likelihood(self, class_embeddings, unflatten: Tuple = None):
+        if unflatten:
+            return self.px_z(self.decoder(class_latent_space=class_embeddings)[0].unflatten(0, unflatten), validate_args=False)
+
+        return self.px_z(self.decoder(class_latent_space=class_embeddings)[0], validate_args=False)
 
     def text_to_pil(self, t, imgsize, alphabet, font, w=128, h=128, linewidth=8):
         blank_img = torch.ones([imgsize[0], w, h]);

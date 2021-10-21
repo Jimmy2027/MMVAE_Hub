@@ -38,7 +38,7 @@ class DecoderText(nn.Module):
         self.text_generator = DataGeneratorText(flags)
         # self.text_generator = Dec(flags)
 
-    def forward(self, z_style, z_content):
+    def forward(self, z_content):
 
         z = z_content
         text_feat_hat = self.feature_generator(z)

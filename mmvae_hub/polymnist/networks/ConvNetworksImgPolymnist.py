@@ -58,7 +58,7 @@ class DecoderImg(nn.Module):
             nn.ConvTranspose2d(32, 3, kernel_size=3, stride=2, padding=1, output_padding=1),   # -> (3, 28, 28)
         )
 
-    def forward(self, style_latent_space, class_latent_space):
+    def forward(self, class_latent_space):
 
         z = class_latent_space
         x_hat = self.decoder(z)

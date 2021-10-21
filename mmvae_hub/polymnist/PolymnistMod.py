@@ -1,6 +1,8 @@
 import os
 
 import torch
+from matplotlib import pyplot as plt
+from torch import Tensor
 
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
 from mmvae_hub.polymnist.networks.ConvNetworkImgClfPolymnist import ClfImg
@@ -43,3 +45,6 @@ class PolymnistMod(ModalityIMG):
                            map_location=self.flags.device))
 
             return model_clf.to(self.flags.device)
+
+    def plot_data_single_img(self, d: Tensor):
+        return plt.imshow(d.detach().cpu().squeeze().moveaxis(0, -1))

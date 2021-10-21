@@ -65,14 +65,12 @@ class BaseMMVAE(ABC, nn.Module):
         class_embeddings = latents_joint.get_joint_embeddings()
 
         for mod_str, enc_mod in enc_mods.items():
-            style_embeddings = None
             mod = self.modalities[mod_str]
-            rec_mods[mod_str] = mod.calc_likelihood(style_embeddings, class_embeddings)
+            rec_mods[mod_str] = mod.calc_likelihood(class_embeddings= class_embeddings)
         return rec_mods
 
     def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
-
         klds, joint_divergence = self.mm_div.calc_klds(forward_results, self.subsets,
                                                        num_samples=self.flags.batch_size,
                                                        joint_keys=getattr(forward_results.joint_latents,
@@ -143,7 +141,7 @@ class BaseMMVAE(ABC, nn.Module):
         cond_gen = {}
         for mod_str, mod in self.modalities.items():
             content = latents.content
-            cond_gen_m = mod.px_z(*mod.decoder(None, content))
+            cond_gen_m = mod.px_z(*mod.decoder(content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
 

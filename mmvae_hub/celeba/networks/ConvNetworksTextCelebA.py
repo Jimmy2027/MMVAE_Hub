@@ -30,7 +30,7 @@ class DecoderText(nn.Module):
                                            5 * flags.DIM_text, bias=True)
         self.text_generator = DataGeneratorText(args=flags, num_features=num_features, a=2.0, b=0.3)
 
-    def forward(self, z_style, z_content):
+    def forward(self, z_content):
         z = z_content
         text_feat_hat = self.feature_generator(z)
         text_feat_hat = text_feat_hat.unsqueeze(-1)

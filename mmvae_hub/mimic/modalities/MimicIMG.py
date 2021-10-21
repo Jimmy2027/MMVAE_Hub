@@ -3,6 +3,9 @@ from pathlib import Path
 
 import torch
 import torchvision.transforms as transforms
+from matplotlib import pyplot as plt
+from torch import Tensor
+
 from mmvae_hub.mimic.classifiers.train_img_clfs import LM
 from mmvae_hub.modalities.ModalityIMG import ModalityIMG
 from mmvae_hub.networks.images.ConvNetworksImgMimic import EncoderImg, DecoderImg
@@ -62,6 +65,9 @@ class MimicImg(ModalityIMG):
             lightning_module.model.load_state_dict(
                 torch.load(img_clf_path, map_location=self.flags.device))
             return lightning_module.to(self.flags.device)
+
+    def plot_data_single_img(self, d: Tensor):
+        return plt.imshow(self.plot_data(d.squeeze(dim=0)).cpu().detach().squeeze(), cmap='gray')
 
 
 class MimicPA(MimicImg):

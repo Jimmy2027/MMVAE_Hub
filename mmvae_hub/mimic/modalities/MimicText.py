@@ -1,4 +1,5 @@
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Union, Tuple
 
@@ -7,7 +8,8 @@ import torch
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from torch import nn
+from matplotlib import pyplot as plt
+from torch import nn, Tensor
 from torch.distributions import OneHotCategorical
 from torchvision import transforms
 from transformers import DistilBertForSequenceClassification, DistilBertTokenizerFast
@@ -24,7 +26,7 @@ class MimicText(BaseModality):
 
         self.len_sequence = flags.len_sequence
         self.data_size = torch.Size((flags.vocab_size, self.len_sequence))
-        self.font = ImageFont.truetype(str(Path(__file__).parent.parent / 'FreeSerif.ttf'), 20)
+        self.font = ImageFont.truetype(str(Path(__file__).parent.parent / 'FreeSerif.ttf'), 24)
         self.gen_quality_eval = False
         self.file_suffix = '.txt'
 
@@ -33,19 +35,24 @@ class MimicText(BaseModality):
 
         self.px_z = OneHotCategorical
         self.rec_weight = rec_weight
-        self.plot_img_size = plot_img_size
+        # self.plot_img_size = torch.Size([1, 256, 128])
+        self.plot_img_size = torch.Size([1, 128, 128])
 
         self.wordidx2word = wordidx2word
 
         self.clf = self.get_clf()
 
         self.vocab_size = flags.vocab_size
+        self.num_features = self.vocab_size
 
     def save_data(self, d, fn, args):
         write_samples_text_to_file(self.tensor_to_text(gen_t=d.unsqueeze(0)), fn)
 
     def plot_data(self, d):
         return self.text_to_pil(d.unsqueeze(0), self.plot_img_size, self.font)
+
+    def plot_data_single_img(self, d: Tensor):
+        return plt.imshow(self.plot_data(d.squeeze(0)).squeeze(), cmap='gray')
 
     def calc_log_prob(self, out_dist: torch.distributions, target: torch.Tensor, norm_value: int):
         target = torch.nn.functional.one_hot(target.to(torch.int64), num_classes=self.flags.vocab_size)
@@ -60,13 +67,13 @@ class MimicText(BaseModality):
             clf.load_state_dict(torch.load(text_clf_path, map_location=self.flags.device))
             return TextClf(self, clf).to(self.flags.device)
 
-    def calc_likelihood(self, style_embeddings, class_embeddings, unflatten: Tuple = None):
+    def calc_likelihood(self, class_embeddings, unflatten: Tuple = None):
         "Calculate px_z"
         if unflatten:
-            logits = self.decoder(style_embeddings, class_embeddings)[0]
+            logits = self.decoder(class_embeddings)[0]
             return self.px_z(logits=logits.unflatten(0, unflatten), validate_args=False)
 
-        return self.px_z(logits=self.decoder(style_embeddings, class_embeddings)[0], validate_args=False)
+        return self.px_z(logits=self.decoder(class_embeddings)[0], validate_args=False)
 
     def log_likelihood(self, px_z, batch_sample):
         return px_z.log_prob(self.batch_text_to_onehot(batch_sample))
@@ -133,7 +140,7 @@ class MimicText(BaseModality):
             return transforms.ToTensor()(pil_img.resize((imgsize[1], imgsize[2]),
                                                         Image.ANTIALIAS).convert('L'))
 
-    def batch_text_to_onehot(self, batch_text):
+    def batch_text_to_onehot(self, batch_text, vocab_size=None):
         return torch.nn.functional.one_hot(batch_text.to(torch.int64),
                                            num_classes=self.vocab_size)
 
@@ -160,7 +167,26 @@ class TextClf(nn.Module):
 
 
 if __name__ == '__main__':
-    clf = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased',
-                                                              num_labels=3)
-    text_clf_path = Path(__file__).parent.parent / 'classifiers/state_dicts/text_clf.pth'
-    clf.load_state_dict(torch.load(text_clf_path))
+    # clf = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased',
+    #                                                           num_labels=3)
+    # text_clf_path = Path(__file__).parent.parent / 'classifiers/state_dicts/text_clf.pth'
+    # clf.load_state_dict(torch.load(text_clf_path))
+
+    @dataclass
+    class Flags:
+        device = 'cpu'
+        vocab_size = 2000
+        len_sequence = 128
+        style_text_dim = 0
+        DIM_text = 128
+        class_dim = 512
+        use_clf = False
+
+    wordidx2word = {'27': 'HelloHelloHelloHello'}
+
+    flags = Flags()
+    textmod = MimicText(flags = flags, labels = [''], rec_weight=1, plot_img_size=None, wordidx2word=wordidx2word)
+    t = torch.tensor([27 for _ in range(128)]).unsqueeze(dim=0)
+    # plt.imshow(textmod.text_to_pil(t= t, imgsize = textmod.plot_img_size, font = textmod.font).squeeze())
+    textmod.plot_data_single_img(d= t)
+    plt.show()

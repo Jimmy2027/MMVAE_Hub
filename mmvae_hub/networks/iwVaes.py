@@ -1,14 +1,16 @@
 import math
 
+import torch.distributions as distr
 import torch.nn.functional as F
+from mmvae_hub.networks.FlowVaes import MoFoPoE
 # from mmvae_hub.networks.GfMVaes import MopGfM
 #
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae
+from mmvae_hub.networks.PoEMMVAE import POEMMVae
 from mmvae_hub.networks.utils.utils import get_distr
 from mmvae_hub.utils.Dataclasses.iwdataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_mean_exp
-import torch.distributions as distr
-from mmvae_hub.networks.PoEMMVAE import POEMMVae
+
 
 def log_mean_exp(value, dim=0, keepdim=False):
     return torch.logsumexp(value, dim, keepdim=keepdim) - math.log(value.size(dim))
@@ -38,11 +40,13 @@ class iwMMVAE():
         for subset_str, subset in joint_latents.subsets.items():
             subset_samples = subset.zs.reshape((self.K * self.flags.batch_size, self.flags.class_dim))
             rec_mods[subset_str] = {
-                out_mod_str: dec_mod.calc_likelihood(class_embeddings=subset_samples, unflatten=(self.K, self.flags.batch_size)
-                )
+                out_mod_str: dec_mod.calc_likelihood(class_embeddings=subset_samples,
+                                                     unflatten=(self.K, self.flags.batch_size)
+                                                     )
                 for out_mod_str, dec_mod in self.modalities.items()
             }
         return rec_mods
+
 
 class iwPoE(iwMMVAE, POEMMVae):
     def __init__(self, exp, flags, modalities, subsets):

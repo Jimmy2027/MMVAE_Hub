@@ -40,7 +40,7 @@ class DecoderImg(nn.Module):
         self.feature_generator = nn.Linear(flags.class_dim, 5 * flags.DIM_img, bias=True)
         self.img_generator = DataGeneratorImg(flags)
 
-    def forward(self, z_style, z_content):
+    def forward(self, z_content):
         z = z_content
         img_feat_hat = self.feature_generator(z)
         img_feat_hat = img_feat_hat.view(img_feat_hat.size(0), img_feat_hat.size(1), 1, 1)

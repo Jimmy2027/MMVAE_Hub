@@ -74,7 +74,8 @@ def upload_one(exp_path: Path):
             db.upload_logfile(Path(log_file[0]))
 
         send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
-                 f'found here: {expvis_url}')
+                 f'found here: {expvis_url}'
+                 )
 
     # delete exp_path
     if is_zip:
@@ -102,9 +103,9 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
-
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
         # upload_all('/mnt/data/hendrik/mmvae_hub/experiments')
-        upload_all('/mnt/data/hendrik/leomed_results')
-        # upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+        # upload_all('/mnt/data/hendrik/leomed_results')
+        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
 
+        # upload_one(Path('/Users/Hendrik/Documents/master_4/leomed_experiments/polymnist_iwmogfm2__2021_10_14_23_37_27_515040.zip'))

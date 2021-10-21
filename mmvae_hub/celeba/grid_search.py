@@ -81,13 +81,13 @@ sp_joint_elbo_article = {
     'n_gpus': [1],
     'method': ['mopoe'],
     'max_beta': [2.],
-    "beta_warmup": [0],
+    "beta_warmup": [30],
     'class_dim': [64],
     "initial_learning_rate": [0.0005],
-    "end_epoch": [100],
-    "eval_freq": [10],
+    "end_epoch": [1],
+    "eval_freq": [1],
     "use_clf": [False],
-    "batch_size": [256]
+    "batch_size": [64]
     # "K":[5]
     # "factorized_representation": [True],
     # "beta": [5.],
