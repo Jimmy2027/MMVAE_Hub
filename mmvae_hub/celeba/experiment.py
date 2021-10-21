@@ -8,12 +8,14 @@ import torch
 from sklearn.metrics import average_precision_score
 from torchvision import transforms
 
+from celeba.modalities.celebaImg import CelebaImg
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.celeba.CelebADataset import CelebaDataset
 from mmvae_hub.celeba.metrics import CelebAMetrics
 from mmvae_hub.celeba.modalities.celebaImg_ import CelebaImg_
 from mmvae_hub.celeba.modalities.celebaText import CelebaText
 from mmvae_hub.mimic.modalities.MimicIMG import MimicImg
+
 LABELS = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
           'Bags_Under_Eyes', 'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair',
           'Blond_Hair', 'Blurry', 'Brown_Hair', 'Bushy_Eyebrows',
@@ -59,18 +61,12 @@ class CelebaExperiment(BaseExperiment):
         self.metrics = CelebAMetrics
 
     def set_modalities(self):
-        # mod1 = CelebaImg(self.flags)
+        mod1 = CelebaImg(self.flags)
         mod2 = CelebaText(flags=self.flags,
                           len_sequence=self.flags.len_sequence,
                           alphabet=self.alphabet)
-        mod1 = MimicImg(flags=self.flags, name='img', labels=self.labels, rec_weight=1.,
-                        plot_img_size=torch.Size((3, 64, 64)), data_size=torch.Size((3, 64, 64)))
-        # mod1 = CelebaImg_(flags=self.flags, name='img')
-        # mod1 = MNIST(self.flags, 'img')
-        # mod2 = Text(self.flags, self.alphabet)
 
         return {mod1.name: mod1, mod2.name: mod2}
-        # return {mod1.name: mod1}
 
     def get_transform_celeba(self):
         offset_height = (218 - self.flags.crop_size_img) // 2
