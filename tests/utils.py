@@ -30,14 +30,18 @@ def set_me_up(tmpdirname, dataset: str, method: str, attributes: Optional = None
         flags_setup = mnistsvhntextFlagsSetup(config_path)
         exp = MNISTSVHNText
 
+    elif dataset == 'celeba':
+        from mmvae_hub.celeba.flags import parser as mnistshvntext_parser, CelebaFlagsSetup
+        from mmvae_hub.celeba.experiment import CelebaExperiment
+        flags = mnistshvntext_parser.parse_args([])
+        flags_setup = CelebaFlagsSetup(config_path)
+        exp = CelebaExperiment
+
     else:
         raise NotImplementedError(f'not implemented for dataset {dataset}.')
 
     flags = flags_setup.setup_test(flags, tmpdirname)
     flags.method = method
-
-    #temp
-    flags.dir_data = '/home/hendrik/src/MMVAE_Hub/mmvae_hub/mnistsvhntext/data'
 
     if attributes:
         for k, v in attributes.items():

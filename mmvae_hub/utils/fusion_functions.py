@@ -7,7 +7,7 @@ from typing import Mapping
 import torch
 from torch import Tensor
 
-from mmvae_hub.utils.dataclasses.Dataclasses import Distr
+from mmvae_hub.utils.Dataclasses.Dataclasses import Distr
 from mmvae_hub.utils.utils import split_int_to_bins
 
 

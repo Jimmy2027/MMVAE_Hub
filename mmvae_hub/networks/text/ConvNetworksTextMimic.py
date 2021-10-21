@@ -23,12 +23,9 @@ class EncoderText(nn.Module):
         # h_text = transformer_encoder(text_in)
         # todo is this better?
         h_text = self.feature_extractor(x_text)
-        if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
-            mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_text)
-            return mu_style, logvar_style, mu_content, logvar_content, h_text
-        else:
-            mu_content, logvar_content = self.feature_compressor(h_text)
-            return None, None, mu_content, logvar_content, h_text
+
+        mu_content, logvar_content = self.feature_compressor(h_text)
+        return None, None, mu_content, logvar_content
 
 
 class DecoderText(nn.Module):
@@ -41,12 +38,9 @@ class DecoderText(nn.Module):
         self.text_generator = DataGeneratorText(flags)
         # self.text_generator = Dec(flags)
 
-    def forward(self, z_style, z_content):
-        if self.flags.factorized_representation:
-            z = torch.cat((z_style, z_content), dim=1).squeeze(-1)
-            # z.shape = [100, 64]
-        else:
-            z = z_content
+    def forward(self, z_content):
+
+        z = z_content
         text_feat_hat = self.feature_generator(z)
         text_feat_hat = text_feat_hat.unsqueeze(-1)
         # predict in batches to spare GPU memory

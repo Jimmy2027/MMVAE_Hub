@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from mmvae_hub import log
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.metrics.average_meters import AverageMeter
 from mmvae_hub.utils.utils import dict2json
 
@@ -19,13 +19,16 @@ class BaseCallback:
 
         # set beta_warmup coefficient
         self.beta = min(
-            [max([self.flags.min_beta, (epoch * 1.) / max([self.flags.beta_warmup, 1.])]), self.flags.max_beta])
+            [max([self.flags.min_beta,
+                  ((epoch - self.flags.beta_start_epoch)
+                   * (self.flags.max_beta - self.flags.min_beta)) / max([self.flags.beta_warmup, 1.])]),
+             self.flags.max_beta])
         log.info(f'beta = {self.beta}')
 
         self.maybe_send_to_db(train_results=train_results, test_results=test_results, epoch=epoch, beta=self.beta)
 
         # save checkpoints after every 5 epochs
-        if (epoch + 1) % 5 == 0 or (epoch + 1) == self.flags.end_epoch:
+        if (epoch + 1) % self.flags.checkpoint_freq == 0 or (epoch + 1) == self.flags.end_epoch:
             self.exp.mm_vae.save_networks(epoch)
 
         return self.beta

@@ -2,7 +2,7 @@ import math
 
 import torch.nn.functional
 
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.utils import reweight_weights
 
 

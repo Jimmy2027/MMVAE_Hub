@@ -12,11 +12,12 @@ from torch import optim, Tensor
 from mmvae_hub.modalities import BaseModality
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae, PfomMMVAE, PoPE, FoMFoP, FoMoP, AfomMMVAE, \
     MoFoPoE
-from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, MoGfMVAE_old, \
-    iwMoGfMVAE, iwmopgfm
+from mmvae_hub.networks.GfMVaes import GfMVAE, GfMoPVAE, PGfMVAE, MopGfM, MoGfMVAE, MoFoGfMVAE, BMoGfMVAE, \
+    iwMoGfMVAE, iwmopgfm, iwMoGfMVAE3, iwMoGfMVAE_amortized, iwMoGfMVAE_old, iwMoGfMVAE_multiloss, \
+    iwMoGfMVAE_multiloss_, iwMoGfMVAE4, iwMoGfMVAE2_, MoGfMVAE_amortized
 from mmvae_hub.networks.MixtureVaes import MOEMMVae, MoPoEMMVae, JSDMMVae
 from mmvae_hub.networks.PoEMMVAE import POEMMVae
-from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE
+from mmvae_hub.networks.iwVaes import iwMoE, iwMoPoE, iwPoE
 from mmvae_hub.sylvester_flows.models.VAE import PlanarVAE, VAE
 from mmvae_hub.utils import utils
 from mmvae_hub.utils.MongoDB import MongoDatabase
@@ -102,16 +103,33 @@ class BaseExperiment(ABC):
                 model = MoFoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'bmogfm':
             model = BMoGfMVAE(self, self.flags, self.modalities, self.subsets)
-        elif self.flags.method == 'mogfm_old':
-            model = MoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm':
             model = iwMoGfMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmoe':
             model = iwMoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwpoe':
+            model = iwPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmopoe':
             model = iwMoPoE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmopgfm':
             model = iwmopgfm(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm3':
+            model = iwMoGfMVAE3(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm_amortized':
+            model = iwMoGfMVAE_amortized(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'mogfm_amortized':
+            model = MoGfMVAE_amortized(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm_old':
+            model = iwMoGfMVAE_old(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm_multiloss':
+            model = iwMoGfMVAE_multiloss(self, self.flags, self.modalities, self.subsets)
+
+        elif self.flags.method == 'iwmogfm_multiloss_':
+            model = iwMoGfMVAE_multiloss_(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm4':
+            model = iwMoGfMVAE4(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'iwmogfm2_':
+            model = iwMoGfMVAE2_(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

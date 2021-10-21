@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from mmvae_hub import log
 from mmvae_hub.networks.FlowVaes import FlowOfJointVAE
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.utils import dict_to_device, atleast_2d
 
 

@@ -4,7 +4,7 @@ import numpy as np
 import torch.nn.functional
 from torch.utils.data import DataLoader
 
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.metrics.likelihood import log_marginal_estimate, log_joint_estimate
 from mmvae_hub.utils.utils import dict_to_device
 
@@ -13,7 +13,6 @@ LOG2PI = float(np.log(2.0 * math.pi))
 
 # at the moment: only marginals and joint
 def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, batch, num_imp_samples=10):
-    # question wie macht man das für planar mixture?
     flags = exp.flags
     model = exp.mm_vae
     mod_weights = exp.style_weights
@@ -32,7 +31,9 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
         style = None
 
     mod_names = mods.keys()
-    l = latents.get_latent_samples(subset_key=subset_key, n_imp_samples=num_imp_samples, mod_names=mod_names, style=style, model = model)
+    # sample from the subset posterior
+    l = latents.get_latent_samples(subset_key=subset_key, n_imp_samples=num_imp_samples, mod_names=mod_names,
+                                   style=style, model=model)
 
     l_style_rep = l['style']
     l_content_rep = l['content']
@@ -40,8 +41,7 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
     c = {'mu': l_content_rep['mu'].view(n_total_samples, -1),
          'logvar': l_content_rep['logvar'].view(n_total_samples, -1),
          'z': l_content_rep['z'].view(n_total_samples, -1)}
-    l_lin_rep = {'content': c,
-                 'style': {}}
+    l_lin_rep = {'content': c, 'style': {}}
     for m_key in (l_style_rep.keys()):
         if flags.factorized_representation:
             s = {'mu': l_style_rep[mod.name]['mu'].view(n_total_samples, -1),
@@ -72,14 +72,14 @@ def calc_log_likelihood_batch(exp, latents: JointLatents, subset_key, subset, ba
         ll_mod = log_marginal_estimate(flags,
                                        num_imp_samples,
                                        gen[mod.name],
-                                       torch.nn.functional.one_hot(batch[mod.name].to(torch.int64),
-                                                                   num_classes=flags.vocab_size) if mod.name == 'mimic_text' else
-                                       batch[mod.name],
+                                       mod.batch_text_to_onehot(batch[mod.name], mod.num_features)
+                                       if mod.name == 'text'
+                                       else batch[mod.name],
                                        style_mod,
                                        l_lin_rep_content)
         ll[mod.name] = ll_mod
 
-    ll_joint = log_joint_estimate(flags, num_imp_samples, gen, batch,
+    ll_joint = log_joint_estimate(mods, flags, num_imp_samples, gen, batch,
                                   l_lin_rep_style,
                                   l_lin_rep_content)
     ll['joint'] = ll_joint

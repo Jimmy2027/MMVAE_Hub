@@ -5,10 +5,13 @@ import pytest
 from mmvae_hub.networks.FlowVaes import PlanarMixtureMMVae
 from mmvae_hub.networks.MixtureVaes import MOEMMVae
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from tests.utils import set_me_up
+from matplotlib import pyplot as plt
 
 DATASET = 'polymnist'
+
+
 # @pytest.mark.tox
 def test_fuse_modalities_1():
     """
@@ -20,7 +23,7 @@ def test_fuse_modalities_1():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset=DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -44,7 +47,7 @@ def test_fuse_modalities_2():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset=DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -80,7 +83,7 @@ def test_fuse_modalities_3():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='planar_mixture',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset=DATASET)
 
         model: PlanarMixtureMMVae = mst.mm_vae
 
@@ -109,7 +112,7 @@ def test_fuse_modalities_4():
     with tempfile.TemporaryDirectory() as tmpdirname:
         mst = set_me_up(tmpdirname, method='moe',
                         attributes={'num_mods': num_mods, 'class_dim': class_dim, 'device': 'cpu',
-                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset = DATASET)
+                                    'batch_size': batch_size, 'weighted_mixture': False}, dataset=DATASET)
 
         model: MOEMMVae = mst.mm_vae
 
@@ -119,7 +122,7 @@ def test_fuse_modalities_4():
 
         logvars = torch.zeros((num_mods, batch_size, class_dim))
 
-        w_modalities = torch.ones((num_mods,)) * (1/3)
+        w_modalities = torch.ones((num_mods,)) * (1 / 3)
 
         joint_distr = mixture_component_selection(mst.flags, mus, logvars, w_modalities)
         assert torch.all(joint_distr.mu ==
@@ -128,5 +131,26 @@ def test_fuse_modalities_4():
                                  [2., 2., 2.]]))
 
 
+def text_beta_warmup():
+    """Verify the beta warmup function."""
+    min_beta = 0
+    max_beta = 10
+    beta_start_epoch = 50
+    beta_warmup = 50
+    epochs = [ep for ep in range(150)]
+    betas = [
+        min(
+            [
+                max([min_beta, ((epoch - beta_start_epoch) * (max_beta - min_beta)) / max([beta_warmup, 1.0])]),
+                max_beta,
+            ]
+        )
+        for epoch in epochs
+    ]
+
+    plt.plot(epochs, betas)
+    plt.show()
+
+
 if __name__ == '__main__':
-    test_fuse_modalities_4()
+    text_beta_warmup()

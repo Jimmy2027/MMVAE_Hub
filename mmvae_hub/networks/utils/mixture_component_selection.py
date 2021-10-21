@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 
 
 def mixture_component_selection(flags, mus, logvars, w_modalities=None) -> Distr:

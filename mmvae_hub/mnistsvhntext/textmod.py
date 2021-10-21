@@ -1,18 +1,19 @@
 import os
 import textwrap
 from pathlib import Path
+from typing import Tuple
 
 import torch
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
 from modun.download_utils import download_zip_from_url
+from torch.distributions import OneHotCategorical
 from torchvision import transforms
 
 from mmvae_hub.mnistsvhntext.networks.ConvNetworkTextClf import ClfText
 from mmvae_hub.mnistsvhntext.networks.ConvNetworksTextMNIST import EncoderText, DecoderText
 from mmvae_hub.modalities import BaseModality
-from mmvae_hub.modalities.utils import get_likelihood
 from mmvae_hub.utils.plotting.save_samples import write_samples_text_to_file
 from mmvae_hub.utils.text import tensor_to_text
 
@@ -22,13 +23,14 @@ class Text(BaseModality):
         super().__init__(flags, name='text')
         self.alphabet = alphabet
         self.rec_weight = 1.
-        self.likelihood_name = 'categorical'
-        self.likelihood = get_likelihood(self.likelihood_name)
+        self.px_z = OneHotCategorical
         self.font = self.get_font()
 
         self.len_sequence = flags.len_sequence
         self.data_size = torch.Size([self.len_sequence]);
         self.plot_img_size = torch.Size((3, 28, 28))
+
+        self.num_features = len(self.alphabet)
 
         self.encoder = EncoderText(flags).to(flags.device)
         self.decoder = DecoderText(flags).to(flags.device)
@@ -60,8 +62,11 @@ class Text(BaseModality):
 
             return model_clf.to(self.flags.device)
 
-    def calc_likelihood(self, style_embeddings, class_embeddings):
-        return self.likelihood(*self.decoder(style_embeddings, class_embeddings), validate_args=False)
+    def calc_likelihood(self, class_embeddings, unflatten: Tuple = None):
+        if unflatten:
+            return self.px_z(self.decoder(class_latent_space=class_embeddings)[0].unflatten(0, unflatten), validate_args=False)
+
+        return self.px_z(self.decoder(class_latent_space=class_embeddings)[0], validate_args=False)
 
     def text_to_pil(self, t, imgsize, alphabet, font, w=128, h=128, linewidth=8):
         blank_img = torch.ones([imgsize[0], w, h]);
@@ -87,3 +92,7 @@ class Text(BaseModality):
     def get_font(self):
         font_path = Path(__file__).parent.parent / 'modalities/text/FreeSerif.ttf'
         return ImageFont.truetype(str(font_path), 38)
+
+    def batch_text_to_onehot(self, batch_text, vocab_size: int):
+        """In the mnistsvhntext dataset the text is already in one hot format"""
+        return batch_text

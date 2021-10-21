@@ -1,22 +1,17 @@
 import json
-import os
 import random
 from pathlib import Path
 
 import PIL.Image as Image
-import mmvae_hub.base
 import numpy as np
 import torch
-import torch.optim as optim
-from PIL import ImageFont
+from sklearn.metrics import accuracy_score
+from torchvision import transforms
+
 from mmvae_hub.base.BaseExperiment import BaseExperiment
 from mmvae_hub.mnistsvhntext.MNISTmod import MNIST
 from mmvae_hub.mnistsvhntext.SVHNMNISTDataset import SVHNMNIST
 from mmvae_hub.mnistsvhntext.SVHNmod import SVHN
-
-from sklearn.metrics import accuracy_score
-from torchvision import transforms
-
 # from utils.BaseExperiment import BaseExperiment
 from mmvae_hub.mnistsvhntext.metrics import mnistsvhntextMetrics
 from mmvae_hub.mnistsvhntext.textmod import Text
@@ -25,19 +20,20 @@ from mmvae_hub.mnistsvhntext.textmod import Text
 class MNISTSVHNText(BaseExperiment):
     def __init__(self, flags):
         super().__init__(flags)
-        flags.style_dim = 0
         self.flags = flags
         self.labels = ['digit']
 
-        alphabet_path = Path(__file__).parent / ('alphabet.json')
+        alphabet_path = Path(__file__).parent.parent / ('modalities/text/alphabet.json')
         with open(alphabet_path) as alphabet_file:
             self.alphabet = str(''.join(json.load(alphabet_file)))
+        # self.flags.vocab_size = len(self.alphabet)
 
         self.dataset_train, self.dataset_test = self.set_dataset()
 
         self.plot_img_size = torch.Size((3, 28, 28))
 
-        self.flags.num_features = len(self.alphabet)
+        if not hasattr(flags, 'num_features'):
+            self.flags.num_features = len(self.alphabet)
 
         self.modalities = self.set_modalities()
         self.num_modalities = len(self.modalities.keys())

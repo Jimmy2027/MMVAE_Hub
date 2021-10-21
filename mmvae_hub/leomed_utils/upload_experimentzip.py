@@ -54,13 +54,16 @@ def upload_one(exp_path: Path):
 
         db.insert_dict(results)
 
-        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs'] if len(mod_str.split('_')) == 1]
+        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs'] if
+                      len(mod_str.split('_')) == 1]
         dir_checkpoints = exp_dir / 'checkpoints'
         db.save_networks_to_db(
             dir_checkpoints=dir_checkpoints,
             epoch=max(int(str(d.name)) for d in dir_checkpoints.iterdir()),
             modalities=modalities,
         )
+
+        db.upload_tensorbardlogs(exp_dir / 'logs')
 
         pdf_path = run_notebook_convert(exp_dir)
         expvis_url = ppb.upload(pdf_path, plain=True)
@@ -70,10 +73,9 @@ def upload_one(exp_path: Path):
         if len(log_file):
             db.upload_logfile(Path(log_file[0]))
 
-        db.upload_tensorbardlogs(exp_dir / 'logs')
-
         send_msg(f'Uploading of experiment {flags.experiment_uid} has finished. The experiment visualisation can be '
-                 f'found here: {expvis_url}')
+                 f'found here: {expvis_url}'
+                 )
 
     # delete exp_path
     if is_zip:
@@ -101,8 +103,9 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
-    # upload_one(Path('/Users/Hendrik/Desktop/polymnist_iwmopoe_2021_08_30_11_10_58_920798.zip'))
-    #
     with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
         # upload_all('/mnt/data/hendrik/mmvae_hub/experiments')
+        # upload_all('/mnt/data/hendrik/leomed_results')
         upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+
+        # upload_one(Path('/Users/Hendrik/Documents/master_4/leomed_experiments/polymnist_iwmogfm2__2021_10_14_23_37_27_515040.zip'))

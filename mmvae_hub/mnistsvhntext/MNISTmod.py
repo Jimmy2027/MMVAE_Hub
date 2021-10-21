@@ -2,15 +2,13 @@ import os
 from pathlib import Path
 
 import torch
-from mmvae_hub.utils.setup.flags_utils import get_config_path
+from modun.download_utils import download_zip_from_url
 from modun.file_io import json2dict
 
 from mmvae_hub.mnistsvhntext.networks.ConvNetworkImgClfMNIST import ClfImg
-from modun.download_utils import download_zip_from_url
-
-from mmvae_hub.mnistsvhntext.networks.ConvNetworksImgMNIST import EncoderImg, DecoderImg
-
+from mmvae_hub.mnistsvhntext.networks.ConvNetworksImgMNIST import DecoderImg, EncoderImg
 from mmvae_hub.polymnist.PolymnistMod import PolymnistMod
+from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 
 class MNIST(PolymnistMod):

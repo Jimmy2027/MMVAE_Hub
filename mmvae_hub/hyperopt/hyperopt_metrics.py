@@ -1,7 +1,7 @@
 import numpy as np
 
 from mmvae_hub import log
-from mmvae_hub.utils.dataclasses.Dataclasses import BaseTestResults
+from mmvae_hub.utils.Dataclasses.Dataclasses import BaseTestResults
 
 
 def get_missing_mod_scores_gen_eval(results: dict):
@@ -14,7 +14,10 @@ def get_missing_mod_scores_gen_eval(results: dict):
             split2 = split1[0].split('_')
             in_mods = split2[1:]
 
-            if out_mod not in in_mods or key == 'random':
+            if key == 'random':
+                yield np.mean([v for _, v in score.items()])
+
+            elif out_mod not in in_mods:
                 yield score
 
 
@@ -41,7 +44,10 @@ def get_missing_mod_scores_prd(results: dict):
             out_mod = split[-1]
             in_mods = split[:-1]
 
-            if out_mod not in in_mods or key == 'random':
+            if key == 'random':
+                yield np.mean([v for _, v in score.items()])
+
+            elif out_mod not in in_mods:
                 yield score
 
 

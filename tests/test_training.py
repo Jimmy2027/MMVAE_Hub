@@ -1,8 +1,10 @@
 import tempfile
+from pathlib import Path
 
 import pytest
 from norby.utils import get_readable_elapsed_time
 
+from mmvae_hub.celeba.CelebaTrainer import CelebaTrainer
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.mimic.MimicTrainer import MimicTrainer
 from mmvae_hub.mnistsvhntext.mnistsvhntextTrainer import mnistsvhnTrainer
@@ -12,7 +14,7 @@ from tests.utils import set_me_up
 
 
 @pytest.mark.tox
-@pytest.mark.parametrize("method", ['mopoe', 'moe', 'poe', 'mopgfm', 'iwmogfm'])
+@pytest.mark.parametrize("method", ['mopoe', 'moe', 'poe', 'mopgfm', 'iwmogfm', 'iwmogfm_amortized'])
 # @pytest.mark.parametrize("method", ['joint_elbo'])
 def test_run_epochs_polymnist(method: str):
     """
@@ -22,10 +24,15 @@ def test_run_epochs_polymnist(method: str):
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
         # todo implement calc likelihood for flow based methods
-        calc_nll = False if method in ['planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm', 'planar_vae',
-                                       'sylvester_vae_noflow', 'iwmogfm'] else True
+        calc_nll = False if method in ['mofop', 'planar_mixture', 'pfom', 'pope', 'fomfop', 'fomop', 'poe', 'gfm',
+                                       'planar_vae',
+                                       'sylvester_vae_noflow', 'iwmogfm', 'iwmogfm2', 'iwmogfm3', 'iwmogfm_amortized',
+                                       'iwmogfm_old'] else True
         # calc_nll = False
         mst = set_me_up(tmpdirname, dataset='polymnist', method=method, attributes={'calc_nll': calc_nll,
+                                                                                    "K": 5,
+                                                                                    "dir_clf": Path(
+                                                                                        "/tmp/trained_clfs_polyMNIST")
 
                                                                                     # 'num_mods': 1
                                                                                     # 'num_flows': 1
@@ -34,6 +41,8 @@ def test_run_epochs_polymnist(method: str):
         test_results = trainer.run_epochs()
 
 
+# @pytest.mark.tox
+# @pytest.mark.parametrize("method", ['mopoe'])
 def test_run_epochs_mimic(method: str):
     """
     Test if the main training loop runs.
@@ -45,9 +54,28 @@ def test_run_epochs_mimic(method: str):
         calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
         mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': True,
                                                                                 'use_clf': True,
+                                                                                'batch_size': 2,
                                                                                 # 'calc_prd': True
                                                                                 })
         trainer = MimicTrainer(mst)
+        test_results = trainer.run_epochs()
+
+
+def test_run_epochs_celeba(method: str):
+    """
+    Test if the main training loop runs.
+    Assert if the total_test loss is constant. If the assertion fails, it means that the model or the evaluation has
+    changed, perhaps involuntarily.
+    """
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # todo implement calc likelihood for flow based methods
+        calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
+        mst = set_me_up(tmpdirname, dataset='celeba', method=method, attributes={'calc_nll': True,
+                                                                                 'use_clf': True,
+                                                                                 'batch_size': 2,
+                                                                                 # 'calc_prd': True
+                                                                                 })
+        trainer = CelebaTrainer(mst)
         test_results = trainer.run_epochs()
 
 
@@ -61,8 +89,8 @@ def test_run_epochs_mnistsvhntext(method: str):
         # todo implement calc likelihood for flow based methods
         calc_nll = method not in ['planar_mixture', 'pfom', 'pope']
         mst = set_me_up(tmpdirname, dataset='mnistsvhntext', method=method, attributes={'calc_nll': True,
-                                                                                        'use_clf': False,
-                                                                                        # 'calc_prd': True
+                                                                                        "dir_clf": Path(
+                                                                                            "/tmp/trained_clfs_mst")
                                                                                         })
         trainer = mnistsvhnTrainer(mst)
         test_results = trainer.run_epochs()
@@ -98,15 +126,19 @@ if __name__ == '__main__':
     from time import time
 
     start_time = time()
-    # test_run_epochs_polymnist(method='afom')
-    # test_run_epochs_polymnist(method='pfom')
-    # test_run_epochs_polymnist(method='gfm')
-    # test_run_epochs_polymnist(method='gfmop')
-    test_run_epochs_polymnist(method='mopoe')
+    # test_run_epochs_celeba(method='mopgfm')
+    test_run_epochs_polymnist(method='iwmogfm_amortized')
+    # test_run_epochs_polymnist(method='mopoe')
+    # test_run_epochs_polymnist(method='iwmogfm2')
+    # test_run_epochs_polymnist(method='iwmogfm')
+    # test_run_epochs_mnistsvhntext(method='mopoe')
+    # test_run_epochs_polymnist(method='iwmogfm_amortized')
+    # test_run_epochs_polymnist(method='iwmogfm2')
+    # test_run_epochs_mimic(method='iwmogfm')
     # test_run_epochs_mnistsvhntext(method='mopoe')
     # test_run_epochs_polymnist(method='iwmopgfm')
     # test_run_epochs_polymnist(method='mopgfm')
-    # test_run_epochs_polymnist(method='mopoe')
+    # test_run_epochs_polymnist(method='mofop')
     # test_run_epochs_polymnist(method='iwmopoe')
     # test_run_epochs_polymnist(method='iwmoe')
 

@@ -87,6 +87,8 @@ parser.add_argument('--num_samples_fid', type=int, default=10000,
                     help="number of samples the calculation of fid is based on")
 parser.add_argument('--num_training_samples_lr', type=int, default=1000,
                     help="number of training samples to train the lr clf")
+parser.add_argument('--checkpoint_freq', type=int, default=50,
+                    help="number of training samples to train the lr clf")
 
 # multimodal
 parser.add_argument('--method', type=str, default='poe', help='choose method for training the model')
@@ -105,7 +107,9 @@ parser.add_argument('--feature_extractor_img', type=str, default='resnet', help=
 
 # LOSS TERM WEIGHTS
 parser.add_argument('--beta', type=float, default=0, help="default weight of sum of weighted divergence terms")
-parser.add_argument('--beta_style', type=float, default=1.0,
+parser.add_argument('--prior', type=str, default='laplace', help="prior used to compute the KL divergence.")
+parser.add_argument('--qz_x', type=str, default='laplace', help="distribution used for the uni modal posteriors.")
+parser.add_argument('--beta_style', type=float, default=0,
                     help="default weight of sum of weighted style divergence terms")
 parser.add_argument('--beta_content', type=float, default=1.0,
                     help="default weight of sum of weighted content divergence terms")
@@ -113,10 +117,9 @@ parser.add_argument('--beta_content', type=float, default=1.0,
 # kl annealing
 parser.add_argument('--beta_warmup', type=int, default=100, metavar='N',
                     help='number of epochs for warm-up. Set to 0 to turn warmup off.')
-parser.add_argument('--max_beta', type=float, default=1., metavar='MB',
-                    help='max beta for warm-up')
-parser.add_argument('--min_beta', type=float, default=0.0, metavar='MB',
-                    help='min beta for warm-up')
+parser.add_argument('--max_beta', type=float, default=1., help='max beta for warm-up')
+parser.add_argument('--min_beta', type=float, default=0.0, help='min beta for warm-up')
+parser.add_argument('--beta_start_epoch', type=float, default=0.0, help='epoch at which beta starts increasing')
 
 # FLOWS
 parser.add_argument('--num_flows', type=int, default=4, help="Number of flow layers, ignored in absence of flows.")
@@ -127,6 +130,8 @@ parser.add_argument('--coupling_dim', type=int, default=512, help="Dimensions of
 # Generalized f-Means
 parser.add_argument('--num_gfm_flows', type=int, default=4,
                     help="Number of flow layers that are used to implement the GfM function.")
+parser.add_argument('--nbr_coupling_block_layers', type=int, default=2,
+                    help="Number of layers used in a coupling block, additional to the input and output layer.")
 
 # importance sampling
 parser.add_argument('--K', type=int, default=10,

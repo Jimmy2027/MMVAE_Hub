@@ -18,38 +18,32 @@ def get_feature_extractor_img(flags):
 
 
 class EncoderImg(nn.Module):
-    def __init__(self, flags, style_dim):
+    def __init__(self, flags, style_dim=None):
         super(EncoderImg, self).__init__()
         self.flags = flags
         self.feature_extractor = get_feature_extractor_img(flags)
         self.feature_compressor = LinearFeatureCompressor(5 * flags.DIM_img,
-                                                          style_dim,
+                                                          0,
                                                           flags.class_dim)
 
     def forward(self, x_img):
         h_img = self.feature_extractor(x_img)
-        if self.feature_compressor.style_mu and self.feature_compressor.style_logvar:
-            mu_style, logvar_style, mu_content, logvar_content = self.feature_compressor(h_img)
-            return mu_style, logvar_style, mu_content, logvar_content, h_img
-        else:
-            mu_content, logvar_content = self.feature_compressor(h_img)
-            return None, None, mu_content, logvar_content, h_img
+
+        mu_content, logvar_content = self.feature_compressor(h_img)
+        return None, None, mu_content, logvar_content
 
 
 class DecoderImg(nn.Module):
-    def __init__(self, flags, style_dim):
+    def __init__(self, flags, style_dim=None):
         super(DecoderImg, self).__init__()
         self.flags = flags
-        self.feature_generator = nn.Linear(style_dim + flags.class_dim, 5 * flags.DIM_img, bias=True)
+        self.feature_generator = nn.Linear(flags.class_dim, 5 * flags.DIM_img, bias=True)
         self.img_generator = DataGeneratorImg(flags)
 
-    def forward(self, z_style, z_content):
-        if self.flags.factorized_representation:
-            z = torch.cat((z_style, z_content), dim=1).squeeze(-1)
-        else:
-            z = z_content
+    def forward(self, z_content):
+        z = z_content
         img_feat_hat = self.feature_generator(z)
         img_feat_hat = img_feat_hat.view(img_feat_hat.size(0), img_feat_hat.size(1), 1, 1)
         img_hat = self.img_generator(img_feat_hat)
-        assert img_hat.mean()
+
         return img_hat, torch.tensor(0.75).to(z.device)

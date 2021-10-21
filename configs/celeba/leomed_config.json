@@ -1,0 +1,15 @@
+{
+  "leomed": true,
+  "dir_data": "~/klugh/mmvae_hub_data/CelebA.zip",
+  "dir_clf": "~/klugh/mmvae_hub_data/celeba/trained_classifiers",
+  "dir_experiment": "~/klugh/mmvae_hub_data/experiments",
+  "inception_state_dict": "~/klugh/mmvae_hub_data/pt_inception-2015-12-05-6726825d.pth",
+  "method": "mopoe",
+  "norby": false,
+  "use_db": true,
+  "batch_size": 256,
+  "calc_nll": true,
+  "eval_lr": true,
+  "calc_prd": true,
+  "use_clf": true
+}

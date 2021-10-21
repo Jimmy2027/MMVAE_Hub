@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from torch import Tensor
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from mmvae_hub import log
 from mmvae_hub.utils.plotting.save_samples import save_generated_samples_singlegroup
@@ -203,7 +204,8 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     cond_gen_classified = init_twolevel_nested_dict(subsets, mods, init_val=torch.Tensor())
     cond_gen_classified: Mapping[str, Mapping[mods, Tensor]]
 
-    for iteration, (batch_d, batch_l) in enumerate(d_loader):
+    # for iteration, (batch_d, batch_l) in enumerate(d_loader):
+    for iteration, (batch_d, batch_l) in tqdm(enumerate(d_loader), total=len(d_loader)):
 
         batch_labels = torch.cat((batch_labels, batch_l), 0)
         batch_d = dict_to_device(batch_d, exp.flags.device)
@@ -229,7 +231,7 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
     return batch_labels, rand_coherences, cond_gen_classified
 
 
-def flatten_cond_gen_values(gen_eval: dict):
+def flatten_cond_gen_values(gen_eval: dict) -> dict:
     """
     Converts the coherence evaluation results into a flattened dict
     """
@@ -240,5 +242,5 @@ def flatten_cond_gen_values(gen_eval: dict):
                 key = l_key + '_' + s_key + '__' + g_key
                 flattened_dict[key] = gen_eval['cond'][l_key][s_key][g_key]
 
-    flattened_dict['random'] = gen_eval['random']['digit']
+    flattened_dict['random'] = {k: v for k, v in gen_eval['random'].items()}
     return flattened_dict

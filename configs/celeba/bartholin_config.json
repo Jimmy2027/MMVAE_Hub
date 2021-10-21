@@ -1,0 +1,21 @@
+{
+  "dir_experiment": "/mnt/data/hendrik/mmvae_hub/experiments",
+  "inception_state_dict": "/mnt/data/hendrik/mimic_scratch/mimic/pt_inception-2015-12-05-6726825d.pth",
+  "norby": true,
+  "use_db": true,
+  "dataloader_workers": 0,
+  "dir_data": "/mnt/data/hendrik/celeba_data/CelebA",
+  "dir_clf": "/mnt/data/hendrik/mnistsvhntext/trained_classifiers",
+  "dir_clf_": "/mnt/data/hendrik/celeba_data/clfs",
+  "dir_fid": "/mnt/data/hendrik/celeba_data/fid",
+  "style_dim": 0,
+  "div_weight_uniform_content": 0.3,
+  "div_weight_m1_content": 0.35,
+  "div_weight_m2_content": 0.35,
+  "initial_learning_rate": 0.0005,
+  "batch_size": 256,
+  "calc_nll": true,
+  "eval_lr": true,
+  "calc_prd": true,
+  "use_clf": true
+}

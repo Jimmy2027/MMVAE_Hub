@@ -1,11 +1,12 @@
 {
   "dir_data": "/mnt/data/hendrik/polymnist",
   "dir_clf": "/mnt/data/hendrik/polymnist/trained_classifiers",
+  "inception_state_dict": "/mnt/data/hendrik/mimic_scratch/mimic/pt_inception-2015-12-05-6726825d.pth",
   "dir_experiment": "/mnt/data/hendrik/mmvae_hub/experiments",
   "method": "mopoe",
   "norby": true,
   "use_db": true,
-  "dataloader_workers": 16,
+  "dataloader_workers": 8,
   "kl_annealing": 0,
   "div_weight_uniform_content": 0.25,
   "num_hidden_layers": 1,

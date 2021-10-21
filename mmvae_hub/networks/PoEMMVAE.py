@@ -5,7 +5,7 @@ import typing
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import POEMMDiv
 from mmvae_hub.networks.BaseMMVae import BaseMMVAE
-from mmvae_hub.utils.dataclasses.Dataclasses import Distr, JointLatents, BaseEncMod
+from mmvae_hub.utils.Dataclasses.Dataclasses import Distr, JointLatents, BaseEncMod
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
 
 

@@ -13,7 +13,7 @@ import torch.distributed as dist
 from torch import device as Device
 
 from mmvae_hub import log
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 
 
 # Print iterations progress
@@ -230,11 +230,15 @@ def json2dict(json_path: Path) -> dict:
 
 
 def dict2pyobject(d: dict, name: str = 'mystruct') -> namedtuple:
+    """Convert dict to an immutable object."""
     MyStruct = namedtuple(name, ' '.join(d))
     return MyStruct(**d)
 
 
 def split_int_to_bins(number: int, nbr_bins: int):
+    """
+    Split number into nbr_bins. The bins will be equally sized if possible.
+    """
     values = np.arange(number, dtype=int)
     bins = np.histogram(values, bins=nbr_bins)
     return bins[0]

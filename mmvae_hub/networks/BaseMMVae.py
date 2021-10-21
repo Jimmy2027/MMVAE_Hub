@@ -9,9 +9,10 @@ from torch.distributions.distribution import Distribution
 
 from mmvae_hub.evaluation.divergence_measures.mm_div import BaseMMDiv
 from mmvae_hub.evaluation.losses import calc_style_kld
+from mmvae_hub.evaluation.utils import dataset_to_metric
 from mmvae_hub.networks.utils.mixture_component_selection import mixture_component_selection as moe
 from mmvae_hub.utils import utils
-from mmvae_hub.utils.dataclasses.Dataclasses import *
+from mmvae_hub.utils.Dataclasses.Dataclasses import *
 from mmvae_hub.utils.fusion_functions import *
 
 
@@ -52,14 +53,9 @@ class BaseMMVAE(ABC, nn.Module):
                 enc_mods[mod_str] = {}
 
                 style_mu, style_logvar, class_mu, class_logvar = mod.encoder(input_batch[mod_str])
-                assert class_mu.mean() is not None
-                assert class_logvar.mean() is not None
+
                 latents_class = Distr(mu=class_mu, logvar=class_logvar)
                 enc_mods[mod_str] = BaseEncMod(latents_class=latents_class)
-
-                if style_mu is not None:
-                    latents_style = Distr(mu=style_mu, logvar=style_logvar)
-                    enc_mods[mod_str].latents_style = latents_style
 
         return enc_mods
 
@@ -69,18 +65,12 @@ class BaseMMVAE(ABC, nn.Module):
         class_embeddings = latents_joint.get_joint_embeddings()
 
         for mod_str, enc_mod in enc_mods.items():
-            if enc_mod.latents_style:
-                latents_style = enc_mod.latents_style
-                style_embeddings = latents_style.reparameterize()
-            else:
-                style_embeddings = None
             mod = self.modalities[mod_str]
-            rec_mods[mod_str] = mod.calc_likelihood(style_embeddings, class_embeddings)
+            rec_mods[mod_str] = mod.calc_likelihood(class_embeddings= class_embeddings)
         return rec_mods
 
     def calculate_loss(self, forward_results: BaseForwardResults, batch_d: dict) -> tuple[
         float, float, dict, Mapping[str, float]]:
-
         klds, joint_divergence = self.mm_div.calc_klds(forward_results, self.subsets,
                                                        num_samples=self.flags.batch_size,
                                                        joint_keys=getattr(forward_results.joint_latents,
@@ -90,14 +80,8 @@ class BaseMMVAE(ABC, nn.Module):
                                                        )
 
         log_probs, weighted_log_prob = self.calc_log_probs(forward_results.rec_mods, batch_d)
-        beta_style = self.flags.beta_style
 
-        if self.flags.factorized_representation:
-            klds_style = calc_klds_style(self.exp, forward_results.joint_latents.enc_mods)
-            kld_style = calc_style_kld(self.exp, klds_style)
-        else:
-            kld_style = 0.0
-        kld_weighted = beta_style * kld_style + self.flags.beta_content * joint_divergence
+        kld_weighted = self.flags.beta_content * joint_divergence
         rec_weight = 1.0
         total_loss = rec_weight * weighted_log_prob + self.flags.beta * kld_weighted
 
@@ -125,9 +109,8 @@ class BaseMMVAE(ABC, nn.Module):
             num_samples = self.flags.batch_size
 
         z_class = self.get_rand_samples_from_joint(num_samples)
-        z_styles = self.get_random_styles(num_samples)
 
-        random_latents = ReparamLatent(content=z_class, style=z_styles)
+        random_latents = ReparamLatent(content=z_class, style=None)
         return self.generate_from_latents(random_latents)
 
     def conditioned_generation(self, input_samples: dict, subset_key: str, style=None):
@@ -157,9 +140,8 @@ class BaseMMVAE(ABC, nn.Module):
     def generate_sufficient_statistics_from_latents(self, latents: ReparamLatent) -> Mapping[str, Distribution]:
         cond_gen = {}
         for mod_str, mod in self.modalities.items():
-            style_m = latents.style[mod_str]
             content = latents.content
-            cond_gen_m = mod.likelihood(*mod.decoder(style_m, content))
+            cond_gen_m = mod.px_z(*mod.decoder(content))
             cond_gen[mod_str] = cond_gen_m
         return cond_gen
 
@@ -297,7 +279,7 @@ class BaseMMVAE(ABC, nn.Module):
 
     def batch_to_device(self, batch):
         """Send the batch to device as Variable."""
-        return {k: Variable(v).to(self.flags.device) for k, v in batch.items()}
+        return {k: v.to(self.flags.device) for k, v in batch.items()}
 
     def save_networks(self, epoch: int):
         dir_network_epoch = os.path.join(self.flags.dir_checkpoints, str(epoch).zfill(4))
@@ -315,14 +297,16 @@ class BaseMMVAE(ABC, nn.Module):
                 state_dict=torch.load(dir_checkpoint / f"decoderM{mod_str}", map_location=self.flags.device))
 
     @staticmethod
-    def calculate_lr_eval_scores(epoch_results: dict):
+    def calculate_lr_eval_scores(epoch_results: dict, dataset: str):
         results_dict = {}
         scores = []
         scores_lr_q0 = []
         scores_lr_zk = []
 
+        metric = dataset_to_metric(dataset)
+
         for key, val in epoch_results['lr_eval_q0'].items():
-            results_dict[f'lr_eval_q0_{key}'] = val['accuracy']
-            scores_lr_q0.append(val['accuracy'])
-            scores.append(val['accuracy'])
+            results_dict[f'lr_eval_q0_{key}'] = val[metric]
+            scores_lr_q0.append(val[metric])
+            scores.append(val[metric])
         return np.mean(scores), np.mean(scores_lr_q0), np.mean(scores_lr_zk)

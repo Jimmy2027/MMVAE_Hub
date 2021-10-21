@@ -19,7 +19,15 @@ def calc_log_probs(exp, result, batch_d):
 
 
 
-
+def calc_klds_style(exp, result):
+    latents = result['latents']['modalities'];
+    klds = dict();
+    for m, key in enumerate(latents.keys()):
+        if key.endswith('style'):
+            mu, logvar = latents[key];
+            klds[key] = calc_kl_divergence(mu, logvar,
+                                           norm_value=exp.flags.batch_size)
+    return klds;
 
 def calc_style_kld(exp, klds):
     mods = exp.modalities

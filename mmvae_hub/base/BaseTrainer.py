@@ -48,6 +48,7 @@ class BaseTrainer:
     def run_epochs(self):
         test_results = None
         end = time.time()
+        epoch = 0
         for epoch in tqdm(range(self.flags.start_epoch, self.flags.end_epoch), postfix='epochs'):
             end = time.time()
 
@@ -89,10 +90,35 @@ class BaseTrainer:
             forward_results: BaseForwardResults = model(batch_d)
             # calculate the loss
             total_loss, joint_divergence, log_probs, klds = model.calculate_loss(forward_results, batch_d)
-
             # backprop
             self.exp.optimizer.zero_grad()
             total_loss.backward()
+            if iteration >= 2:
+                for _, mod in model.modalities.items():
+                    for name, param in mod.encoder.named_parameters():
+                        if param.requires_grad:
+                            try:
+                                if torch.any(torch.isnan(param.grad.mean())):
+                                    print(name, param.grad.mean())
+
+                            except AttributeError:
+                                print(name, ': NONE gradient')
+            # temp
+            for _, mod in model.modalities.items():
+                # torch.nn.utils.clip_grad_norm_(mod.encoder.parameters(), 5)
+                # with torch.no_grad():
+                #     for p in mod.encoder.parameters():
+                #         torch.nan_to_num_(p, nan=0,posinf=0, neginf=0)
+                # print(max(p.grad.max() for p in mod.encoder.parameters() if not p.grad is None))
+                if sum(p.grad.max().isnan() for p in mod.encoder.parameters() if not p.grad is None):
+                    sgfdhf = 0
+
+                assert not sum(
+                    p.grad.max().isnan()
+                    for p in mod.encoder.parameters()
+                    if p.grad is not None
+                )
+
             self.exp.optimizer.step()
 
             results = {**forward_results.__dict__, 'joint_divergence': joint_divergence}
@@ -102,7 +128,7 @@ class BaseTrainer:
                 'klds': get_items_from_dict(klds),
                 'log_probs': get_items_from_dict(log_probs),
                 'joint_divergence': results['joint_divergence'].item(),
-                'latents': forward_results.enc_mods,
+                # 'latents': forward_results.enc_mods,
                 # 'joint_latents': forward_results.joint_latents
             }
 
@@ -133,7 +159,7 @@ class BaseTrainer:
                     'klds': get_items_from_dict(klds),
                     'log_probs': get_items_from_dict(log_probs),
                     'joint_divergence': results['joint_divergence'].item(),
-                    'latents': forward_results.enc_mods,
+                    # 'latents': forward_results.enc_mods,
                     # 'joint_latents': forward_results.joint_latents
                 }
 
@@ -147,8 +173,9 @@ class BaseTrainer:
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
             log.info('generating plots')
-            plots = generate_plots(self.exp, epoch)
-            self.tb_logger.write_plots(plots, epoch)
+            # temp
+            # plots = generate_plots(self.exp, epoch)
+            # self.tb_logger.write_plots(plots, epoch)
 
             if self.flags.eval_lr:
                 log.info('evaluation of latent representation')
@@ -202,7 +229,7 @@ class BaseTrainer:
             'klds': AverageMeterDict('klds'),
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
-            'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
+            # 'latents': AverageMeterLatents('latents', self.flags.factorized_representation),
             # 'joint_latents': AverageMeterJointLatents(model=self.exp.mm_vae, name='joint_latents',
             #                                           factorized_representation=self.flags.factorized_representation)
         }

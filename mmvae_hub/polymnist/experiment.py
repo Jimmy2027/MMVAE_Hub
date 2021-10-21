@@ -21,10 +21,8 @@ class PolymnistExperiment(BaseExperiment):
         super(PolymnistExperiment, self).__init__(flags)
 
         self.labels = ['digit']
-        # self.name = flags.name
         self.dataset_name = 'polymnist'
         self.num_modalities = flags.num_mods
-        self.plot_img_size = torch.Size((3, 28, 28))
 
         self.modalities = self.set_modalities()
         self.subsets = self.set_subsets()
