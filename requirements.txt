@@ -120,7 +120,7 @@ joblib==1.0.1
     #   scikit-learn
 jsonschema==3.2.0
     # via nbformat
-jupyter-client==7.0.3
+jupyter-client==7.0.6
     # via nbclient
 jupyter-core==4.8.1
     # via
