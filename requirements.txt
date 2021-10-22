@@ -35,7 +35,7 @@ certifi==2021.5.30
     # via requests
 chardet==4.0.0
     # via aiohttp
-charset-normalizer==2.0.6
+charset-normalizer==2.0.7
     # via requests
 clang==11.0
     # via tensorflow
