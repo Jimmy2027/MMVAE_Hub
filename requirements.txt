@@ -75,7 +75,7 @@ flatbuffers==1.12
     # via tensorflow
 git+https://github.com/VLL-HD/FrEIA.git
     # via MMVAE-Hub (setup.py)
-fsspec[http]==2021.8.1
+fsspec[http]==2021.10.1
     # via pytorch-lightning
 future==0.18.2
     # via pytorch-lightning
