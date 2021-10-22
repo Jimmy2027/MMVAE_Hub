@@ -304,7 +304,7 @@ scipy==1.7.1
     #   freia
     #   optuna
     #   scikit-learn
-six==1.15.0
+six==1.16.0
     # via
     #   absl-py
     #   astunparse
