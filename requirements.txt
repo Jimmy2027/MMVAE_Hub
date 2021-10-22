@@ -89,7 +89,7 @@ google-auth-oauthlib==0.4.6
     # via tensorboard
 google-pasta==0.2.0
     # via tensorflow
-greenlet==1.1.1
+greenlet==1.1.2
     # via sqlalchemy
 grpcio==1.40.0
     # via
