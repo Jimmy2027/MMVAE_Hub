@@ -229,7 +229,7 @@ prettytable==2.2.0
     # via cliff
 prompt-toolkit==3.0.20
     # via ipython
-protobuf==3.18.0
+protobuf==3.19.0
     # via
     #   tensorboard
     #   tensorflow
