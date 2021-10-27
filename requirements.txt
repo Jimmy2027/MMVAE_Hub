@@ -326,7 +326,7 @@ sqlalchemy==1.4.23
     #   optuna
 stevedore==3.4.0
     # via cliff
-subprocess-tee==0.3.4
+subprocess-tee==0.3.5
     # via norby
 tensorboard==2.6.0
     # via
