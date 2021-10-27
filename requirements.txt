@@ -266,7 +266,7 @@ python-dateutil==2.8.2
     #   jupyter-client
     #   matplotlib
     #   pandas
-pytorch-lightning==1.4.7
+pytorch-lightning==1.4.9
     # via MMVAE-Hub (setup.py)
 pytz==2021.1
     # via pandas
@@ -326,7 +326,7 @@ sqlalchemy==1.4.23
     #   optuna
 stevedore==3.4.0
     # via cliff
-subprocess-tee==0.3.4
+subprocess-tee==0.3.5
     # via norby
 tensorboard==2.6.0
     # via
@@ -345,7 +345,7 @@ termcolor==1.1.0
     # via tensorflow
 testpath==0.5.0
     # via nbconvert
-threadpoolctl==2.2.0
+threadpoolctl==3.0.0
     # via scikit-learn
 tokenizers==0.10.3
     # via transformers
