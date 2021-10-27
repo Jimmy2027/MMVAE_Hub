@@ -400,7 +400,7 @@ wcwidth==0.2.5
     #   prompt-toolkit
 webencodings==0.5.1
     # via bleach
-werkzeug==2.0.1
+werkzeug==2.0.2
     # via tensorboard
 wget==3.2
     # via
