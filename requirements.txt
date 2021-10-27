@@ -362,7 +362,7 @@ torchvision==0.10.1
     # via MMVAE-Hub (setup.py)
 tornado==6.1
     # via jupyter-client
-tqdm==4.62.2
+tqdm==4.62.3
     # via
     #   MMVAE-Hub (setup.py)
     #   huggingface-hub
