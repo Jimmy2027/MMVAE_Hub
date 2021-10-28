@@ -171,7 +171,7 @@ nltk==3.6.5
     # via MMVAE-Hub (setup.py)
 git+https://github.com/Jimmy2027/NORBY.git
     # via MMVAE-Hub (setup.py)
-numpy==1.19.5
+numpy==1.21.3
     # via
     #   cmaes
     #   freia
