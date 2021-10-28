@@ -225,7 +225,7 @@ pillow==8.3.2
     #   imageio
     #   matplotlib
     #   torchvision
-prettytable==2.2.0
+prettytable==2.2.1
     # via cliff
 prompt-toolkit==3.0.20
     # via ipython
