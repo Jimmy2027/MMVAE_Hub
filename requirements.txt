@@ -391,7 +391,7 @@ typing-extensions==3.7.4.3
     #   pytorch-lightning
     #   tensorflow
     #   torch
-urllib3==1.26.6
+urllib3==1.26.7
     # via requests
 wcwidth==0.2.5
     # via
