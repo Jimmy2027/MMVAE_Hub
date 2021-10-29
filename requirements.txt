@@ -57,7 +57,7 @@ colorlog==6.4.1
     # via optuna
 configparser==5.0.2
     # via MMVAE-Hub (setup.py)
-cycler==0.10.0
+cycler==0.11.0
     # via matplotlib
 decorator==5.1.0
     # via ipython
