@@ -99,7 +99,7 @@ h5py==3.1.0
     # via tensorflow
 huggingface-hub==0.0.17
     # via transformers
-idna==3.2
+idna==3.3
     # via
     #   requests
     #   yarl
