@@ -328,7 +328,7 @@ stevedore==3.4.0
     # via cliff
 subprocess-tee==0.3.5
     # via norby
-tensorboard==2.6.0
+tensorboard==2.7.0
     # via
     #   MMVAE-Hub (setup.py)
     #   pytorch-lightning
