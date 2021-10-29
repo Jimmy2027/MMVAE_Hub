@@ -324,7 +324,7 @@ sqlalchemy==1.4.23
     # via
     #   alembic
     #   optuna
-stevedore==3.4.0
+stevedore==3.5.0
     # via cliff
 subprocess-tee==0.3.5
     # via norby
