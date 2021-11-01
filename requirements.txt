@@ -151,7 +151,7 @@ mistune==0.8.4
     # via nbconvert
 git+https://github.com/Jimmy2027/MODUN.git
     # via MMVAE-Hub (setup.py)
-multidict==5.1.0
+multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
