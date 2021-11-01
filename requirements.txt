@@ -339,7 +339,7 @@ tensorboard-plugin-wit==1.8.0
     # via tensorboard
 tensorflow==2.6.0
     # via MMVAE-Hub (setup.py)
-tensorflow-estimator==2.6.0
+tensorflow-estimator==2.7.0
     # via tensorflow
 termcolor==1.1.0
     # via tensorflow
