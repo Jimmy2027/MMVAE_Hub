@@ -197,7 +197,7 @@ opt-einsum==3.3.0
     # via tensorflow
 optuna==2.9.1
     # via MMVAE-Hub (setup.py)
-packaging==21.0
+packaging==21.2
     # via
     #   bleach
     #   huggingface-hub
