@@ -105,7 +105,7 @@ idna==3.3
     #   yarl
 imageio==2.10.1
     # via MMVAE-Hub (setup.py)
-ipython==7.28.0
+ipython==7.29.0
     # via MMVAE-Hub (setup.py)
 ipython-genutils==0.2.0
     # via nbformat
@@ -118,7 +118,7 @@ joblib==1.0.1
     #   nltk
     #   sacremoses
     #   scikit-learn
-jsonschema==3.2.0
+jsonschema==4.2.0
     # via nbformat
 jupyter-client==7.0.6
     # via nbclient
