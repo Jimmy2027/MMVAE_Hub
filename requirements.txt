@@ -320,7 +320,7 @@ six==1.16.0
     #   tensorflow
 sklearn==0.0
     # via MMVAE-Hub (setup.py)
-sqlalchemy==1.4.23
+sqlalchemy==1.4.26
     # via
     #   alembic
     #   optuna
