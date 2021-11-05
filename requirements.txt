@@ -10,7 +10,7 @@ absl-py==0.15.0
     #   tensorflow
 aiohttp==3.7.4.post0
     # via fsspec
-alembic==1.7.3
+alembic==1.7.4
     # via optuna
 appnope==0.1.2
     # via ipython
