@@ -155,7 +155,7 @@ multidict==5.2.0
     # via
     #   aiohttp
     #   yarl
-nbclient==0.5.4
+nbclient==0.5.5
     # via nbconvert
 nbconvert==6.1.0
     # via MMVAE-Hub (setup.py)
