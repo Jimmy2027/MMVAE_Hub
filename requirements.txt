@@ -252,7 +252,7 @@ pymongo==3.12.1
     # via
     #   MMVAE-Hub (setup.py)
     #   modun
-pyparsing==3.0.4
+pyparsing==3.0.5
     # via
     #   cliff
     #   matplotlib
