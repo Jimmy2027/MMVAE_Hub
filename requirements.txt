@@ -122,7 +122,7 @@ jsonschema==4.2.0
     # via nbformat
 jupyter-client==7.0.6
     # via nbclient
-jupyter-core==4.8.1
+jupyter-core==4.9.1
     # via
     #   jupyter-client
     #   nbconvert
