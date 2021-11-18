@@ -103,7 +103,7 @@ idna==3.3
     # via
     #   requests
     #   yarl
-imageio==2.10.1
+imageio==2.11.0
     # via MMVAE-Hub (setup.py)
 ipython==7.29.0
     # via MMVAE-Hub (setup.py)
