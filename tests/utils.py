@@ -2,6 +2,7 @@
 from pathlib import Path
 from typing import Optional
 
+from mmvae_hub.VQVAE.vq_mimic_experiment import VQmimicExperiment
 from mmvae_hub.mnistsvhntext.experiment import MNISTSVHNText
 
 import mmvae_hub
@@ -22,7 +23,10 @@ def set_me_up(tmpdirname, dataset: str, method: str, attributes: Optional = None
         from mmvae_hub.mimic.flags import parser as mimic_parser, MimicFlagsSetup
         flags = mimic_parser.parse_args([])
         flags_setup = MimicFlagsSetup(config_path)
-        exp = MimicExperiment
+        if method.startswith('vq'):
+            exp = VQmimicExperiment
+        else:
+            exp = MimicExperiment
 
     elif dataset == 'mnistsvhntext':
         from mmvae_hub.mnistsvhntext.flags import parser as mnistshvntext_parser, mnistsvhntextFlagsSetup

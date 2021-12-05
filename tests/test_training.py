@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from norby.utils import get_readable_elapsed_time
 
+from mmvae_hub.VQVAE.VQTrainer import VQTrainer
 from mmvae_hub.celeba.CelebaTrainer import CelebaTrainer
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation
 from mmvae_hub.mimic.MimicTrainer import MimicTrainer
@@ -79,6 +80,26 @@ def test_run_epochs_celeba(method: str):
         test_results = trainer.run_epochs()
 
 
+def test_run_epochs_vqmimic(method: str):
+    """
+    Test if the main training loop runs.
+    Assert if the total_test loss is constant. If the assertion fails, it means that the model or the evaluation has
+    changed, perhaps involuntarily.
+    """
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        # todo implement calc likelihood for flow based methods
+        calc_nll = False
+        mst = set_me_up(tmpdirname, dataset='mimic', method=method, attributes={'calc_nll': False,
+                                                                                'use_clf': True,
+                                                                                'batch_size': 2,
+                                                                                'mods': 'F_L',
+                                                                                "eval_lr": False,
+                                                                                # 'calc_prd': True
+                                                                                })
+        trainer = VQTrainer(mst)
+        test_results = trainer.run_epochs()
+
+
 def test_run_epochs_mnistsvhntext(method: str):
     """
     Test if the main training loop runs.
@@ -126,15 +147,16 @@ if __name__ == '__main__':
     from time import time
 
     start_time = time()
-    # test_run_epochs_celeba(method='mopgfm')
-    test_run_epochs_polymnist(method='iwmogfm_amortized')
+    # test_run_epochs_vqmimic(method='vqmogfm')
+    # test_run_epochs_polymnist(method='iwmogfm_amortized')
     # test_run_epochs_polymnist(method='mopoe')
     # test_run_epochs_polymnist(method='iwmogfm2')
     # test_run_epochs_polymnist(method='iwmogfm')
     # test_run_epochs_mnistsvhntext(method='mopoe')
     # test_run_epochs_polymnist(method='iwmogfm_amortized')
     # test_run_epochs_polymnist(method='iwmogfm2')
-    # test_run_epochs_mimic(method='iwmogfm')
+    # test_run_epochs_vqmimic(method='vqmogfm')
+    test_run_epochs_vqmimic(method='vqmopoe')
     # test_run_epochs_mnistsvhntext(method='mopoe')
     # test_run_epochs_polymnist(method='iwmopgfm')
     # test_run_epochs_polymnist(method='mopgfm')

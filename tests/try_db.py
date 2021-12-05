@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import datetime
+import json
 from pathlib import Path
 
 from pymongo import MongoClient
 
-from mmvae_hub.utils import json2dict
-
-dbconfig = json2dict(Path(__file__).parent.parent / 'configs/mmvae_db.json')
-client = MongoClient(dbconfig['mongodb_URI'])
+json_path = Path(__file__).parent.parent / 'configs/mmvae_db.json'
+with open(json_path, 'rt') as json_file:
+    json_config = json.load(json_file)
+client = MongoClient(json_config['mongodb_URI'])
 db = client.mmvae
 posts = db.posts
 
