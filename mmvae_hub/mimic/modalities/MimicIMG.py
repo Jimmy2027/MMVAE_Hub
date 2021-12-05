@@ -13,6 +13,8 @@ from modun.download_utils import download_zip_from_url
 
 
 class LM_(LM):
+    """Lightning Module"""
+
     def __init__(self, str_labels: list, transforms):
         super().__init__(str_labels)
         self.transforms = transforms

@@ -6,6 +6,8 @@ import random
 import typing
 from collections import Counter, OrderedDict
 from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -19,10 +21,21 @@ from mmvae_hub.mimic.utils import get_transform_img, filter_labels
 from mmvae_hub.utils import text
 
 
+@dataclass
+class MimicDataArgs:
+    dir_data: Path
+    mods: list
+    img_size: tuple
+    feature_extractor_img: str
+    undersample_dataset: bool
+    len_sequence: int
+    word_min_occ: int
+
+
 class Mimic(Dataset):
     """Custom Dataset for loading mimic images"""
 
-    def __init__(self, args, str_labels, split: str, clf_training=False, transform_images: bool = True):
+    def __init__(self, args: MimicDataArgs, str_labels, split: str, clf_training=False, transform_images: bool = True):
         """
         split: string, either train, eval or test
         clf_training: set to true if the dataset is used to train a classifier. In this case the densenet
@@ -232,11 +245,11 @@ class MimicSentences(Dataset):
         self.min_occ = min_occ
         self.transform = to_tensor if transform else None
         self.findings = findings
-        self.gen_dir = os.path.join(self.data_dir, "oc:{}_msl:{}".
+        self.gen_dir = os.path.join(self.data_dir, "oc_{}__msl_{}".
                                     format(self.min_occ, self.max_sequence_length))
 
         self.raw_data_path = os.path.join(data_dir, split + '_findings.csv')
-
+        print('making dir ', self.gen_dir)
         os.makedirs(self.gen_dir, exist_ok=True)
         self.data_file = 'mimic.{}.s{}'.format(split, self.max_sequence_length)
         self.vocab_file = 'mimic.vocab'
@@ -400,6 +413,8 @@ class Mimic_testing(Dataset):
         self.vocab_size = 3517
         self.flags = flags
         self.report_findings_dataset = Report_findings_dataset_test(self.vocab_size)
+        modkey_to_mod = {'F': 'PA', 'L': 'Lateral', 'T': 'text'}
+        self.mods = [modkey_to_mod[k] for k in flags.mods.split('_')]
 
     def __getitem__(self, index):
         sample = self.get_images() if not self.flags.only_text_modality else {}
@@ -407,7 +422,7 @@ class Mimic_testing(Dataset):
 
         nbr_labels = 1 if self.flags.binary_labels else 3
         label = torch.tensor([random.randint(0, 1) for _ in range(nbr_labels)]).float()
-        return sample, label
+        return {k: v for k, v in sample.items() if k in self.mods}, label
 
     def get_images(self) -> dict:
         img_size = (self.flags.img_size, self.flags.img_size)

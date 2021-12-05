@@ -1,6 +1,4 @@
-import random
 import typing
-from argparse import Namespace
 
 import numpy as np
 import torch
@@ -122,7 +120,7 @@ class MimicExperiment(BaseExperiment):
         """
         n_test = self.dataset_test.__len__()
         samples = []
-        for idx in range(0, num_images*5, 5):
+        for idx in range(0, num_images * 5, 5):
             # sample, _ = self.dataset_test.__getitem__(random.randint(0, n_test - 1))
             sample, _ = self.dataset_test.__getitem__(idx)
             sample = dict_to_device(sample, self.flags.device)

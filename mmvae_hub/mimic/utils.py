@@ -182,7 +182,7 @@ def undersample(labels: pd.DataFrame):
     return labels[labels.index.isin(undersample_indices)]
 
 
-def get_str_labels(binary_labels) -> Iterable[str]:
+def get_str_labels(binary_labels: bool) -> Iterable[str]:
     if binary_labels:
         return ['Finding']
     else:

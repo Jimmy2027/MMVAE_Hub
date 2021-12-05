@@ -8,7 +8,8 @@ from mmvae_hub.mimic.flags import parser
 from mmvae_hub.utils.setup.flags_utils import get_config_path
 
 sp_mopoe_mimic = {
-    'method': ['mopoe'],
+    'method': ['mopgfm'],
+    'mods': ['F'],
     'beta': [2.],
     'class_dim': [640],
     # "num_mods": [1],
