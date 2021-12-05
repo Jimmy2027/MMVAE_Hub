@@ -18,7 +18,8 @@ def generate_plots(exp, epoch, nbr_samples_x: int = 10, nbr_samples_y: int = 10)
         cond_k = generate_conditional_fig_M(exp, epoch, M + 1, nbr_samples_x, nbr_samples_y)
         plots['cond_gen_' + str(M + 1).zfill(2)] = cond_k
 
-    plots['random'] = generate_random_samples_plots(exp, epoch)
+    if not exp.flags.method.startswith('vq'):
+        plots['random'] = generate_random_samples_plots(exp, epoch)
     return plots
 
 
