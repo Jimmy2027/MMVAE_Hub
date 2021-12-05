@@ -29,8 +29,9 @@ def upload_one(exp_path: Path):
     """
     is_zip = exp_path.suffix == '.zip'
     with tempfile.TemporaryDirectory() as tmpdirname:
+        # tmpdirname = Path('~/temp').expanduser()
         tmpdir = Path(tmpdirname) / exp_path.stem
-        tmpdir.mkdir()
+        tmpdir.mkdir(exist_ok=True)
 
         if is_zip:
             # unpack zip into tmpdir
@@ -54,8 +55,13 @@ def upload_one(exp_path: Path):
 
         db.insert_dict(results)
 
-        modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs'] if
-                      len(mod_str.split('_')) == 1]
+        if 'log_probs' in results['epoch_results'][str(epoch)]['train_results']:
+            modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['log_probs'] if
+                          len(mod_str.split('_')) == 1]
+        else:
+            modalities = [mod_str for mod_str in results['epoch_results'][str(epoch)]['train_results']['rec_losses'] if
+                          len(mod_str.split('_')) == 1]
+
         dir_checkpoints = exp_dir / 'checkpoints'
         db.save_networks_to_db(
             dir_checkpoints=dir_checkpoints,
@@ -66,6 +72,8 @@ def upload_one(exp_path: Path):
         db.upload_tensorbardlogs(exp_dir / 'logs')
 
         pdf_path = run_notebook_convert(exp_dir)
+        shutil.copyfile(pdf_path, dst='/cluster/home/klugh/temp/')
+
         expvis_url = ppb.upload(pdf_path, plain=True)
         db.insert_dict({'expvis_url': expvis_url})
 
@@ -103,9 +111,11 @@ if __name__ == '__main__':
     # app()
     from norby.utils import norby
 
-    with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
-        # upload_all('/mnt/data/hendrik/mmvae_hub/experiments')
-        # upload_all('/mnt/data/hendrik/leomed_results')
-        upload_all('/Users/Hendrik/Documents/master_4/leomed_experiments')
+    # upload_all('/cluster/home/klugh/klugh/mmvae_hub_data/experiments')
 
-        # upload_one(Path('/Users/Hendrik/Documents/master_4/leomed_experiments/polymnist_iwmogfm2__2021_10_14_23_37_27_515040.zip'))
+    # with norby('beginning upload experimentzip', 'finished beginning upload experimentmentzip'):
+        # upload_all('/home/hendrik/.scratch/leomed_experiments')
+    upload_all('/mnt/data/hendrik/leomed_results')
+    # upload_all('/home/hendrik/data/mmvae/leomed_experiments')
+
+    # upload_one(Path('/Users/Hendrik/Documents/master_4/leomed_experiments/polymnist_iwmogfm2__2021_10_14_23_37_27_515040.zip'))

@@ -34,7 +34,10 @@ def launch_leomed_jobs(which_dataset: str, params: dict) -> None:
         scratch_space = int(np.ceil(((params['end_epoch'] / 100) * 5) / n_cores))
 
     elif which_dataset == 'mimic':
-        python_file = mmvae_hub_dir / 'mimic/main_mimic.py'
+        if params['method'] in ['vqmogfm']:
+            python_file = mmvae_hub_dir / 'VQVAE/main_mimic.py'
+        else:
+            python_file = mmvae_hub_dir / 'mimic/main_mimic.py'
         # 1 epochs needs approx. 20 minutes
         num_hours = int(np.round((params['end_epoch'] * 20) / 60)) or 1
         mem = 2500
