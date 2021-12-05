@@ -58,13 +58,14 @@ class AverageMeterNestedDict:
 
     def update(self, val: typing.Mapping[str, typing.Mapping[str, typing.Iterable[float]]]) -> None:
         for k1 in self.structure:
-            for k2 in self.structure:
+            for k2 in self.structure[k1]:
                 self.vals[k1][k2].append(val[k1][k2])
 
     def get_average(self) -> typing.Mapping[str, typing.Mapping[str, float]]:
         d = {}
         for k1 in self.structure:
-            for k2 in self.structure:
+            d[k1] = {}
+            for k2 in self.structure[k1]:
                 d[k1][k2] = np.mean(self.vals[k1][k2])
 
         return d
