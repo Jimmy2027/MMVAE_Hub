@@ -7,6 +7,9 @@ from typing import Mapping, Iterable
 
 import numpy as np
 import torch
+from mmvae_hub.VQVAE.VQMoPoE import VQMoPoE
+
+from mmvae_hub.VQVAE.VQVAE import VQMoGFMVAE
 from torch import optim, Tensor
 
 from mmvae_hub.modalities import BaseModality
@@ -130,6 +133,10 @@ class BaseExperiment(ABC):
             model = iwMoGfMVAE4(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'iwmogfm2_':
             model = iwMoGfMVAE2_(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'vqmogfm':
+            model = VQMoGFMVAE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'vqmopoe':
+            model = VQMoPoE(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

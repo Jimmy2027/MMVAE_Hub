@@ -9,7 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from mmvae_hub import log
-from mmvae_hub.base import BaseCallback
+from mmvae_hub.base.BaseCallback import BaseCallback
 from mmvae_hub.base import BaseExperiment
 from mmvae_hub.evaluation.eval_metrics.coherence import test_generation, flatten_cond_gen_values
 from mmvae_hub.evaluation.eval_metrics.likelihood import estimate_likelihoods
@@ -41,9 +41,8 @@ class BaseTrainer:
         tb_logger.writer.add_text('FLAGS', str_flags, 0)
         return tb_logger
 
-    @abstractmethod
-    def _set_callback(self) -> BaseCallback:
-        pass
+    def _set_callback(self):
+        return BaseCallback(self.exp)
 
     def run_epochs(self):
         test_results = None
@@ -81,7 +80,8 @@ class BaseTrainer:
         self.exp.set_train_mode()
         model = self.exp.mm_vae
 
-        d_loader, training_steps, average_meters = self.setup_phase('train')
+        training_steps = self.flags.steps_per_training_epoch
+        d_loader, average_meters = self.setup_phase('train')
 
         for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
             batch_d = model.batch_to_device(batch_d)
@@ -121,13 +121,11 @@ class BaseTrainer:
 
             self.exp.optimizer.step()
 
-            results = {**forward_results.__dict__, 'joint_divergence': joint_divergence}
-
             batch_results = {
                 'total_loss': total_loss.item(),
                 'klds': get_items_from_dict(klds),
                 'log_probs': get_items_from_dict(log_probs),
-                'joint_divergence': results['joint_divergence'].item(),
+                'joint_divergence': joint_divergence.item(),
                 # 'latents': forward_results.enc_mods,
                 # 'joint_latents': forward_results.joint_latents
             }
@@ -144,7 +142,8 @@ class BaseTrainer:
             self.exp.set_eval_mode()
             model = self.exp.mm_vae
 
-            d_loader, training_steps, average_meters = self.setup_phase('test')
+            training_steps = self.flags.steps_per_training_epoch
+            d_loader, average_meters = self.setup_phase('test')
 
             for iteration, (batch_d, _) in enumerate(at_most_n(d_loader, training_steps)):
                 batch_d = model.batch_to_device(batch_d)
@@ -152,13 +151,12 @@ class BaseTrainer:
 
                 # calculate the loss
                 total_loss, joint_divergence, log_probs, klds = model.calculate_loss(forward_results, batch_d)
-                results = {**forward_results.__dict__, 'joint_divergence': joint_divergence}
 
                 batch_results = {
                     'total_loss': total_loss.item(),
                     'klds': get_items_from_dict(klds),
                     'log_probs': get_items_from_dict(log_probs),
-                    'joint_divergence': results['joint_divergence'].item(),
+                    'joint_divergence': joint_divergence.item(),
                     # 'latents': forward_results.enc_mods,
                     # 'joint_latents': forward_results.joint_latents
                 }
@@ -173,9 +171,9 @@ class BaseTrainer:
             test_results = BaseTestResults(joint_div=averages['joint_divergence'], **averages)
 
             log.info('generating plots')
-            # temp
-            # plots = generate_plots(self.exp, epoch)
-            # self.tb_logger.write_plots(plots, epoch)
+
+            plots = generate_plots(self.exp, epoch)
+            self.tb_logger.write_plots(plots, epoch)
 
             if self.flags.eval_lr:
                 log.info('evaluation of latent representation')
@@ -222,10 +220,8 @@ class BaseTrainer:
         d_loader = DataLoader(dataset, batch_size=self.flags.batch_size, shuffle=True,
                               num_workers=self.flags.dataloader_workers, drop_last=True)
 
-        training_steps = self.flags.steps_per_training_epoch
-
         average_meters = {
-            'total_loss': AverageMeter('total_test_loss'),
+            'total_loss': AverageMeter(f'total_{phase}_loss'),
             'klds': AverageMeterDict('klds'),
             'log_probs': AverageMeterDict('log_probs'),
             'joint_divergence': AverageMeter('joint_divergence'),
@@ -233,7 +229,7 @@ class BaseTrainer:
             # 'joint_latents': AverageMeterJointLatents(model=self.exp.mm_vae, name='joint_latents',
             #                                           factorized_representation=self.flags.factorized_representation)
         }
-        return d_loader, training_steps, average_meters
+        return d_loader, average_meters
 
     def finalize(self, test_results: BaseTestResults, epoch: int, average_epoch_time):
         log.info('Finalizing.')

@@ -136,3 +136,15 @@ parser.add_argument('--nbr_coupling_block_layers', type=int, default=2,
 # importance sampling
 parser.add_argument('--K', type=int, default=10,
                     help="Number of flow layers that are used to implement the GfM function.")
+
+# VQ-VAE
+parser.add_argument('--num_embeddings', type=int, default=512, help="Number of embeddings for VQ-VAE.")
+parser.add_argument('--num_residual_hiddens', type=int, default=32, help="Quantized vector shape.")
+parser.add_argument('--num_residual_layers', type=int, default=5,
+                    help="Number of residual layers in encoder and decoder.")
+parser.add_argument('--decay', type=float, default=0.99,
+                    help="Decay for the vector quantizer that uses exponential moving averages.")
+parser.add_argument('--embedding_dim', type=int, default=64, help="Dimensionality of embeddings for VQ-VAE.")
+parser.add_argument('--commitment_cost', type=float, default=0.25,
+                    help="Weight of the commitment loss for VQ-VAE. "
+                         "The commitment loss penalizes encoder outputs that are far away from any embedding.")
