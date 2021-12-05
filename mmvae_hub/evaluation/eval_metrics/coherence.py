@@ -76,7 +76,7 @@ def save_generated_samples(exp, rand_gen: dict, iteration: int, batch_d: dict) -
     Saves generated samples to dir_fid
     """
     save_generated_samples_singlegroup(exp, iteration, 'random', rand_gen)
-    if exp.flags.__contains__('text_encoding') and exp.flags.text_encoding == 'word':
+    if exp.flags.__contains__('text_encoding') and exp.flags.text_encoding == 'word' and 'T' in exp.flags.mods:
         batch_d_temp = batch_d.copy()
         batch_d_temp['text'] = torch.nn.functional.one_hot(batch_d_temp['text'].to(torch.int64),
                                                            num_classes=exp.flags.vocab_size)
@@ -177,8 +177,8 @@ def test_generation(exp, dataset=None):
 
     mods = exp.modalities
     mm_vae = exp.mm_vae
-    subsets = [*exp.subsets, 'joint']
 
+    subsets = [*exp.subsets, 'joint'] if not args.method.startswith('vq') else exp.subsets
     d_loader = DataLoader(exp.dataset_test if not dataset else dataset,
                           batch_size=args.batch_size,
                           shuffle=True,
@@ -211,7 +211,8 @@ def classify_generated_samples(args, d_loader, exp, mm_vae, mods, subsets):
         batch_d = dict_to_device(batch_d, exp.flags.device)
 
         # evaluating random generation
-        rand_coherences = calc_coherence_random_gen(exp, mm_vae, iteration, rand_coherences, batch_d)
+        if not args.method.startswith('vq'):
+            rand_coherences = calc_coherence_random_gen(exp, mm_vae, iteration, rand_coherences, batch_d)
 
         # evaluating conditional generation
         # first generates the conditional gen_samples
