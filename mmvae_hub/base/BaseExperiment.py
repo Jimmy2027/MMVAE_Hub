@@ -7,6 +7,8 @@ from typing import Mapping, Iterable
 
 import numpy as np
 import torch
+
+from mmvae_hub.VQVAE.VQMoAM import VQMoAM
 from mmvae_hub.VQVAE.VQMoPoE import VQMoPoE
 
 from mmvae_hub.VQVAE.VQVAE import VQMoGFMVAE
@@ -137,6 +139,8 @@ class BaseExperiment(ABC):
             model = VQMoGFMVAE(self, self.flags, self.modalities, self.subsets)
         elif self.flags.method == 'vqmopoe':
             model = VQMoPoE(self, self.flags, self.modalities, self.subsets)
+        elif self.flags.method == 'vqmoam':
+            model = VQMoAM(self, self.flags, self.modalities, self.subsets)
         else:
             raise NotImplementedError(f'Method {self.flags.method} not implemented. Exiting...!')
         return model.to(self.flags.device)

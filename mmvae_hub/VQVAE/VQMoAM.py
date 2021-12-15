@@ -8,7 +8,7 @@ from mmvae_hub.VQVAE.VqVaeDataclasses import VQEncMod, JointLatentsVQ, JointEmbe
 from mmvae_hub.utils.fusion_functions import subsets_from_batchmods
 
 
-class VQMoPoE(VQVAE):
+class VQMoAM(VQVAE):
     def __init__(self, exp, flags, modalities, subsets):
         super().__init__(exp, flags, modalities, subsets)
 
@@ -32,7 +32,7 @@ class VQMoPoE(VQVAE):
                 # sum of random variables
                 subset_enc_mods = torch.stack([enc_mods[mod.name].enc_mod for mod in self.subsets[s_key]])
 
-                # geometric mean
+                # arithmetic mean
                 z_geom_mean = subset_enc_mods.mean(dim=0)
 
                 z_joint = torch.cat([z_joint, z_geom_mean])

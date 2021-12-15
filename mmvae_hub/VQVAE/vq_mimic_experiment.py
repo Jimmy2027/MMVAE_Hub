@@ -4,7 +4,6 @@ import typing
 from mmvae_hub import log
 from mmvae_hub.VQVAE.VQMimicIMG import VQMimicPA, VQMimicLateral
 from mmvae_hub.VQVAE.VQMimicText import VQMimicText
-from mmvae_hub.mimic.MimicDataset import MimicText
 from mmvae_hub.mimic.experiment import MimicExperiment
 from mmvae_hub.modalities import BaseModality
 
@@ -25,7 +24,7 @@ class VQmimicExperiment(MimicExperiment):
                 mod = VQMimicText(self.flags, self.labels, self.flags.rec_weight_m3, self.plot_img_size,
                                   self.dataset_train.report_findings_dataset.i2w)
             else:
-                raise ValueError(f'Invalid mod_str {mod_str}.' + 'Choose between {T,L,T}')
+                raise ValueError(f'Invalid mod_str {mod_str}.' + 'Choose between {F,L,T}')
             mods[mod.name] = mod
 
         return mods

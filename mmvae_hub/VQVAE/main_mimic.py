@@ -14,10 +14,10 @@ if __name__ == '__main__':
 
     flags.dataset = DATASET
     flags_setup = MimicFlagsSetup(get_config_path(dataset=DATASET, flags=flags))
-    flags = flags_setup.setup(flags, additional_args={'dataset': DATASET, 'method': 'vqmogfm'})
+    flags = flags_setup.setup(flags, additional_args={'dataset': DATASET})
 
     # Args
-    # flags.mods = 'T'
+    # flags.mods = 'F_L'
     flags.batch_size = 128
     # flags.end_epoch = 150
 

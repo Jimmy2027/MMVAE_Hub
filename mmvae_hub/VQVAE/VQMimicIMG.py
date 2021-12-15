@@ -124,7 +124,6 @@ class VQEncoder(nn.Module):
 
         x = self._conv_3(x)
         x = self._residual_stack(x)
-
         return self._pre_vq_conv(x)
 
 
