@@ -227,7 +227,7 @@ pillow==8.4.0
     #   torchvision
 prettytable==2.2.1
     # via cliff
-prompt-toolkit==3.0.21
+prompt-toolkit==3.0.25
     # via ipython
 protobuf==3.19.0
     # via
