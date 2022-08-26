@@ -97,7 +97,7 @@ grpcio==1.41.1
     #   tensorflow
 h5py==3.5.0
     # via tensorflow
-huggingface-hub==0.0.19
+huggingface-hub==0.9.1
     # via transformers
 idna==3.3
     # via
