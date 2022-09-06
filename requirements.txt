@@ -129,7 +129,7 @@ jupyter-core==4.9.1
     #   nbformat
 jupyterlab-pygments==0.1.2
     # via nbconvert
-keras==2.6.0
+keras==2.10.0
     # via tensorflow
 keras-preprocessing==1.1.2
     # via tensorflow
